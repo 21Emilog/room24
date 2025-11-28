@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import { Home, MessageSquare, PlusCircle, Search, MapPin, X, Send, ArrowLeft, User, Phone, Mail, Edit } from 'lucide-react';
 import MapView from './MapView';
 export default function RentalPlatform() {
