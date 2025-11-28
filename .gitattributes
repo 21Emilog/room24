@@ -1,0 +1,14 @@
+# Auto-normalize text files and avoid noisy LF/CRLF diffs
+* text=auto
+
+# Treat common binary files as binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
+
+# Lock large generated files
+package-lock.json -text
