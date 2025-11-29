@@ -9,6 +9,37 @@
 *.webp binary
 *.ico binary
 *.pdf binary
+# Normalize line endings across OSes
+* text=auto
+
+# Force LF for source files
+*.js   text eol=lf
+*.jsx  text eol=lf
+*.ts   text eol=lf
+*.tsx  text eol=lf
+*.css  text eol=lf
+*.scss text eol=lf
+*.html text eol=lf
+*.json text eol=lf
+*.md   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.svg  text eol=lf
+*.sh   text eol=lf
+
+# Use CRLF for Windows scripts when needed
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+
+# Treat common binaries as binary (no line ending changes)
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary
+*.zip  binary
 
 # Lock large generated files
 package-lock.json -text
