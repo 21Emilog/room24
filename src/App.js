@@ -21,6 +21,7 @@ export default function RentalPlatform() {
   const [nearbyRadius, setNearbyRadius] = useState(5); // km
   const [userLocation, setUserLocation] = useState(null);
   const [nearbyStatus, setNearbyStatus] = useState('');
+  const [showLocationConsent, setShowLocationConsent] = useState(false);
 
   const openAuthModal = (type = 'renter') => {
     setAuthDefaultType(type);
@@ -138,6 +139,12 @@ export default function RentalPlatform() {
       setNearbyStatus('Geolocation not supported');
       return;
     }
+    // Show consent modal before accessing location
+    setShowLocationConsent(true);
+  };
+
+  const handleLocationConsentAccept = () => {
+    setShowLocationConsent(false);
     setNearbyStatus('Locating...');
     navigator.geolocation.getCurrentPosition((pos) => {
       const lat = pos.coords.latitude;
@@ -594,6 +601,44 @@ const filteredListings = listings
         userType={userType}
         messageCount={userConversations.length}
       />
+
+      {showLocationConsent && (
+        <LocationConsentModal
+          onAccept={handleLocationConsentAccept}
+          onDecline={() => setShowLocationConsent(false)}
+        />
+      )}
+
+      {/* Footer */}
+      <footer className="bg-gray-800 text-gray-300 py-8 mt-auto">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-6">
+            <div>
+              <h3 className="text-white font-bold text-lg mb-3">Room24</h3>
+              <p className="text-sm text-gray-400">Find your perfect room in South Africa. Connect with verified landlords and renters.</p>
+            </div>
+            <div>
+              <h4 className="text-white font-semibold mb-3">Legal</h4>
+              <ul className="space-y-2 text-sm">
+                <li><a href="#privacy" className="hover:text-white transition">Privacy Policy</a></li>
+                <li><a href="#terms" className="hover:text-white transition">Terms of Service</a></li>
+                <li><a href="#cookies" className="hover:text-white transition">Cookie Policy</a></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-white font-semibold mb-3">Contact</h4>
+              <ul className="space-y-2 text-sm">
+                <li><a href="mailto:support@room24.co.za" className="hover:text-white transition">support@room24.co.za</a></li>
+                <li><a href="#help" className="hover:text-white transition">Help Center</a></li>
+              </ul>
+            </div>
+          </div>
+          <div className="border-t border-gray-700 pt-6 text-sm text-gray-400">
+            <p>© {new Date().getFullYear()} Room24. All rights reserved.</p>
+            <p className="mt-2">By using this site, you agree to our use of location services and cookies for improved user experience.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
@@ -2079,6 +2124,57 @@ function AuthModal({ defaultType = 'renter', onClose, onSubmit }) {
             <button onClick={handleSubmit} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded">Continue</button>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function LocationConsentModal({ onAccept, onDecline }) {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
+        <div className="flex items-center gap-3 mb-4">
+          <MapPin className="w-8 h-8 text-blue-600" />
+          <h3 className="text-xl font-bold text-gray-800">Location Access</h3>
+        </div>
+        
+        <p className="text-gray-600 mb-4">
+          Room24 would like to access your location to show nearby rental listings. Your location data:
+        </p>
+        
+        <ul className="text-sm text-gray-600 mb-6 space-y-2">
+          <li className="flex items-start gap-2">
+            <span className="text-green-600 mt-0.5">✓</span>
+            <span>Is only used to calculate distances to listings</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-green-600 mt-0.5">✓</span>
+            <span>Is not stored on our servers</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-green-600 mt-0.5">✓</span>
+            <span>Is not shared with third parties</span>
+          </li>
+        </ul>
+
+        <div className="flex gap-3">
+          <button
+            onClick={onDecline}
+            className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 rounded-lg transition"
+          >
+            Not Now
+          </button>
+          <button
+            onClick={onAccept}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition"
+          >
+            Allow
+          </button>
+        </div>
+        
+        <p className="text-xs text-gray-500 mt-4 text-center">
+          You can change this permission anytime in your browser settings.
+        </p>
       </div>
     </div>
   );
