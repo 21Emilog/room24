@@ -11,6 +11,35 @@ L.Icon.Default.mergeOptions({
   shadowUrl: require('leaflet/dist/images/marker-shadow.png')
 });
 
+// Custom marker icons with distinct colors
+const renterIcon = new L.Icon({
+  iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+    <svg width="25" height="41" viewBox="0 0 25 41" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12.5 0C5.596 0 0 5.596 0 12.5c0 9.375 12.5 28.125 12.5 28.125S25 21.875 25 12.5C25 5.596 19.404 0 12.5 0z" fill="#2563eb"/>
+      <circle cx="12.5" cy="12.5" r="6" fill="white"/>
+    </svg>
+  `),
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
+  shadowSize: [41, 41]
+});
+
+const listingIcon = new L.Icon({
+  iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+    <svg width="25" height="41" viewBox="0 0 25 41" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12.5 0C5.596 0 0 5.596 0 12.5c0 9.375 12.5 28.125 12.5 28.125S25 21.875 25 12.5C25 5.596 19.404 0 12.5 0z" fill="#ef4444"/>
+      <circle cx="12.5" cy="12.5" r="6" fill="white"/>
+    </svg>
+  `),
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
+  shadowSize: [41, 41]
+});
+
 // Mock location coordinates for South African areas
 const locationCoordinates = {
   'soweto': [-26.2373, 27.8471],
@@ -47,7 +76,7 @@ function FitBounds({ bounds }) {
   return null;
 }
 
-export default function MapView({ listings = [], onMarkerClick = () => {}, userLocation = null, nearbyRadius = 0 }) {
+export default function MapView({ listings = [], onMarkerClick = () => {}, userLocation = null, nearbyRadius = 0, fullHeight = false }) {
   const markers = useMemo(() => {
     return listings
       .map(l => {
@@ -79,8 +108,10 @@ export default function MapView({ listings = [], onMarkerClick = () => {}, userL
   const MAPBOX_KEY = process.env.REACT_APP_MAPBOX_API_KEY;
   const useMapbox = MAPBOX_KEY && MAPBOX_KEY.length > 0;
 
+  const mapHeight = fullHeight ? 'calc(100vh - 180px)' : '384px';
+
   return (
-    <div className="w-full h-96 bg-gray-100 rounded-lg border border-gray-200 p-0 overflow-hidden">
+    <div className={`w-full bg-gray-100 rounded-lg border border-gray-200 p-0 overflow-hidden`} style={{ height: mapHeight }}>
       {markers.length === 0 ? (
         <div className="h-full p-4 flex flex-col">
           <div className="text-gray-700 font-semibold mb-2 p-4">No listings to show on the map.</div>
@@ -109,8 +140,11 @@ export default function MapView({ listings = [], onMarkerClick = () => {}, userL
             {/* Render renter position & search radius if provided */}
             {userLocation && typeof userLocation.lat === 'number' && typeof userLocation.lon === 'number' && (
               <>
-                <Marker position={[userLocation.lat, userLocation.lon]}>
-                  <Popup>You (approx.)</Popup>
+                <Marker position={[userLocation.lat, userLocation.lon]} icon={renterIcon}>
+                  <Popup>
+                    <div className="font-semibold text-blue-600">Your Location</div>
+                    <div className="text-xs text-gray-500">(approximate)</div>
+                  </Popup>
                 </Marker>
                 {nearbyRadius > 0 && (
                   <Circle center={[userLocation.lat, userLocation.lon]} radius={nearbyRadius * 1000} pathOptions={{ color: '#2563eb', fillOpacity: 0.05 }} />
@@ -118,7 +152,7 @@ export default function MapView({ listings = [], onMarkerClick = () => {}, userL
               </>
             )}
           {markers.map(m => (
-            <Marker key={m.id} position={[m.lat, m.lng]} eventHandlers={{ click: () => onMarkerClick(m.raw) }}>
+            <Marker key={m.id} position={[m.lat, m.lng]} icon={listingIcon} eventHandlers={{ click: () => onMarkerClick(m.raw) }}>
               <Popup>
                 <div className="min-w-[150px]">
                   <div className="font-semibold">{m.title}</div>

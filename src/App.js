@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
-import { Home, MessageSquare, PlusCircle, Search, MapPin, X, Send, ArrowLeft, User, Phone, Mail, Edit } from 'lucide-react';
+import { Home, MessageSquare, PlusCircle, Search, MapPin, X, Send, ArrowLeft, User, Phone, Mail, Edit, Menu, CheckCircle } from 'lucide-react';
 import MapView from './MapView';
 export default function RentalPlatform() {
   const [currentView, setCurrentView] = useState('browse');
@@ -22,6 +22,8 @@ export default function RentalPlatform() {
   const [userLocation, setUserLocation] = useState(null);
   const [nearbyStatus, setNearbyStatus] = useState('');
   const [showLocationConsent, setShowLocationConsent] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [toast, setToast] = useState(null);
 
   const openAuthModal = (type = 'renter') => {
     setAuthDefaultType(type);
@@ -165,6 +167,12 @@ export default function RentalPlatform() {
     setNearbyStatus('');
   };
 
+  // Toast notification helper
+  const showToast = (message, type = 'info', title = '') => {
+    setToast({ message, type, title });
+    setTimeout(() => setToast(null), 5000);
+  };
+
   const saveListings = async (newListings) => {
     try {
       localStorage.setItem('listings', JSON.stringify(newListings));
@@ -240,6 +248,7 @@ const handleProfileSetup = async (profileData) => {
     
     localStorage.setItem('current-user', JSON.stringify(user));
     setCurrentUser(user);
+    showToast('Profile created successfully!', 'success', 'Welcome!');
     setCurrentView('browse');
   } catch (error) {
     console.error('Error saving profile:', error);
@@ -252,6 +261,7 @@ const handleProfileSetup = async (profileData) => {
       createdAt: new Date().toISOString()
     };
     setCurrentUser(user);
+    showToast('Profile created (data may not be persisted)', 'error');
     setCurrentView('browse');
   }
 };
@@ -262,11 +272,13 @@ const handleUpdateProfile = async (profileData) => {
     
     localStorage.setItem('current-user', JSON.stringify(updatedUser));
     setCurrentUser(updatedUser);
+    showToast('Profile updated successfully!', 'success');
     setCurrentView('browse');
   } catch (error) {
     console.error('Error updating profile:', error);
     const updatedUser = { ...currentUser, ...profileData };
     setCurrentUser(updatedUser);
+    showToast('Profile updated (data may not be persisted)', 'error');
     setCurrentView('browse');
   }
 };
@@ -335,7 +347,10 @@ const handleAddListing = async (listingData) => {
 
     const updatedListings = [...listings, newListing];
     await saveListings(updatedListings);
+    showToast('Listing created successfully!', 'success', 'Success!');
     setCurrentView('browse');
+    // Scroll to top to see new listing
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSendMessage = async (listingId, message) => {
@@ -437,20 +452,84 @@ const filteredListings = listings
     <div className="min-h-screen bg-gray-50">
       {/* Modern Professional Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            {!currentUser && (
-              <div className="flex items-center gap-3">
-                <button onClick={() => openAuthModal('renter')} className="text-gray-600 hover:text-gray-800 px-3 py-2 rounded-lg">Sign in</button>
-                <button onClick={() => openAuthModal('landlord')} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg">List Your Room</button>
-              </div>
-            )}
+        <div className="max-w-7xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            {/* Logo */}
             <h1 className="text-2xl font-bold">
               <span className="text-blue-600">Room</span><span className="text-red-500">24</span>
             </h1>
-            {currentUser && (
-              <div className="hidden md:flex items-center gap-2 text-sm">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold">
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center gap-4">
+              {!currentUser && (
+                <div className="flex items-center gap-3">
+                  <button onClick={() => openAuthModal('renter')} className="text-gray-600 hover:text-gray-800 px-3 py-2 rounded-lg">Sign in</button>
+                  <button onClick={() => openAuthModal('landlord')} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg">List Your Room</button>
+                </div>
+              )}
+              
+              {currentUser && (
+                <>
+                  <div className="flex items-center gap-2 text-sm mr-4">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold">
+                      {currentUser.name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-800">{currentUser.name}</p>
+                      <p className="text-xs text-gray-500">{currentUser.type === 'landlord' ? 'Property Owner' : 'Looking for a Room'}</p>
+                    </div>
+                  </div>
+                  
+                  {userConversations.length > 0 && (
+                    <button 
+                      onClick={() => setCurrentView('messages')}
+                      className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
+                      aria-label="Messages"
+                    >
+                      <MessageSquare className="w-6 h-6" />
+                      {userConversations.length > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                          {userConversations.length}
+                        </span>
+                      )}
+                    </button>
+                  )}
+                  
+                  <button 
+                    onClick={() => setCurrentView('profile')}
+                    className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
+                    aria-label="Profile"
+                  >
+                    <User className="w-6 h-6" />
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Mobile: CTAs and Hamburger */}
+            <div className="flex md:hidden items-center gap-2">
+              {!currentUser ? (
+                <>
+                  <button onClick={() => openAuthModal('renter')} className="text-sm text-gray-600 hover:text-gray-800 px-2 py-1">Sign in</button>
+                  <button onClick={() => openAuthModal('landlord')} className="text-sm bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded">List Room</button>
+                </>
+              ) : (
+                <button 
+                  onClick={() => setShowMobileMenu(!showMobileMenu)}
+                  className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
+                  aria-label="Menu"
+                >
+                  {showMobileMenu ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Mobile Menu Dropdown */}
+          {currentUser && showMobileMenu && (
+            <div className="md:hidden mt-3 pb-3 border-t border-gray-200 pt-3 animate-slideDown">
+              <div className="flex items-center gap-3 mb-4 pb-3 border-b border-gray-100">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold">
                   {currentUser.name.charAt(0)}
                 </div>
                 <div>
@@ -458,32 +537,57 @@ const filteredListings = listings
                   <p className="text-xs text-gray-500">{currentUser.type === 'landlord' ? 'Property Owner' : 'Looking for a Room'}</p>
                 </div>
               </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-4">
-            {userConversations.length > 0 && (
-              <button 
-                onClick={() => setCurrentView('messages')}
-                className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
-              >
-                <MessageSquare className="w-6 h-6" />
+              
+              <div className="space-y-1">
                 {userConversations.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                    {userConversations.length}
-                  </span>
+                  <button 
+                    onClick={() => { setCurrentView('messages'); setShowMobileMenu(false); }}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                  >
+                    <MessageSquare className="w-5 h-5" />
+                    <span>Messages</span>
+                    {userConversations.length > 0 && (
+                      <span className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                        {userConversations.length}
+                      </span>
+                    )}
+                  </button>
                 )}
-              </button>
-            )}
-            <button 
-              onClick={() => setCurrentView('profile')}
-              className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
-            >
-              <User className="w-6 h-6" />
-            </button>
-          </div>
+                
+                <button 
+                  onClick={() => { setCurrentView('profile'); setShowMobileMenu(false); }}
+                  className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                >
+                  <User className="w-5 h-5" />
+                  <span>Profile</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed top-20 right-4 z-50 bg-white border-l-4 ${
+          toast.type === 'success' ? 'border-green-500' : 
+          toast.type === 'error' ? 'border-red-500' : 
+          'border-blue-500'
+        } rounded shadow-lg p-4 animate-slideInRight flex items-start gap-3 max-w-sm`}>
+          {toast.type === 'success' && <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />}
+          <div className="flex-1">
+            {toast.title && <p className="font-semibold text-gray-800 mb-1">{toast.title}</p>}
+            <p className="text-sm text-gray-600">{toast.message}</p>
+          </div>
+          <button 
+            onClick={() => setToast(null)}
+            className="text-gray-400 hover:text-gray-600"
+            aria-label="Close notification"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       <div className="max-w-6xl mx-auto pb-20">
         {currentView === 'setup-profile' && (
@@ -1188,11 +1292,15 @@ function BrowseView({
       {/* Map / List Toggle - only relevant when there are listings */}
       {listings.length > 0 && (
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex justify-end mb-4">
+          <div className="flex justify-between items-center mb-4">
+            <p className="text-sm text-gray-600">
+              {mapView ? 'Click markers to view details' : `Showing ${listings.length} results`}
+            </p>
             <button
               onClick={() => setMapView(!mapView)}
-              className="text-sm px-3 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50"
+              className="text-sm px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition flex items-center gap-2"
             >
+              <MapPin className="w-4 h-4" />
               {mapView ? 'Show List' : 'Show Map'}
             </button>
           </div>
@@ -1202,6 +1310,7 @@ function BrowseView({
                 onMarkerClick={(l) => onSelectListing(l)}
                 userLocation={userLocation}
                 nearbyRadius={nearbyRadius}
+                fullHeight={true}
               />
           )}
         </div>
@@ -1251,19 +1360,40 @@ function ListingCard({ listing, onClick }) {
       {/* Image Container */}
       {listing.photos && listing.photos.length > 0 ? (
         <div className="relative bg-gray-200 aspect-video overflow-hidden">
-          <img src={listing.photos[0]} alt="Room" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+          <img 
+            src={listing.photos[0]} 
+            alt="Room" 
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 skeleton"
+            onLoad={(e) => e.target.classList.remove('skeleton')}
+          />
           <div className="absolute top-3 right-3 flex gap-2">
             {listing.photos.length > 1 && (
               <div className="bg-black bg-opacity-60 text-white px-2 py-1 rounded-md text-xs font-semibold">
                 {listing.photos.length} 📸
               </div>
             )}
+            {/* Availability Badge */}
+            <div className={`px-2 py-1 rounded-md text-xs font-semibold ${
+              listing.status === 'available' 
+                ? 'bg-green-500 text-white' 
+                : 'bg-gray-700 text-white'
+            }`}>
+              {listing.status === 'available' ? 'Available' : 'Rented'}
+            </div>
           </div>
           <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-5 transition-opacity" />
         </div>
       ) : (
-        <div className="bg-gradient-to-br from-gray-200 to-gray-300 aspect-video flex items-center justify-center">
+        <div className="bg-gradient-to-br from-gray-200 to-gray-300 aspect-video flex items-center justify-center relative">
           <Home className="w-12 h-12 text-gray-400" />
+          {/* Availability Badge for no-photo cards */}
+          <div className={`absolute top-3 right-3 px-2 py-1 rounded-md text-xs font-semibold ${
+            listing.status === 'available' 
+              ? 'bg-green-500 text-white' 
+              : 'bg-gray-700 text-white'
+          }`}>
+            {listing.status === 'available' ? 'Available' : 'Rented'}
+          </div>
         </div>
       )}
 
@@ -1334,11 +1464,55 @@ function AddListingView({ onSubmit, onCancel, currentUser, userType, onRequireAu
     longitude: null
   });
   const [geocodingStatus, setGecodingStatus] = useState('');
+  const [errors, setErrors] = useState({});
 
   const availableAmenities = [
     'WiFi', 'Parking', 'Kitchen', 'Laundry', 'Air Conditioning', 
     'Heating', 'TV', 'Furnished', 'Pet Friendly', 'Garden'
   ];
+
+  const validateField = (name, value) => {
+    const newErrors = { ...errors };
+    
+    switch (name) {
+      case 'title':
+        if (!value || value.trim().length < 5) {
+          newErrors.title = 'Title must be at least 5 characters';
+        } else {
+          delete newErrors.title;
+        }
+        break;
+      case 'price':
+        if (!value || parseFloat(value) <= 0) {
+          newErrors.price = 'Price must be greater than 0';
+        } else if (parseFloat(value) < 500) {
+          newErrors.price = 'Price seems too low (minimum R500)';
+        } else if (parseFloat(value) > 50000) {
+          newErrors.price = 'Price seems too high (maximum R50,000)';
+        } else {
+          delete newErrors.price;
+        }
+        break;
+      case 'location':
+        if (!value || value.trim().length < 3) {
+          newErrors.location = 'Location is required (min 3 characters)';
+        } else {
+          delete newErrors.location;
+        }
+        break;
+      case 'description':
+        if (value && value.length > 500) {
+          newErrors.description = 'Description is too long (max 500 characters)';
+        } else {
+          delete newErrors.description;
+        }
+        break;
+      default:
+        break;
+    }
+    
+    setErrors(newErrors);
+  };
 
   // Geocode address using Nominatim (OpenStreetMap)
   // Use browser geolocation and reverse-geocode to fill address/coords
@@ -1536,11 +1710,29 @@ function AddListingView({ onSubmit, onCancel, currentUser, userType, onRequireAu
       return;
     }
 
-    if (formData.title && formData.price && formData.location) {
-      onSubmit(formData);
-    } else {
-      alert('Please complete the required fields: title, price and location.');
+    // Validate all fields
+    validateField('title', formData.title);
+    validateField('price', formData.price);
+    validateField('location', formData.location);
+    validateField('description', formData.description);
+
+    if (!formData.title || formData.title.trim().length < 5) {
+      setErrors(prev => ({ ...prev, title: 'Title must be at least 5 characters' }));
+      return;
     }
+    if (!formData.price || parseFloat(formData.price) <= 0) {
+      setErrors(prev => ({ ...prev, price: 'Price must be greater than 0' }));
+      return;
+    }
+    if (!formData.location || formData.location.trim().length < 3) {
+      setErrors(prev => ({ ...prev, location: 'Location is required' }));
+      return;
+    }
+    if (Object.keys(errors).length > 0) {
+      return;
+    }
+
+    onSubmit(formData);
   };
 
   return (
@@ -1562,10 +1754,15 @@ function AddListingView({ onSubmit, onCancel, currentUser, userType, onRequireAu
                 type="text"
                 required
                 value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, title: e.target.value });
+                  validateField('title', e.target.value);
+                }}
+                onBlur={(e) => validateField('title', e.target.value)}
                 placeholder="e.g., Cozy backroom with bathroom"
-                className="w-full px-4 py-3 border border-gray-300 bg-white text-gray-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition placeholder-gray-400"
+                className={`w-full px-4 py-3 border ${errors.title ? 'border-red-500' : 'border-gray-300'} bg-white text-gray-800 rounded-lg focus:ring-2 ${errors.title ? 'focus:ring-red-500' : 'focus:ring-blue-500'} focus:border-transparent transition placeholder-gray-400`}
               />
+              {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
             </div>
 
             {/* Price */}
@@ -1575,10 +1772,15 @@ function AddListingView({ onSubmit, onCancel, currentUser, userType, onRequireAu
                 type="number"
                 required
                 value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, price: e.target.value });
+                  validateField('price', e.target.value);
+                }}
+                onBlur={(e) => validateField('price', e.target.value)}
                 placeholder="e.g., 2500"
-                className="w-full px-4 py-3 border border-gray-300 bg-white text-gray-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition placeholder-gray-400"
+                className={`w-full px-4 py-3 border ${errors.price ? 'border-red-500' : 'border-gray-300'} bg-white text-gray-800 rounded-lg focus:ring-2 ${errors.price ? 'focus:ring-red-500' : 'focus:ring-blue-500'} focus:border-transparent transition placeholder-gray-400`}
               />
+              {errors.price && <p className="text-red-500 text-xs mt-1">{errors.price}</p>}
             </div>
 
             {/* Location and Street Address */}
@@ -1589,10 +1791,15 @@ function AddListingView({ onSubmit, onCancel, currentUser, userType, onRequireAu
                   type="text"
                   required
                   value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, location: e.target.value });
+                    validateField('location', e.target.value);
+                  }}
+                  onBlur={(e) => validateField('location', e.target.value)}
                   placeholder="e.g., Soweto, Johannesburg"
-                  className="w-full px-4 py-3 border border-gray-300 bg-white text-gray-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition placeholder-gray-400"
+                  className={`w-full px-4 py-3 border ${errors.location ? 'border-red-500' : 'border-gray-300'} bg-white text-gray-800 rounded-lg focus:ring-2 ${errors.location ? 'focus:ring-red-500' : 'focus:ring-blue-500'} focus:border-transparent transition placeholder-gray-400`}
                 />
+                {errors.location && <p className="text-red-500 text-xs mt-1">{errors.location}</p>}
               </div>
 
               <div>
@@ -1607,43 +1814,63 @@ function AddListingView({ onSubmit, onCancel, currentUser, userType, onRequireAu
               </div>
             </div>
 
-            {/* Geocode / Geolocate Buttons */}
-            <div className="flex gap-2 items-center">
-              <button
-                type="button"
-                onClick={geocodeAddress}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
-              >
-                Find on Map
-              </button>
-
-              <button
-                type="button"
-                onClick={geolocateCurrentPosition}
-                className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg text-sm font-medium transition"
-              >
-                Use Current Location
-              </button>
-
-              <div className="text-sm">
-                {geocodingStatus && (
-                  <span className={geocodingStatus.startsWith('✓') ? 'text-green-600 font-medium' : 'text-gray-600'}>
-                    {geocodingStatus}
-                  </span>
-                )}
-                {formData.latitude && formData.longitude && (
-                  <span className="text-green-600 font-medium ml-2">
-                    📍 {formData.latitude.toFixed(4)}, {formData.longitude.toFixed(4)}
-                  </span>
-                )}
+            {/* Geocode Section - More Prominent */}
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
+              <div className="flex items-start gap-3 mb-4">
+                <MapPin className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-1">Set Location on Map</h3>
+                  <p className="text-sm text-gray-600">Help renters find your listing by pinpointing its exact location.</p>
+                </div>
               </div>
-              {/* Small draggable preview map to fine-tune the listing location */}
-              <div className="mt-3">
-                <label className="block text-sm font-semibold text-gray-800 mb-2">Adjust Pin (drag to fine-tune)</label>
+
+              <div className="flex flex-wrap gap-3 items-center mb-4">
+                <button
+                  type="button"
+                  onClick={geocodeAddress}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-sm font-semibold transition shadow-sm flex items-center gap-2"
+                >
+                  <MapPin className="w-4 h-4" />
+                  Find on Map
+                </button>
+
+                <button
+                  type="button"
+                  onClick={geolocateCurrentPosition}
+                  className="bg-white hover:bg-gray-50 border-2 border-gray-300 text-gray-800 px-6 py-3 rounded-lg text-sm font-semibold transition shadow-sm flex items-center gap-2"
+                >
+                  <MapPin className="w-4 h-4" />
+                  Use Current Location
+                </button>
+
+                <div className="text-sm flex-1">
+                  {geocodingStatus && (
+                    <span className={`${geocodingStatus.startsWith('✓') ? 'text-green-600 font-semibold' : 'text-gray-700'} flex items-center gap-1`}>
+                      {geocodingStatus.startsWith('✓') && <CheckCircle className="w-4 h-4" />}
+                      {geocodingStatus}
+                    </span>
+                  )}
+                  {formData.latitude && formData.longitude && !geocodingStatus && (
+                    <span className="text-green-600 font-semibold flex items-center gap-1">
+                      <CheckCircle className="w-4 h-4" />
+                      Location set: {formData.latitude.toFixed(4)}, {formData.longitude.toFixed(4)}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Draggable preview map */}
+              <div className="mt-4">
                 {(formData.latitude && formData.longitude) ? (
-                  <DraggablePreview lat={formData.latitude} lng={formData.longitude} />
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-800 mb-2">Fine-tune Location (drag pin)</label>
+                    <DraggablePreview lat={formData.latitude} lng={formData.longitude} />
+                  </div>
                 ) : (
-                  <div className="text-sm text-gray-500">No coordinates yet. Use 'Find on Map' or 'Use Current Location' to set a pin.</div>
+                  <div className="text-sm text-gray-600 bg-white border border-gray-200 rounded-lg p-4 text-center">
+                    <MapPin className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                    No location set yet. Click "Find on Map" or "Use Current Location" to place a pin.
+                  </div>
                 )}
               </div>
             </div>
@@ -1675,14 +1902,26 @@ function AddListingView({ onSubmit, onCancel, currentUser, userType, onRequireAu
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">Description</label>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
+                Description 
+                {formData.description && (
+                  <span className={`ml-2 text-xs ${formData.description.length > 500 ? 'text-red-500' : 'text-gray-500'}`}>
+                    ({formData.description.length}/500 characters)
+                  </span>
+                )}
+              </label>
               <textarea
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, description: e.target.value });
+                  validateField('description', e.target.value);
+                }}
+                onBlur={(e) => validateField('description', e.target.value)}
                 placeholder="Describe the room, amenities, rules, and any other details..."
                 rows="4"
-                className="w-full px-4 py-3 border border-gray-300 bg-white text-gray-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition placeholder-gray-400"
+                className={`w-full px-4 py-3 border ${errors.description ? 'border-red-500' : 'border-gray-300'} bg-white text-gray-800 rounded-lg focus:ring-2 ${errors.description ? 'focus:ring-red-500' : 'focus:ring-blue-500'} focus:border-transparent transition placeholder-gray-400`}
               />
+              {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
             </div>
 
             {/* Amenities */}
