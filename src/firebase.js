@@ -10,6 +10,8 @@ import {
   collection, 
   doc, 
   getDocs, 
+  getDoc,
+  setDoc,
   addDoc, 
   updateDoc, 
   deleteDoc, 
@@ -19,6 +21,17 @@ import {
   onSnapshot,
   serverTimestamp 
 } from 'firebase/firestore';
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+  signOut as firebaseSignOut,
+  onAuthStateChanged,
+  updateProfile,
+  sendPasswordResetEmail
+} from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
@@ -33,6 +46,7 @@ const firebaseConfig = {
 let messagingInstance;
 let analyticsInstance;
 let firestoreInstance;
+let authInstance;
 let firebaseApp;
 
 export function initFirebase() {
@@ -49,7 +63,22 @@ export function initFirebase() {
   } catch (e) {
     console.warn('Firestore not available', e);
   }
+  // Initialize Auth
+  try {
+    authInstance = getAuth(firebaseApp);
+    console.log('Auth initialized');
+  } catch (e) {
+    console.warn('Auth not available', e);
+  }
   return firebaseApp;
+}
+
+// Get Auth instance
+export function getAuthInstance() {
+  if (!authInstance && firebaseApp) {
+    authInstance = getAuth(firebaseApp);
+  }
+  return authInstance;
 }
 
 // Get Firestore instance
@@ -58,6 +87,118 @@ export function getDb() {
     firestoreInstance = getFirestore(firebaseApp);
   }
   return firestoreInstance;
+}
+
+// ===========================
+// AUTHENTICATION FUNCTIONS
+// ===========================
+
+// Sign up with email and password
+export async function signUpWithEmail(email, password, displayName) {
+  const auth = getAuthInstance();
+  if (!auth) throw new Error('Auth not initialized');
+  
+  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+  
+  // Update display name
+  if (displayName) {
+    await updateProfile(userCredential.user, { displayName });
+  }
+  
+  return userCredential.user;
+}
+
+// Sign in with email and password
+export async function signInWithEmail(email, password) {
+  const auth = getAuthInstance();
+  if (!auth) throw new Error('Auth not initialized');
+  
+  const userCredential = await signInWithEmailAndPassword(auth, email, password);
+  return userCredential.user;
+}
+
+// Sign in with Google
+export async function signInWithGoogle() {
+  const auth = getAuthInstance();
+  if (!auth) throw new Error('Auth not initialized');
+  
+  const provider = new GoogleAuthProvider();
+  const userCredential = await signInWithPopup(auth, provider);
+  return userCredential.user;
+}
+
+// Sign out
+export async function signOut() {
+  const auth = getAuthInstance();
+  if (!auth) throw new Error('Auth not initialized');
+  
+  await firebaseSignOut(auth);
+}
+
+// Listen to auth state changes
+export function subscribeToAuthState(callback) {
+  const auth = getAuthInstance();
+  if (!auth) {
+    console.warn('Auth not initialized');
+    return () => {};
+  }
+  
+  return onAuthStateChanged(auth, callback);
+}
+
+// Send password reset email
+export async function resetPassword(email) {
+  const auth = getAuthInstance();
+  if (!auth) throw new Error('Auth not initialized');
+  
+  await sendPasswordResetEmail(auth, email);
+}
+
+// Get current user
+export function getCurrentUser() {
+  const auth = getAuthInstance();
+  return auth?.currentUser || null;
+}
+
+// ===========================
+// USER PROFILE FUNCTIONS
+// ===========================
+
+// Get user profile from Firestore
+export async function getUserProfile(userId) {
+  const db = getDb();
+  if (!db) return null;
+  
+  try {
+    const userRef = doc(db, 'users', userId);
+    const snapshot = await getDoc(userRef);
+    if (snapshot.exists()) {
+      return { id: snapshot.id, ...snapshot.data() };
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    return null;
+  }
+}
+
+// Create or update user profile in Firestore
+export async function saveUserProfile(userId, profileData) {
+  const db = getDb();
+  if (!db) throw new Error('Firestore not initialized');
+  
+  try {
+    const userRef = doc(db, 'users', userId);
+    await setDoc(userRef, {
+      ...profileData,
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
+    console.log('User profile saved:', userId);
+    return true;
+  } catch (error) {
+    console.error('Error saving user profile:', error);
+    throw error;
+  }
 }
 
 // ===========================

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { initFirebase, initAnalytics, requestFcmToken, listenForegroundMessages, trackEvent, fetchListings, addListing, deleteListing, subscribeToListings, isFirestoreEnabled } from './firebase';
-import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle } from 'lucide-react';
+import { initFirebase, initAnalytics, requestFcmToken, listenForegroundMessages, trackEvent, fetchListings, addListing, deleteListing, subscribeToListings, isFirestoreEnabled, subscribeToAuthState, getUserProfile, saveUserProfile } from './firebase';
+import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut } from 'lucide-react';
 import Header from './components/Header';
 import ListingDetailModal from './components/ListingDetailModal';
 import Footer from './components/Footer';
@@ -14,6 +14,13 @@ import OfflineIndicator from './components/OfflineIndicator';
 import BackToTop from './components/BackToTop';
 import { getNotifications } from './utils/notificationEngine';
 import { loadListingTemplate, saveListingTemplate, clearListingTemplate } from './utils/listingTemplateStorage';
+import { 
+  signUpWithEmail, 
+  signInWithEmail, 
+  signInWithGoogle, 
+  signOut as firebaseSignOut, 
+  resetPassword 
+} from './firebase';
 
 export default function RentalPlatform() {
   const [currentView, setCurrentView] = useState('browse');
@@ -27,6 +34,8 @@ export default function RentalPlatform() {
   const [selectedAmenities, setSelectedAmenities] = useState([]);
   const [sortBy, setSortBy] = useState('newest');
   const [currentUser, setCurrentUser] = useState(null);
+  const [userProfile, setUserProfile] = useState(null); // Extended profile from Firestore
+  const [authLoading, setAuthLoading] = useState(true); // Loading state for auth
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authDefaultType, setAuthDefaultType] = useState('renter');
   // Mobile menu state moved into Header component
@@ -40,6 +49,56 @@ export default function RentalPlatform() {
   const openAuthModal = (type = 'renter') => {
     setAuthDefaultType(type);
     setShowAuthModal(true);
+  };
+
+  // Auth functions to pass to AuthModal
+  const authFunctions = {
+    signUp: async (email, password, displayName, userTypeParam = 'renter', phone = '') => {
+      const firebaseUser = await signUpWithEmail(email, password, displayName);
+      
+      // Create user profile in Firestore
+      const profileData = {
+        email: firebaseUser.email,
+        displayName: displayName || firebaseUser.displayName,
+        userType: userTypeParam,
+        phone,
+        photoURL: firebaseUser.photoURL || '',
+        createdAt: new Date().toISOString(),
+        landlordComplete: userTypeParam === 'renter',
+      };
+      
+      await saveUserProfile(firebaseUser.uid, profileData);
+      return firebaseUser;
+    },
+    signIn: async (email, password) => {
+      return await signInWithEmail(email, password);
+    },
+    signInGoogle: async (userTypeParam = 'renter') => {
+      const firebaseUser = await signInWithGoogle();
+      
+      // Check if user profile exists
+      let profile = await getUserProfile(firebaseUser.uid);
+      
+      if (!profile) {
+        // Create new profile for Google user
+        const profileData = {
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName || '',
+          userType: userTypeParam,
+          phone: firebaseUser.phoneNumber || '',
+          photoURL: firebaseUser.photoURL || '',
+          createdAt: new Date().toISOString(),
+          landlordComplete: userTypeParam === 'renter',
+        };
+        
+        await saveUserProfile(firebaseUser.uid, profileData);
+      }
+      
+      return firebaseUser;
+    },
+    sendPasswordReset: async (email) => {
+      await resetPassword(email);
+    }
   };
 
   // Update unread notification count
@@ -58,6 +117,28 @@ export default function RentalPlatform() {
     loadData();
     // Initialize Firebase + FCM token fetch (deferred until user interaction if desired)
     const app = initFirebase();
+    
+    // Set up Firebase Auth listener
+    const unsubscribeAuth = subscribeToAuthState(async (firebaseUser) => {
+      if (firebaseUser) {
+        setCurrentUser(firebaseUser);
+        // Fetch extended profile from Firestore
+        try {
+          const profile = await getUserProfile(firebaseUser.uid);
+          if (profile) {
+            setUserProfile(profile);
+            setUserType(profile.userType || 'renter');
+          }
+        } catch (err) {
+          console.error('Error fetching user profile:', err);
+        }
+      } else {
+        setCurrentUser(null);
+        setUserProfile(null);
+        setUserType(null);
+      }
+      setAuthLoading(false);
+    });
     
     // Set up real-time listener for Firestore listings
     let unsubscribeListings = null;
@@ -105,8 +186,11 @@ export default function RentalPlatform() {
       }
     });
     
-    // Cleanup: unsubscribe from Firestore listener on unmount
+    // Cleanup: unsubscribe from listeners on unmount
     return () => {
+      if (unsubscribeAuth) {
+        unsubscribeAuth();
+      }
       if (unsubscribeListings) {
         unsubscribeListings();
       }
@@ -115,6 +199,8 @@ export default function RentalPlatform() {
 
   // Guard: if someone navigates to 'add' without landlord auth, prompt to sign in
   useEffect(() => {
+    if (authLoading) return; // Wait for auth to load
+    
     if (currentView === 'add') {
       if (!currentUser) {
         openAuthModal('landlord');
@@ -123,12 +209,12 @@ export default function RentalPlatform() {
         // Not a landlord - prompt to become one
         openAuthModal('landlord');
         setCurrentView('browse');
-      } else if (!currentUser.landlordComplete) {
+      } else if (!userProfile?.landlordComplete) {
         // Landlord but hasn't completed onboarding
         setCurrentView('landlord-onboarding');
       }
     }
-  }, [currentView, currentUser, userType]);
+  }, [currentView, currentUser, userType, userProfile, authLoading]);
 
   const loadData = async () => {
     try {
@@ -422,70 +508,34 @@ const handleUpdateProfile = async (profileData) => {
   }
 };
 
-const handleQuickAuth = async (profileData) => {
-  // Lightweight auth (used by AuthModal) - create and persist a user
+// Sign out using Firebase
+const handleSignOut = async () => {
   try {
-    if (isDuplicateContact(profileData.phone, profileData.email)) {
-      showToast('Phone or email already registered', 'error', 'Duplicate');
-      return;
-    }
-    const userId = `user-${Date.now()}`;
-    const user = {
-      id: userId,
-      type: profileData.type || 'renter',
-      name: profileData.name,
-      phone: profileData.phone || '',
-      email: profileData.email || '',
-      photo: profileData.photo || '',
-      notificationPrefs: { updates: true, marketing: false },
-      createdAt: new Date().toISOString()
-    };
-    localStorage.setItem('current-user', JSON.stringify(user));
-    setCurrentUser(user);
-    setUserType(user.type);
-    // registry update
-    const existingUsersRaw = localStorage.getItem('users');
-    let existingUsers = [];
-    if (existingUsersRaw) {
-      try { existingUsers = JSON.parse(existingUsersRaw); } catch { existingUsers = []; }
-    }
-    existingUsers.push(user);
-    localStorage.setItem('users', JSON.stringify(existingUsers));
-    setUsers(existingUsers);
-    setShowAuthModal(false);
-    // If landlord, route to onboarding to complete setup before posting
-    if (user.type === 'landlord') {
-      setCurrentView('landlord-onboarding');
-    } else {
-      setCurrentView('browse');
-    }
-  } catch (err) {
-    console.error('Auth failed', err);
-  }
-};
-
-// Sign out helper so you can re-auth as renter for perspective preview
-const handleSignOut = () => {
-  try {
-    localStorage.removeItem('current-user');
+    await firebaseSignOut();
+    setCurrentUser(null);
+    setUserProfile(null);
+    setUserType(null);
+    setCurrentView('browse');
+    showToast('Signed out successfully.', 'info');
   } catch (e) {
-    console.warn('Could not clear localStorage current-user');
+    console.error('Sign out error:', e);
+    showToast('Error signing out. Please try again.', 'error');
   }
-  setCurrentUser(null);
-  setUserType(null);
-  setCurrentView('browse');
-  showToast('Signed out. You can now sign in as Renter.', 'info');
 };
 
 const handleCompleteOnboarding = async (onboardData) => {
   try {
-    const updated = { ...currentUser, landlordComplete: true, landlordInfo: onboardData };
-    localStorage.setItem('current-user', JSON.stringify(updated));
-    setCurrentUser(updated);
+    if (currentUser?.uid) {
+      await saveUserProfile(currentUser.uid, { 
+        landlordComplete: true, 
+        landlordInfo: onboardData 
+      });
+      setUserProfile(prev => ({ ...prev, landlordComplete: true, landlordInfo: onboardData }));
+    }
     setCurrentView('browse');
+    showToast('Profile complete! You can now create listings.', 'success');
   } catch (err) {
     console.error('Onboarding save failed', err);
-    setCurrentUser({ ...currentUser, landlordComplete: true, landlordInfo: onboardData });
     setCurrentView('browse');
   }
 };
@@ -511,11 +561,12 @@ const handleAddListing = async (listingData) => {
     longitude: listingData.longitude ?? null,
     paymentMethod: listingData.paymentMethod || 'Bank and Cash',
     premium: !!listingData.premium,
-    landlordId: currentUser.id,
-    landlordName: currentUser.name,
-    landlordPhone: currentUser.phone,
-    landlordEmail: currentUser.email,
-    landlordPhoto: currentUser.photo,
+    // Use Firebase UID for landlordId
+    landlordId: currentUser?.uid || currentUser?.id,
+    landlordName: userProfile?.displayName || currentUser?.displayName || '',
+    landlordPhone: userProfile?.phone || '',
+    landlordEmail: currentUser?.email || '',
+    landlordPhoto: userProfile?.photoURL || currentUser?.photoURL || '',
   };
 
   try {
@@ -665,24 +716,27 @@ const filteredListings = listings
 
         {currentView === 'profile' && currentUser && (
           <ProfileView 
-            user={currentUser} 
+            user={{
+              name: userProfile?.displayName || currentUser?.displayName || '',
+              email: currentUser?.email || '',
+              phone: userProfile?.phone || '',
+              photo: userProfile?.photoURL || currentUser?.photoURL || '',
+              type: userProfile?.userType || userType || 'renter',
+              notificationPrefs: userProfile?.notificationPrefs || { updates: true, marketing: false },
+            }}
             onEdit={() => setCurrentView('edit-profile')} 
-            onUpdatePrefs={(prefs) => {
-              const updated = { ...currentUser, notificationPrefs: prefs };
-              setCurrentUser(updated);
-              try {
-                localStorage.setItem('current-user', JSON.stringify(updated));
-                // update registry
-                const raw = localStorage.getItem('users');
-                if (raw) {
-                  try {
-                    const arr = JSON.parse(raw);
-                    const idx = arr.findIndex(u => u.id === updated.id);
-                    if (idx !== -1) { arr[idx] = updated; localStorage.setItem('users', JSON.stringify(arr)); }
-                  } catch {}
+            onSignOut={handleSignOut}
+            onUpdatePrefs={async (prefs) => {
+              if (currentUser?.uid) {
+                try {
+                  await saveUserProfile(currentUser.uid, { notificationPrefs: prefs });
+                  setUserProfile(prev => ({ ...prev, notificationPrefs: prefs }));
+                  showToast('Preferences updated', 'success');
+                } catch (err) {
+                  console.error('Failed to update prefs:', err);
+                  showToast('Failed to update preferences', 'error');
                 }
-              } catch {}
-              showToast('Preferences updated', 'success');
+              }
             }}
           />
         )}
@@ -730,7 +784,7 @@ const filteredListings = listings
 
         {currentView === 'my-listings' && currentUser && userType === 'landlord' && (
           <MyListingsView 
-            listings={listings.filter(l => l.landlordId === currentUser.id)}
+            listings={listings.filter(l => l.landlordId === currentUser.uid || l.landlordId === currentUser.id)}
             onDelete={async (id) => {
               try {
                 // Try to delete from Firestore first
@@ -781,7 +835,10 @@ const filteredListings = listings
         <AuthModal
           defaultType={authDefaultType}
           onClose={() => setShowAuthModal(false)}
-          onSubmit={handleQuickAuth}
+          onSuccess={() => {
+            showToast('Signed in successfully!', 'success', 'Welcome!');
+          }}
+          authFunctions={authFunctions}
         />
       )}
 
@@ -1022,7 +1079,7 @@ function ProfileSetupView({ onSubmit, userType }) {
   );
 }
 
-function ProfileView({ user, onEdit, onUpdatePrefs }) {
+function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut }) {
   const prefs = user.notificationPrefs || { updates: true, marketing: false };
   const [localPrefs, setLocalPrefs] = React.useState(prefs);
 
@@ -1163,6 +1220,17 @@ function ProfileView({ user, onEdit, onUpdatePrefs }) {
             </div>
             <p className="text-[11px] text-gray-500 mt-3 text-center">Changes save automatically • You can opt out anytime</p>
           </div>
+
+          {/* Sign Out Button */}
+          {onSignOut && (
+            <button
+              onClick={onSignOut}
+              className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
+            >
+              <LogOut className="w-5 h-5" />
+              Sign Out
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -2604,19 +2672,44 @@ function MyListingsView({ listings, onDelete }) {
 
 // ConversationModal removed
 
-function AuthModal({ defaultType = 'renter', onClose, onSubmit }) {
-  const [form, setForm] = useState({ name: '', phone: '', email: '', type: defaultType, photo: '' });
+function AuthModal({ defaultType = 'renter', onClose, onSuccess, authFunctions }) {
+  const [mode, setMode] = useState('signin'); // 'signin', 'signup', 'reset'
+  const [form, setForm] = useState({ 
+    name: '', 
+    phone: '', 
+    email: '', 
+    password: '',
+    confirmPassword: '',
+    type: defaultType 
+  });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [authError, setAuthError] = useState('');
+  const [resetSent, setResetSent] = useState(false);
 
   const validateForm = () => {
     const newErrors = {};
-    if (!form.name || form.name.trim().length < 2) {
-      newErrors.name = 'Name must be at least 2 characters';
+    
+    if (mode === 'signup') {
+      if (!form.name || form.name.trim().length < 2) {
+        newErrors.name = 'Name must be at least 2 characters';
+      }
     }
+    
     if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       newErrors.email = 'Please enter a valid email address';
     }
+    
+    if (mode !== 'reset') {
+      if (!form.password || form.password.length < 6) {
+        newErrors.password = 'Password must be at least 6 characters';
+      }
+    }
+    
+    if (mode === 'signup' && form.password !== form.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -2624,8 +2717,38 @@ function AuthModal({ defaultType = 'renter', onClose, onSubmit }) {
   const handleSubmit = async () => {
     if (!validateForm()) return;
     setIsSubmitting(true);
+    setAuthError('');
+    
     try {
-      await onSubmit(form);
+      if (mode === 'signup') {
+        await authFunctions.signUp(form.email, form.password, form.name, form.type, form.phone);
+        onSuccess?.();
+        onClose();
+      } else if (mode === 'signin') {
+        await authFunctions.signIn(form.email, form.password);
+        onSuccess?.();
+        onClose();
+      } else if (mode === 'reset') {
+        await authFunctions.sendPasswordReset(form.email);
+        setResetSent(true);
+      }
+    } catch (err) {
+      setAuthError(err.message || 'An error occurred. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsSubmitting(true);
+    setAuthError('');
+    
+    try {
+      await authFunctions.signInGoogle(form.type);
+      onSuccess?.();
+      onClose();
+    } catch (err) {
+      setAuthError(err.message || 'Google sign-in failed. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -2635,7 +2758,7 @@ function AuthModal({ defaultType = 'renter', onClose, onSubmit }) {
     <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-start sm:items-center justify-center p-4 pt-16 sm:pt-4 z-50 overflow-y-auto">
       <div className="bg-white rounded-2xl w-full max-w-md p-8 my-auto shadow-2xl fade-in border border-gray-100">
         {/* Header */}
-        <div className="flex items-start justify-between mb-8">
+        <div className="flex items-start justify-between mb-6">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
@@ -2646,8 +2769,16 @@ function AuthModal({ defaultType = 'renter', onClose, onSubmit }) {
                 <span className="text-rose-500">24</span>
               </span>
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mt-4">Welcome!</h3>
-            <p className="text-sm text-gray-500 mt-1">Sign in or create your account</p>
+            <h3 className="text-xl font-bold text-gray-900 mt-4">
+              {mode === 'signin' && 'Welcome back!'}
+              {mode === 'signup' && 'Create your account'}
+              {mode === 'reset' && 'Reset password'}
+            </h3>
+            <p className="text-sm text-gray-500 mt-1">
+              {mode === 'signin' && 'Sign in to continue'}
+              {mode === 'signup' && 'Join Room24 today'}
+              {mode === 'reset' && "We'll send you a reset link"}
+            </p>
           </div>
           <button 
             onClick={onClose} 
@@ -2657,21 +2788,68 @@ function AuthModal({ defaultType = 'renter', onClose, onSubmit }) {
           </button>
         </div>
 
-        <div className="space-y-5">
-          {/* Name */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Full name *</label>
-            <input 
-              type="text" 
-              value={form.name} 
-              onChange={(e) => { setForm({ ...form, name: e.target.value }); setErrors({ ...errors, name: '' }); }}
-              className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500 ${
-                errors.name ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-gray-300'
-              }`}
-              placeholder="John Doe"
-            />
-            {errors.name && <p className="text-rose-500 text-xs mt-1.5 flex items-center gap-1"><span>⚠</span>{errors.name}</p>}
+        {/* Auth Error */}
+        {authError && (
+          <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-sm flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+            {authError}
           </div>
+        )}
+
+        {/* Reset Success Message */}
+        {resetSent && (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm flex items-center gap-2">
+            <CheckCircle className="w-4 h-4 flex-shrink-0" />
+            Password reset email sent! Check your inbox.
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {/* Google Sign In */}
+          {mode !== 'reset' && (
+            <>
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={isSubmitting}
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 border-2 border-gray-200 hover:border-gray-300 rounded-xl transition-all hover:bg-gray-50 font-medium text-gray-700"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                Continue with Google
+              </button>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-4 bg-white text-gray-500">or</span>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Name (signup only) */}
+          {mode === 'signup' && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Full name *</label>
+              <input 
+                type="text" 
+                value={form.name} 
+                onChange={(e) => { setForm({ ...form, name: e.target.value }); setErrors({ ...errors, name: '' }); }}
+                className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500 ${
+                  errors.name ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-gray-300'
+                }`}
+                placeholder="John Doe"
+              />
+              {errors.name && <p className="text-rose-500 text-xs mt-1.5 flex items-center gap-1"><span>⚠</span>{errors.name}</p>}
+            </div>
+          )}
 
           {/* Email */}
           <div>
@@ -2679,7 +2857,7 @@ function AuthModal({ defaultType = 'renter', onClose, onSubmit }) {
             <input 
               type="email" 
               value={form.email} 
-              onChange={(e) => { setForm({ ...form, email: e.target.value }); setErrors({ ...errors, email: '' }); }}
+              onChange={(e) => { setForm({ ...form, email: e.target.value }); setErrors({ ...errors, email: '' }); setAuthError(''); }}
               className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500 ${
                 errors.email ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-gray-300'
               }`}
@@ -2688,79 +2866,158 @@ function AuthModal({ defaultType = 'renter', onClose, onSubmit }) {
             {errors.email && <p className="text-rose-500 text-xs mt-1.5 flex items-center gap-1"><span>⚠</span>{errors.email}</p>}
           </div>
 
-          {/* Phone */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Phone <span className="text-gray-400 font-normal">(optional)</span>
-            </label>
-            <input 
-              type="tel" 
-              value={form.phone} 
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              className="w-full px-4 py-3 border-2 border-gray-200 hover:border-gray-300 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500"
-              placeholder="+27 12 345 6789"
-            />
-          </div>
-
-          {/* User Type */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">I am a</label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setForm({ ...form, type: 'renter' })}
-                className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
-                  form.type === 'renter' 
-                    ? 'border-teal-500 bg-gradient-to-br from-teal-50 to-cyan-50 text-teal-700 shadow-md' 
-                    : 'border-gray-200 hover:border-gray-300 text-gray-600 hover:bg-gray-50'
+          {/* Password (not for reset) */}
+          {mode !== 'reset' && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Password *</label>
+              <input 
+                type="password" 
+                value={form.password} 
+                onChange={(e) => { setForm({ ...form, password: e.target.value }); setErrors({ ...errors, password: '' }); setAuthError(''); }}
+                className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500 ${
+                  errors.password ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-gray-300'
                 }`}
-              >
-                <Search className={`w-6 h-6 ${form.type === 'renter' ? 'text-teal-500' : ''}`} />
-                <span className="text-sm font-semibold">Looking for a room</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setForm({ ...form, type: 'landlord' })}
-                className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
-                  form.type === 'landlord' 
-                    ? 'border-rose-500 bg-gradient-to-br from-rose-50 to-pink-50 text-rose-700 shadow-md' 
-                    : 'border-gray-200 hover:border-gray-300 text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                <Home className={`w-6 h-6 ${form.type === 'landlord' ? 'text-rose-500' : ''}`} />
-                <span className="text-sm font-semibold">Listing rooms</span>
-              </button>
+                placeholder="••••••••"
+              />
+              {errors.password && <p className="text-rose-500 text-xs mt-1.5 flex items-center gap-1"><span>⚠</span>{errors.password}</p>}
             </div>
-          </div>
+          )}
 
-          {/* Buttons */}
-          <div className="flex gap-3 pt-4">
-            <button 
-              onClick={onClose} 
-              className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-xl transition-colors"
+          {/* Confirm Password (signup only) */}
+          {mode === 'signup' && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Confirm Password *</label>
+              <input 
+                type="password" 
+                value={form.confirmPassword} 
+                onChange={(e) => { setForm({ ...form, confirmPassword: e.target.value }); setErrors({ ...errors, confirmPassword: '' }); }}
+                className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500 ${
+                  errors.confirmPassword ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-gray-300'
+                }`}
+                placeholder="••••••••"
+              />
+              {errors.confirmPassword && <p className="text-rose-500 text-xs mt-1.5 flex items-center gap-1"><span>⚠</span>{errors.confirmPassword}</p>}
+            </div>
+          )}
+
+          {/* Phone (signup only) */}
+          {mode === 'signup' && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Phone <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <input 
+                type="tel" 
+                value={form.phone} 
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                className="w-full px-4 py-3 border-2 border-gray-200 hover:border-gray-300 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500"
+                placeholder="+27 12 345 6789"
+              />
+            </div>
+          )}
+
+          {/* User Type (signup only) */}
+          {mode === 'signup' && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">I am a</label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, type: 'renter' })}
+                  className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${
+                    form.type === 'renter' 
+                      ? 'border-teal-500 bg-gradient-to-br from-teal-50 to-cyan-50 text-teal-700 shadow-md' 
+                      : 'border-gray-200 hover:border-gray-300 text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <Search className={`w-5 h-5 ${form.type === 'renter' ? 'text-teal-500' : ''}`} />
+                  <span className="text-xs font-semibold">Looking for a room</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, type: 'landlord' })}
+                  className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${
+                    form.type === 'landlord' 
+                      ? 'border-rose-500 bg-gradient-to-br from-rose-50 to-pink-50 text-rose-700 shadow-md' 
+                      : 'border-gray-200 hover:border-gray-300 text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <Home className={`w-5 h-5 ${form.type === 'landlord' ? 'text-rose-500' : ''}`} />
+                  <span className="text-xs font-semibold">Listing rooms</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Forgot Password Link (signin only) */}
+          {mode === 'signin' && (
+            <button
+              type="button"
+              onClick={() => { setMode('reset'); setAuthError(''); setResetSent(false); }}
+              className="text-sm text-teal-600 hover:text-teal-700 font-medium"
             >
-              Cancel
+              Forgot your password?
             </button>
-            <button 
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className={`flex-1 font-bold py-3 rounded-xl transition-all relative ${
-                isSubmitting 
-                  ? 'bg-teal-400 cursor-not-allowed' 
-                  : 'bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-lg hover:shadow-xl hover:shadow-teal-500/25'
-              }`}
-            >
-              {isSubmitting ? (
-                <>
-                  <span className="opacity-0">Continue</span>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  </div>
-                </>
-              ) : (
-                'Continue →'
-              )}
-            </button>
+          )}
+
+          {/* Submit Button */}
+          <button 
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className={`w-full font-bold py-3 rounded-xl transition-all relative ${
+              isSubmitting 
+                ? 'bg-teal-400 cursor-not-allowed' 
+                : 'bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-lg hover:shadow-xl hover:shadow-teal-500/25'
+            }`}
+          >
+            {isSubmitting ? (
+              <>
+                <span className="opacity-0">Submit</span>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                </div>
+              </>
+            ) : (
+              <>
+                {mode === 'signin' && 'Sign In'}
+                {mode === 'signup' && 'Create Account'}
+                {mode === 'reset' && 'Send Reset Link'}
+              </>
+            )}
+          </button>
+
+          {/* Toggle Mode */}
+          <div className="text-center text-sm text-gray-600">
+            {mode === 'signin' && (
+              <>
+                Don't have an account?{' '}
+                <button 
+                  onClick={() => { setMode('signup'); setAuthError(''); }} 
+                  className="text-teal-600 hover:text-teal-700 font-semibold"
+                >
+                  Sign up
+                </button>
+              </>
+            )}
+            {mode === 'signup' && (
+              <>
+                Already have an account?{' '}
+                <button 
+                  onClick={() => { setMode('signin'); setAuthError(''); }} 
+                  className="text-teal-600 hover:text-teal-700 font-semibold"
+                >
+                  Sign in
+                </button>
+              </>
+            )}
+            {mode === 'reset' && (
+              <button 
+                onClick={() => { setMode('signin'); setAuthError(''); setResetSent(false); }} 
+                className="text-teal-600 hover:text-teal-700 font-semibold"
+              >
+                ← Back to sign in
+              </button>
+            )}
           </div>
         </div>
 
