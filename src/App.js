@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { initFirebase, initAnalytics, requestFcmToken, listenForegroundMessages, trackEvent, fetchListings, addListing, deleteListing, subscribeToListings, isFirestoreEnabled, subscribeToAuthState, getUserProfile, saveUserProfile, initRecaptcha, sendPhoneOTP, verifyPhoneOTP, clearRecaptcha, getLinkedProviders, linkGoogleAccount } from './firebase';
-import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2 } from 'lucide-react';
+import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone } from 'lucide-react';
 import Header from './components/Header';
 import ListingDetailModal from './components/ListingDetailModal';
 import Footer from './components/Footer';
@@ -45,6 +45,8 @@ export default function RentalPlatform() {
   const [showAnalyticsConsent, setShowAnalyticsConsent] = useState(false);
   const [showNotificationsPanel, setShowNotificationsPanel] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
 
   const openAuthModal = (type = 'renter') => {
     setAuthDefaultType(type);
@@ -142,6 +144,62 @@ export default function RentalPlatform() {
     const interval = setInterval(updateUnreadCount, 5000); // check every 5s
     return () => clearInterval(interval);
   }, []);
+
+  // PWA Install Banner Logic
+  useEffect(() => {
+    // Check if already installed or dismissed
+    const isInstalled = window.matchMedia('(display-mode: standalone)').matches 
+                     || window.navigator.standalone === true;
+    const wasDismissed = localStorage.getItem('installBannerDismissed');
+    const dismissedTime = wasDismissed ? parseInt(wasDismissed, 10) : 0;
+    const daysSinceDismissed = (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24);
+    
+    if (isInstalled) {
+      setShowInstallBanner(false);
+      return;
+    }
+
+    // Listen for the beforeinstallprompt event
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      // Show banner if not dismissed recently (within 7 days)
+      if (!wasDismissed || daysSinceDismissed > 7) {
+        setTimeout(() => setShowInstallBanner(true), 3000); // Show after 3 seconds
+      }
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    // For iOS (no beforeinstallprompt), show manual instructions after delay
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (isIOS && !isInstalled && (!wasDismissed || daysSinceDismissed > 7)) {
+      setTimeout(() => setShowInstallBanner(true), 5000);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setShowInstallBanner(false);
+      }
+      setDeferredPrompt(null);
+    } else {
+      // iOS - show instructions
+      showToast('Tap the Share button, then "Add to Home Screen"', 'info', 'Install Room24');
+    }
+  };
+
+  const dismissInstallBanner = () => {
+    setShowInstallBanner(false);
+    localStorage.setItem('installBannerDismissed', Date.now().toString());
+  };
   
 
   useEffect(() => {
@@ -666,6 +724,42 @@ const filteredListings = listings
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-gray-100">
       {/* Offline Indicator */}
       <OfflineIndicator />
+      
+      {/* PWA Install Banner */}
+      {showInstallBanner && (
+        <div className="fixed bottom-20 left-4 right-4 md:left-auto md:right-4 md:max-w-sm z-50 bg-gradient-to-r from-teal-600 to-cyan-600 rounded-2xl shadow-2xl p-4 fade-in border border-teal-400/30">
+          <div className="flex items-start gap-3">
+            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
+              <Smartphone className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="font-bold text-white text-sm">Install Room24</h4>
+              <p className="text-teal-100 text-xs mt-0.5">Add to your home screen for the best experience!</p>
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={handleInstallClick}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-white text-teal-700 font-semibold text-xs rounded-lg hover:bg-teal-50 transition-colors shadow-sm"
+                >
+                  <Download className="w-4 h-4" />
+                  Install
+                </button>
+                <button
+                  onClick={dismissInstallBanner}
+                  className="px-3 py-2 text-white/80 hover:text-white text-xs font-medium transition-colors"
+                >
+                  Maybe Later
+                </button>
+              </div>
+            </div>
+            <button
+              onClick={dismissInstallBanner}
+              className="text-white/60 hover:text-white transition-colors p-1"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
       
       {/* Back to Top Button */}
       <BackToTop />
