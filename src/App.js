@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { initFirebase, initAnalytics, requestFcmToken, listenForegroundMessages, trackEvent, fetchListings, addListing, deleteListing, subscribeToListings, isFirestoreEnabled, subscribeToAuthState, getUserProfile, saveUserProfile } from './firebase';
+import { initFirebase, initAnalytics, requestFcmToken, listenForegroundMessages, trackEvent, fetchListings, addListing, deleteListing, subscribeToListings, isFirestoreEnabled, subscribeToAuthState, getUserProfile, saveUserProfile, initRecaptcha, sendPhoneOTP, verifyPhoneOTP, clearRecaptcha } from './firebase';
 import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut } from 'lucide-react';
 import Header from './components/Header';
 import ListingDetailModal from './components/ListingDetailModal';
@@ -98,6 +98,37 @@ export default function RentalPlatform() {
     },
     sendPasswordReset: async (email) => {
       await resetPassword(email);
+    },
+    sendPhoneOTP: async (phoneNumber) => {
+      // Initialize reCAPTCHA if not already done
+      initRecaptcha('phone-sign-in-button');
+      return await sendPhoneOTP(phoneNumber);
+    },
+    verifyPhoneOTP: async (otpCode, userTypeParam = 'renter', displayName = '') => {
+      const firebaseUser = await verifyPhoneOTP(otpCode);
+      
+      // Check if user profile exists
+      let profile = await getUserProfile(firebaseUser.uid);
+      
+      if (!profile) {
+        // Create new profile for phone user
+        const profileData = {
+          email: '',
+          displayName: displayName || firebaseUser.phoneNumber,
+          userType: userTypeParam,
+          phone: firebaseUser.phoneNumber || '',
+          photoURL: '',
+          createdAt: new Date().toISOString(),
+          landlordComplete: userTypeParam === 'renter',
+        };
+        
+        await saveUserProfile(firebaseUser.uid, profileData);
+      }
+      
+      return firebaseUser;
+    },
+    clearPhoneAuth: () => {
+      clearRecaptcha();
     }
   };
 
@@ -2673,41 +2704,54 @@ function MyListingsView({ listings, onDelete }) {
 // ConversationModal removed
 
 function AuthModal({ defaultType = 'renter', onClose, onSuccess, authFunctions }) {
-  const [mode, setMode] = useState('signin'); // 'signin', 'signup', 'reset'
+  const [mode, setMode] = useState('signin'); // 'signin', 'signup', 'reset', 'phone', 'phone-verify'
   const [form, setForm] = useState({ 
     name: '', 
     phone: '', 
     email: '', 
     password: '',
     confirmPassword: '',
+    otp: '',
     type: defaultType 
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState('');
   const [resetSent, setResetSent] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [phoneFormatted, setPhoneFormatted] = useState('');
 
   const validateForm = () => {
     const newErrors = {};
     
-    if (mode === 'signup') {
-      if (!form.name || form.name.trim().length < 2) {
-        newErrors.name = 'Name must be at least 2 characters';
+    if (mode === 'phone') {
+      if (!form.phone || form.phone.trim().length < 9) {
+        newErrors.phone = 'Please enter a valid phone number';
       }
-    }
-    
-    if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      newErrors.email = 'Please enter a valid email address';
-    }
-    
-    if (mode !== 'reset') {
-      if (!form.password || form.password.length < 6) {
-        newErrors.password = 'Password must be at least 6 characters';
+    } else if (mode === 'phone-verify') {
+      if (!form.otp || form.otp.length !== 6) {
+        newErrors.otp = 'Please enter the 6-digit code';
       }
-    }
-    
-    if (mode === 'signup' && form.password !== form.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+    } else {
+      if (mode === 'signup') {
+        if (!form.name || form.name.trim().length < 2) {
+          newErrors.name = 'Name must be at least 2 characters';
+        }
+      }
+      
+      if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+        newErrors.email = 'Please enter a valid email address';
+      }
+      
+      if (mode !== 'reset') {
+        if (!form.password || form.password.length < 6) {
+          newErrors.password = 'Password must be at least 6 characters';
+        }
+      }
+      
+      if (mode === 'signup' && form.password !== form.confirmPassword) {
+        newErrors.confirmPassword = 'Passwords do not match';
+      }
     }
     
     setErrors(newErrors);
@@ -2731,9 +2775,33 @@ function AuthModal({ defaultType = 'renter', onClose, onSuccess, authFunctions }
       } else if (mode === 'reset') {
         await authFunctions.sendPasswordReset(form.email);
         setResetSent(true);
+      } else if (mode === 'phone') {
+        // Send OTP
+        const result = await authFunctions.sendPhoneOTP(form.phone);
+        setPhoneFormatted(result.formattedNumber);
+        setOtpSent(true);
+        setMode('phone-verify');
+      } else if (mode === 'phone-verify') {
+        // Verify OTP
+        await authFunctions.verifyPhoneOTP(form.otp, form.type, form.name);
+        onSuccess?.();
+        onClose();
       }
     } catch (err) {
-      setAuthError(err.message || 'An error occurred. Please try again.');
+      console.error('Auth error:', err);
+      let errorMessage = 'An error occurred. Please try again.';
+      if (err.code === 'auth/invalid-phone-number') {
+        errorMessage = 'Invalid phone number format. Please use format: 0XX XXX XXXX';
+      } else if (err.code === 'auth/too-many-requests') {
+        errorMessage = 'Too many attempts. Please try again later.';
+      } else if (err.code === 'auth/invalid-verification-code') {
+        errorMessage = 'Invalid code. Please check and try again.';
+      } else if (err.code === 'auth/code-expired') {
+        errorMessage = 'Code expired. Please request a new one.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      setAuthError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -2752,6 +2820,12 @@ function AuthModal({ defaultType = 'renter', onClose, onSuccess, authFunctions }
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const startPhoneAuth = () => {
+    setMode('phone');
+    setAuthError('');
+    setOtpSent(false);
   };
 
   return (
@@ -2773,11 +2847,15 @@ function AuthModal({ defaultType = 'renter', onClose, onSuccess, authFunctions }
               {mode === 'signin' && 'Welcome back!'}
               {mode === 'signup' && 'Create your account'}
               {mode === 'reset' && 'Reset password'}
+              {mode === 'phone' && 'Sign in with phone'}
+              {mode === 'phone-verify' && 'Enter verification code'}
             </h3>
             <p className="text-sm text-gray-500 mt-1">
               {mode === 'signin' && 'Sign in to continue'}
               {mode === 'signup' && 'Join Room24 today'}
               {mode === 'reset' && "We'll send you a reset link"}
+              {mode === 'phone' && "We'll send you a verification code"}
+              {mode === 'phone-verify' && `Code sent to ${phoneFormatted}`}
             </p>
           </div>
           <button 
@@ -2805,163 +2883,312 @@ function AuthModal({ defaultType = 'renter', onClose, onSuccess, authFunctions }
         )}
 
         <div className="space-y-4">
-          {/* Google Sign In */}
-          {mode !== 'reset' && (
+          {/* Phone OTP Verification Mode */}
+          {mode === 'phone-verify' && (
             <>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Verification Code *</label>
+                <input 
+                  type="text" 
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={form.otp} 
+                  onChange={(e) => { 
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                    setForm({ ...form, otp: val }); 
+                    setErrors({ ...errors, otp: '' }); 
+                    setAuthError(''); 
+                  }}
+                  className={`w-full px-4 py-4 border-2 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500 text-center text-2xl font-bold tracking-[0.5em] ${
+                    errors.otp ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                  placeholder="000000"
+                  autoFocus
+                />
+                {errors.otp && <p className="text-rose-500 text-xs mt-1.5 flex items-center gap-1"><span>⚠</span>{errors.otp}</p>}
+              </div>
+
+              {/* Name for new phone users */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Your Name *</label>
+                <input 
+                  type="text" 
+                  value={form.name} 
+                  onChange={(e) => { setForm({ ...form, name: e.target.value }); setErrors({ ...errors, name: '' }); }}
+                  className="w-full px-4 py-3 border-2 border-gray-200 hover:border-gray-300 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500"
+                  placeholder="John Doe"
+                />
+              </div>
+
+              {/* User Type for new phone users */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">I am a</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, type: 'renter' })}
+                    className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${
+                      form.type === 'renter' 
+                        ? 'border-teal-500 bg-gradient-to-br from-teal-50 to-cyan-50 text-teal-700 shadow-md' 
+                        : 'border-gray-200 hover:border-gray-300 text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Search className={`w-5 h-5 ${form.type === 'renter' ? 'text-teal-500' : ''}`} />
+                    <span className="text-xs font-semibold">Looking for a room</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, type: 'landlord' })}
+                    className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${
+                      form.type === 'landlord' 
+                        ? 'border-rose-500 bg-gradient-to-br from-rose-50 to-pink-50 text-rose-700 shadow-md' 
+                        : 'border-gray-200 hover:border-gray-300 text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Home className={`w-5 h-5 ${form.type === 'landlord' ? 'text-rose-500' : ''}`} />
+                    <span className="text-xs font-semibold">Listing rooms</span>
+                  </button>
+                </div>
+              </div>
+
               <button
                 type="button"
-                onClick={handleGoogleSignIn}
-                disabled={isSubmitting}
-                className="w-full flex items-center justify-center gap-3 px-4 py-3 border-2 border-gray-200 hover:border-gray-300 rounded-xl transition-all hover:bg-gray-50 font-medium text-gray-700"
+                onClick={() => { setMode('phone'); setOtpSent(false); setForm({ ...form, otp: '' }); }}
+                className="text-sm text-teal-600 hover:text-teal-700 font-medium"
               >
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
-                Continue with Google
+                ← Change phone number
               </button>
+            </>
+          )}
+
+          {/* Phone Entry Mode */}
+          {mode === 'phone' && (
+            <>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number *</label>
+                <div className="flex gap-2">
+                  <div className="flex items-center px-3 bg-gray-100 border-2 border-gray-200 rounded-xl text-gray-600 font-medium">
+                    🇿🇦 +27
+                  </div>
+                  <input 
+                    type="tel" 
+                    value={form.phone} 
+                    onChange={(e) => { 
+                      setForm({ ...form, phone: e.target.value }); 
+                      setErrors({ ...errors, phone: '' }); 
+                      setAuthError(''); 
+                    }}
+                    className={`flex-1 px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500 ${
+                      errors.phone ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    placeholder="72 123 4567"
+                    autoFocus
+                  />
+                </div>
+                {errors.phone && <p className="text-rose-500 text-xs mt-1.5 flex items-center gap-1"><span>⚠</span>{errors.phone}</p>}
+                <p className="text-xs text-gray-500 mt-2">We'll send you an SMS with a verification code</p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => { setMode('signin'); setAuthError(''); }}
+                className="text-sm text-teal-600 hover:text-teal-700 font-medium"
+              >
+                ← Use email instead
+              </button>
+            </>
+          )}
+
+          {/* Google & Phone Sign In Buttons */}
+          {(mode === 'signin' || mode === 'signup') && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={handleGoogleSignIn}
+                  disabled={isSubmitting}
+                  className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-gray-200 hover:border-gray-300 rounded-xl transition-all hover:bg-gray-50 font-medium text-gray-700"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                  </svg>
+                  Google
+                </button>
+
+                <button
+                  type="button"
+                  onClick={startPhoneAuth}
+                  disabled={isSubmitting}
+                  className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-gray-200 hover:border-gray-300 rounded-xl transition-all hover:bg-gray-50 font-medium text-gray-700"
+                >
+                  <Phone className="w-5 h-5 text-green-600" />
+                  Phone
+                </button>
+              </div>
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-gray-200"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-gray-500">or</span>
+                  <span className="px-4 bg-white text-gray-500">or use email</span>
                 </div>
               </div>
             </>
           )}
 
-          {/* Name (signup only) */}
-          {mode === 'signup' && (
+          {/* Reset Mode */}
+          {mode === 'reset' && (
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Full name *</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Email *</label>
               <input 
-                type="text" 
-                value={form.name} 
-                onChange={(e) => { setForm({ ...form, name: e.target.value }); setErrors({ ...errors, name: '' }); }}
+                type="email" 
+                value={form.email} 
+                onChange={(e) => { setForm({ ...form, email: e.target.value }); setErrors({ ...errors, email: '' }); setAuthError(''); }}
                 className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500 ${
-                  errors.name ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-gray-300'
+                  errors.email ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-gray-300'
                 }`}
-                placeholder="John Doe"
+                placeholder="john@example.com"
               />
-              {errors.name && <p className="text-rose-500 text-xs mt-1.5 flex items-center gap-1"><span>⚠</span>{errors.name}</p>}
+              {errors.email && <p className="text-rose-500 text-xs mt-1.5 flex items-center gap-1"><span>⚠</span>{errors.email}</p>}
             </div>
           )}
 
-          {/* Email */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Email *</label>
-            <input 
-              type="email" 
-              value={form.email} 
-              onChange={(e) => { setForm({ ...form, email: e.target.value }); setErrors({ ...errors, email: '' }); setAuthError(''); }}
-              className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500 ${
-                errors.email ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-gray-300'
-              }`}
-              placeholder="john@example.com"
-            />
-            {errors.email && <p className="text-rose-500 text-xs mt-1.5 flex items-center gap-1"><span>⚠</span>{errors.email}</p>}
-          </div>
+          {/* Email/Password Form (signin/signup) */}
+          {(mode === 'signin' || mode === 'signup') && (
+            <>
+              {/* Name (signup only) */}
+              {mode === 'signup' && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Full name *</label>
+                  <input 
+                    type="text" 
+                    value={form.name} 
+                    onChange={(e) => { setForm({ ...form, name: e.target.value }); setErrors({ ...errors, name: '' }); }}
+                    className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500 ${
+                      errors.name ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    placeholder="John Doe"
+                  />
+                  {errors.name && <p className="text-rose-500 text-xs mt-1.5 flex items-center gap-1"><span>⚠</span>{errors.name}</p>}
+                </div>
+              )}
 
-          {/* Password (not for reset) */}
-          {mode !== 'reset' && (
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Password *</label>
-              <input 
-                type="password" 
-                value={form.password} 
-                onChange={(e) => { setForm({ ...form, password: e.target.value }); setErrors({ ...errors, password: '' }); setAuthError(''); }}
-                className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500 ${
-                  errors.password ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-gray-300'
-                }`}
-                placeholder="••••••••"
-              />
-              {errors.password && <p className="text-rose-500 text-xs mt-1.5 flex items-center gap-1"><span>⚠</span>{errors.password}</p>}
-            </div>
-          )}
-
-          {/* Confirm Password (signup only) */}
-          {mode === 'signup' && (
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Confirm Password *</label>
-              <input 
-                type="password" 
-                value={form.confirmPassword} 
-                onChange={(e) => { setForm({ ...form, confirmPassword: e.target.value }); setErrors({ ...errors, confirmPassword: '' }); }}
-                className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500 ${
-                  errors.confirmPassword ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-gray-300'
-                }`}
-                placeholder="••••••••"
-              />
-              {errors.confirmPassword && <p className="text-rose-500 text-xs mt-1.5 flex items-center gap-1"><span>⚠</span>{errors.confirmPassword}</p>}
-            </div>
-          )}
-
-          {/* Phone (signup only) */}
-          {mode === 'signup' && (
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Phone <span className="text-gray-400 font-normal">(optional)</span>
-              </label>
-              <input 
-                type="tel" 
-                value={form.phone} 
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                className="w-full px-4 py-3 border-2 border-gray-200 hover:border-gray-300 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500"
-                placeholder="+27 12 345 6789"
-              />
-            </div>
-          )}
-
-          {/* User Type (signup only) */}
-          {mode === 'signup' && (
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">I am a</label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setForm({ ...form, type: 'renter' })}
-                  className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${
-                    form.type === 'renter' 
-                      ? 'border-teal-500 bg-gradient-to-br from-teal-50 to-cyan-50 text-teal-700 shadow-md' 
-                      : 'border-gray-200 hover:border-gray-300 text-gray-600 hover:bg-gray-50'
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Email *</label>
+                <input 
+                  type="email" 
+                  value={form.email} 
+                  onChange={(e) => { setForm({ ...form, email: e.target.value }); setErrors({ ...errors, email: '' }); setAuthError(''); }}
+                  className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500 ${
+                    errors.email ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-gray-300'
                   }`}
-                >
-                  <Search className={`w-5 h-5 ${form.type === 'renter' ? 'text-teal-500' : ''}`} />
-                  <span className="text-xs font-semibold">Looking for a room</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setForm({ ...form, type: 'landlord' })}
-                  className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${
-                    form.type === 'landlord' 
-                      ? 'border-rose-500 bg-gradient-to-br from-rose-50 to-pink-50 text-rose-700 shadow-md' 
-                      : 'border-gray-200 hover:border-gray-300 text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  <Home className={`w-5 h-5 ${form.type === 'landlord' ? 'text-rose-500' : ''}`} />
-                  <span className="text-xs font-semibold">Listing rooms</span>
-                </button>
+                  placeholder="john@example.com"
+                />
+                {errors.email && <p className="text-rose-500 text-xs mt-1.5 flex items-center gap-1"><span>⚠</span>{errors.email}</p>}
               </div>
-            </div>
-          )}
 
-          {/* Forgot Password Link (signin only) */}
-          {mode === 'signin' && (
-            <button
-              type="button"
-              onClick={() => { setMode('reset'); setAuthError(''); setResetSent(false); }}
-              className="text-sm text-teal-600 hover:text-teal-700 font-medium"
-            >
-              Forgot your password?
-            </button>
+              {/* Password */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Password *</label>
+                <input 
+                  type="password" 
+                  value={form.password} 
+                  onChange={(e) => { setForm({ ...form, password: e.target.value }); setErrors({ ...errors, password: '' }); setAuthError(''); }}
+                  className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500 ${
+                    errors.password ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                  placeholder="••••••••"
+                />
+                {errors.password && <p className="text-rose-500 text-xs mt-1.5 flex items-center gap-1"><span>⚠</span>{errors.password}</p>}
+              </div>
+
+              {/* Confirm Password (signup only) */}
+              {mode === 'signup' && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Confirm Password *</label>
+                  <input 
+                    type="password" 
+                    value={form.confirmPassword} 
+                    onChange={(e) => { setForm({ ...form, confirmPassword: e.target.value }); setErrors({ ...errors, confirmPassword: '' }); }}
+                    className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500 ${
+                      errors.confirmPassword ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    placeholder="••••••••"
+                  />
+                  {errors.confirmPassword && <p className="text-rose-500 text-xs mt-1.5 flex items-center gap-1"><span>⚠</span>{errors.confirmPassword}</p>}
+                </div>
+              )}
+
+              {/* Phone (signup only) */}
+              {mode === 'signup' && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Phone <span className="text-gray-400 font-normal">(optional)</span>
+                  </label>
+                  <input 
+                    type="tel" 
+                    value={form.phone} 
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-200 hover:border-gray-300 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500"
+                    placeholder="+27 12 345 6789"
+                  />
+                </div>
+              )}
+
+              {/* User Type (signup only) */}
+              {mode === 'signup' && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">I am a</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, type: 'renter' })}
+                      className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${
+                        form.type === 'renter' 
+                          ? 'border-teal-500 bg-gradient-to-br from-teal-50 to-cyan-50 text-teal-700 shadow-md' 
+                          : 'border-gray-200 hover:border-gray-300 text-gray-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      <Search className={`w-5 h-5 ${form.type === 'renter' ? 'text-teal-500' : ''}`} />
+                      <span className="text-xs font-semibold">Looking for a room</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, type: 'landlord' })}
+                      className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${
+                        form.type === 'landlord' 
+                          ? 'border-rose-500 bg-gradient-to-br from-rose-50 to-pink-50 text-rose-700 shadow-md' 
+                          : 'border-gray-200 hover:border-gray-300 text-gray-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      <Home className={`w-5 h-5 ${form.type === 'landlord' ? 'text-rose-500' : ''}`} />
+                      <span className="text-xs font-semibold">Listing rooms</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Forgot Password Link (signin only) */}
+              {mode === 'signin' && (
+                <button
+                  type="button"
+                  onClick={() => { setMode('reset'); setAuthError(''); setResetSent(false); }}
+                  className="text-sm text-teal-600 hover:text-teal-700 font-medium"
+                >
+                  Forgot your password?
+                </button>
+              )}
+            </>
           )}
 
           {/* Submit Button */}
           <button 
+            id="phone-sign-in-button"
             onClick={handleSubmit}
             disabled={isSubmitting}
             className={`w-full font-bold py-3 rounded-xl transition-all relative ${
@@ -2982,9 +3209,14 @@ function AuthModal({ defaultType = 'renter', onClose, onSuccess, authFunctions }
                 {mode === 'signin' && 'Sign In'}
                 {mode === 'signup' && 'Create Account'}
                 {mode === 'reset' && 'Send Reset Link'}
+                {mode === 'phone' && 'Send Verification Code'}
+                {mode === 'phone-verify' && 'Verify & Sign In'}
               </>
             )}
           </button>
+
+          {/* reCAPTCHA container for phone auth */}
+          <div id="recaptcha-container" className="flex justify-center"></div>
 
           {/* Toggle Mode */}
           <div className="text-center text-sm text-gray-600">
@@ -3013,6 +3245,14 @@ function AuthModal({ defaultType = 'renter', onClose, onSuccess, authFunctions }
             {mode === 'reset' && (
               <button 
                 onClick={() => { setMode('signin'); setAuthError(''); setResetSent(false); }} 
+                className="text-teal-600 hover:text-teal-700 font-semibold"
+              >
+                ← Back to sign in
+              </button>
+            )}
+            {(mode === 'phone' || mode === 'phone-verify') && (
+              <button 
+                onClick={() => { setMode('signin'); setAuthError(''); setOtpSent(false); }} 
                 className="text-teal-600 hover:text-teal-700 font-semibold"
               >
                 ← Back to sign in

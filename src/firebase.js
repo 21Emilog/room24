@@ -30,7 +30,11 @@ import {
   signOut as firebaseSignOut,
   onAuthStateChanged,
   updateProfile,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  PhoneAuthProvider,
+  linkWithCredential
 } from 'firebase/auth';
 
 const firebaseConfig = {
@@ -152,6 +156,122 @@ export async function resetPassword(email) {
   if (!auth) throw new Error('Auth not initialized');
   
   await sendPasswordResetEmail(auth, email);
+}
+
+// ===========================
+// PHONE AUTHENTICATION
+// ===========================
+
+// Store reCAPTCHA verifier instance
+let recaptchaVerifier = null;
+let confirmationResult = null;
+
+// Initialize reCAPTCHA verifier for phone auth
+export function initRecaptcha(buttonId) {
+  const auth = getAuthInstance();
+  if (!auth) throw new Error('Auth not initialized');
+  
+  // Clear any existing verifier
+  if (recaptchaVerifier) {
+    try {
+      recaptchaVerifier.clear();
+    } catch (e) {
+      console.warn('Could not clear recaptcha:', e);
+    }
+  }
+  
+  recaptchaVerifier = new RecaptchaVerifier(auth, buttonId, {
+    size: 'invisible',
+    callback: () => {
+      console.log('reCAPTCHA verified');
+    },
+    'expired-callback': () => {
+      console.log('reCAPTCHA expired');
+    }
+  });
+  
+  return recaptchaVerifier;
+}
+
+// Send OTP to phone number
+export async function sendPhoneOTP(phoneNumber) {
+  const auth = getAuthInstance();
+  if (!auth) throw new Error('Auth not initialized');
+  
+  if (!recaptchaVerifier) {
+    throw new Error('reCAPTCHA not initialized. Call initRecaptcha first.');
+  }
+  
+  // Format phone number for South Africa if not already formatted
+  let formattedNumber = phoneNumber.trim();
+  if (formattedNumber.startsWith('0')) {
+    formattedNumber = '+27' + formattedNumber.slice(1);
+  } else if (!formattedNumber.startsWith('+')) {
+    formattedNumber = '+27' + formattedNumber;
+  }
+  
+  try {
+    confirmationResult = await signInWithPhoneNumber(auth, formattedNumber, recaptchaVerifier);
+    console.log('OTP sent successfully');
+    return { success: true, formattedNumber };
+  } catch (error) {
+    console.error('Error sending OTP:', error);
+    // Reset reCAPTCHA on error
+    if (recaptchaVerifier) {
+      try {
+        recaptchaVerifier.clear();
+        recaptchaVerifier = null;
+      } catch (e) {}
+    }
+    throw error;
+  }
+}
+
+// Verify OTP code
+export async function verifyPhoneOTP(otpCode) {
+  if (!confirmationResult) {
+    throw new Error('No OTP request pending. Send OTP first.');
+  }
+  
+  try {
+    const userCredential = await confirmationResult.confirm(otpCode);
+    confirmationResult = null; // Clear after successful verification
+    return userCredential.user;
+  } catch (error) {
+    console.error('Error verifying OTP:', error);
+    throw error;
+  }
+}
+
+// Link phone number to existing account
+export async function linkPhoneToAccount(otpCode) {
+  const auth = getAuthInstance();
+  if (!auth || !auth.currentUser) throw new Error('No user logged in');
+  if (!confirmationResult) throw new Error('No OTP request pending');
+  
+  try {
+    const credential = PhoneAuthProvider.credential(
+      confirmationResult.verificationId,
+      otpCode
+    );
+    await linkWithCredential(auth.currentUser, credential);
+    confirmationResult = null;
+    return true;
+  } catch (error) {
+    console.error('Error linking phone:', error);
+    throw error;
+  }
+}
+
+// Clear reCAPTCHA (useful for cleanup)
+export function clearRecaptcha() {
+  if (recaptchaVerifier) {
+    try {
+      recaptchaVerifier.clear();
+    } catch (e) {}
+    recaptchaVerifier = null;
+  }
+  confirmationResult = null;
 }
 
 // Get current user
