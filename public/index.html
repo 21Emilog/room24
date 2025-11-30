@@ -3,17 +3,69 @@
   <head>
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta
-      name="description"
-      content="Web site created using create-react-app"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+    <meta name="theme-color" content="#0d9488" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Room24" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="msapplication-TileColor" content="#0d9488" />
+    <meta name="msapplication-tap-highlight" content="no" />
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Find affordable rooms to rent in South Africa. Connect with verified landlords in Johannesburg, Cape Town, Durban, Pretoria and more. Safe, easy, free." />
+    <meta name="keywords" content="room rental, rooms to rent, South Africa, Johannesburg, Cape Town, Durban, Pretoria, accommodation, flatshare, housemate, backroom" />
+    <meta name="author" content="Room24" />
+    <meta name="robots" content="index, follow" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://room24.co.za/" />
+    <meta property="og:title" content="Room24 - Find Your Perfect Room in South Africa" />
+    <meta property="og:description" content="Find affordable rooms to rent in South Africa. Connect with verified landlords and renters." />
+    <meta property="og:image" content="%PUBLIC_URL%/og-image.png" />
+    <meta property="og:locale" content="en_ZA" />
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://room24.co.za/" />
+    <meta name="twitter:title" content="Room24 - Find Your Perfect Room in South Africa" />
+    <meta name="twitter:description" content="Find affordable rooms to rent in South Africa. Connect with verified landlords and renters." />
+    <meta name="twitter:image" content="%PUBLIC_URL%/og-image.png" />
+    
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <title>Room Rental Platform</title>
+    
+    <!-- Google AdSense - ADD YOUR CLIENT ID BEFORE DEPLOYING -->
+    <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXX" crossorigin="anonymous"></script> -->
+    
+    <title>Room24 - Find Your Perfect Room in South Africa</title>
+    
+    <!-- Structured Data for SEO -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Room24",
+      "description": "Find affordable rooms to rent in South Africa",
+      "url": "https://room24.co.za",
+      "applicationCategory": "RealEstateApplication",
+      "operatingSystem": "Any",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "ZAR"
+      }
+    }
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

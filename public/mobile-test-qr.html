@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Room24 - Mobile Testing QR Code</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 {
+            color: #0d9488;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        p {
+            color: #64748b;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        #qrcode {
+            display: inline-block;
+            padding: 20px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .url-display {
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 14px;
+            color: #0f766e;
+            word-break: break-all;
+            margin-bottom: 20px;
+            border: 2px dashed #cbd5e1;
+        }
+        .instructions {
+            background: #f0fdfa;
+            border-left: 4px solid #0d9488;
+            padding: 20px;
+            text-align: left;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .instructions h3 {
+            color: #0d9488;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        .instructions ol {
+            margin-left: 20px;
+            color: #475569;
+        }
+        .instructions li {
+            margin: 8px 0;
+            line-height: 1.5;
+        }
+        .badge {
+            display: inline-block;
+            background: #0d9488;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        .error {
+            background: #fee2e2;
+            border-left: 4px solid #dc2626;
+            padding: 15px;
+            border-radius: 8px;
+            color: #991b1b;
+            margin-top: 20px;
+        }
+        .btn {
+            background: #0d9488;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 5px;
+            transition: background 0.2s;
+        }
+        .btn:hover {
+            background: #0f766e;
+        }
+        .btn-secondary {
+            background: #64748b;
+        }
+        .btn-secondary:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 Room24 Mobile Test</h1>
+        <span class="badge">Local Development</span>
+        <p>Scan this QR code with your phone's camera to instantly test your Room24 app!</p>
+        
+        <div id="qrcode"></div>
+        
+        <div class="url-display" id="url">Detecting your local IP...</div>
+        
+        <div>
+            <button class="btn" onclick="generateQR()">🔄 Regenerate QR</button>
+            <button class="btn btn-secondary" onclick="copyURL()">📋 Copy URL</button>
+        </div>
+        
+        <div class="instructions">
+            <h3>📝 How to Test:</h3>
+            <ol>
+                <li><strong>Open Camera App</strong> on your phone</li>
+                <li><strong>Point at the QR code</strong> above</li>
+                <li><strong>Tap the notification</strong> that appears</li>
+                <li><strong>Your Room24 app opens!</strong> 🎉</li>
+            </ol>
+            <p style="margin-top: 15px; color: #64748b; font-size: 13px;">
+                <strong>Note:</strong> Your phone must be on the same WiFi network as this computer.
+            </p>
+        </div>
+        
+        <div id="error" style="display: none;" class="error">
+            <strong>⚠️ Can't detect local IP</strong><br>
+            Your computer might not be connected to a network. Try connecting to WiFi first.
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script>
+        let currentURL = '';
+        
+        async function getLocalIP() {
+            try {
+                // Try to get local IP using WebRTC
+                const pc = new RTCPeerConnection({
+                    iceServers: []
+                });
+                
+                pc.createDataChannel('');
+                
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                
+                return new Promise((resolve) => {
+                    pc.onicecandidate = (ice) => {
+                        if (!ice || !ice.candidate || !ice.candidate.candidate) return;
+                        
+                        const parts = ice.candidate.candidate.split(' ');
+                        const ip = parts[4];
+                        
+                        if (ip && ip !== '0.0.0.0' && !ip.includes(':')) {
+                            pc.close();
+                            resolve(ip);
+                        }
+                    };
+                    
+                    // Fallback after 3 seconds
+                    setTimeout(() => {
+                        pc.close();
+                        resolve(null);
+                    }, 3000);
+                });
+            } catch (e) {
+                return null;
+            }
+        }
+        
+        async function generateQR() {
+            const qrcodeDiv = document.getElementById('qrcode');
+            const urlDiv = document.getElementById('url');
+            const errorDiv = document.getElementById('error');
+            
+            // Clear previous QR code
+            qrcodeDiv.innerHTML = '';
+            errorDiv.style.display = 'none';
+            
+            // Try to detect local IP
+            let localIP = await getLocalIP();
+            
+            // Fallback IPs (common ranges)
+            if (!localIP) {
+                localIP = '192.168.137.1'; // From your system
+            }
+            
+            // Construct URL
+            currentURL = `http://${localIP}:3001`;
+            urlDiv.textContent = currentURL;
+            
+            // Generate QR Code
+            try {
+                new QRCode(qrcodeDiv, {
+                    text: currentURL,
+                    width: 256,
+                    height: 256,
+                    colorDark: "#0d9488",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            } catch (e) {
+                errorDiv.style.display = 'block';
+                errorDiv.innerHTML = '<strong>⚠️ Error generating QR code</strong><br>' + e.message;
+            }
+        }
+        
+        function copyURL() {
+            navigator.clipboard.writeText(currentURL).then(() => {
+                alert('✅ URL copied to clipboard!\n\n' + currentURL);
+            }).catch(() => {
+                // Fallback for older browsers
+                const input = document.createElement('input');
+                input.value = currentURL;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                alert('✅ URL copied to clipboard!\n\n' + currentURL);
+            });
+        }
+        
+        // Generate QR code on page load
+        window.onload = generateQR;
+    </script>
+</body>
+</html>

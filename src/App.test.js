@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import App from './App';
 
-test('renders learn react link', () => {
+test('renders at least one brand marker Room24', () => {
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+  const brands = screen.getAllByText(/Room24/i);
+  expect(brands.length).toBeGreaterThan(0);
 });

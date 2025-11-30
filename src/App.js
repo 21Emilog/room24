@@ -1,15 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker } from 'react-leaflet';
-import { Home, MessageSquare, PlusCircle, Search, MapPin, X, Send, ArrowLeft, User, Phone, Mail, Edit, Menu, CheckCircle } from 'lucide-react';
-import MapView from './MapView';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { initFirebase, initAnalytics, requestFcmToken, listenForegroundMessages, trackEvent, fetchListings, addListing, deleteListing, subscribeToListings, isFirestoreEnabled } from './firebase';
+import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle } from 'lucide-react';
+import Header from './components/Header';
+import ListingDetailModal from './components/ListingDetailModal';
+import Footer from './components/Footer';
+import BrowseView from './components/BrowseView';
+import PrivacyPolicyModal from './components/PrivacyPolicyModal';
+import NotificationBanner from './components/NotificationBanner';
+import AnalyticsConsentModal from './components/AnalyticsConsentModal';
+import NotificationsPanel from './components/NotificationsPanel';
+import PhotoEditor from './components/PhotoEditor';
+import OfflineIndicator from './components/OfflineIndicator';
+import BackToTop from './components/BackToTop';
+import { getNotifications } from './utils/notificationEngine';
+import { loadListingTemplate, saveListingTemplate, clearListingTemplate } from './utils/listingTemplateStorage';
+
 export default function RentalPlatform() {
   const [currentView, setCurrentView] = useState('browse');
-  const [mapView, setMapView] = useState(false);
   const [userType, setUserType] = useState(null);
+  const [previewAsRenter, setPreviewAsRenter] = useState(false); // landlord UI preview toggle
   const [listings, setListings] = useState([]);
-  const [conversations, setConversations] = useState([]);
   const [selectedListing, setSelectedListing] = useState(null);
-  const [selectedConversation, setSelectedConversation] = useState(null);
+  const [users, setUsers] = useState([]); // registry of all users (localStorage 'users')
   const [searchLocation, setSearchLocation] = useState('');
   const [priceRange, setPriceRange] = useState([0, 10000]);
   const [selectedAmenities, setSelectedAmenities] = useState([]);
@@ -17,22 +29,88 @@ export default function RentalPlatform() {
   const [currentUser, setCurrentUser] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authDefaultType, setAuthDefaultType] = useState('renter');
-  const [nearbyMode, setNearbyMode] = useState(false);
-  const [nearbyRadius, setNearbyRadius] = useState(5); // km
-  const [userLocation, setUserLocation] = useState(null);
-  const [nearbyStatus, setNearbyStatus] = useState('');
-  const [showLocationConsent, setShowLocationConsent] = useState(false);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  // Mobile menu state moved into Header component
   const [toast, setToast] = useState(null);
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+  const [notificationBanner, setNotificationBanner] = useState(null);
+  const [showAnalyticsConsent, setShowAnalyticsConsent] = useState(false);
+  const [showNotificationsPanel, setShowNotificationsPanel] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const openAuthModal = (type = 'renter') => {
     setAuthDefaultType(type);
     setShowAuthModal(true);
   };
+
+  // Update unread notification count
+  useEffect(() => {
+    const updateUnreadCount = () => {
+      const notifications = getNotifications();
+      setUnreadCount(notifications.filter(n => !n.read).length);
+    };
+    updateUnreadCount();
+    const interval = setInterval(updateUnreadCount, 5000); // check every 5s
+    return () => clearInterval(interval);
+  }, []);
   
 
   useEffect(() => {
     loadData();
+    // Initialize Firebase + FCM token fetch (deferred until user interaction if desired)
+    const app = initFirebase();
+    
+    // Set up real-time listener for Firestore listings
+    let unsubscribeListings = null;
+    if (isFirestoreEnabled()) {
+      unsubscribeListings = subscribeToListings((firestoreListings) => {
+        if (firestoreListings && firestoreListings.length >= 0) {
+          setListings(firestoreListings);
+          // Cache locally for offline access
+          localStorage.setItem('listings', JSON.stringify(firestoreListings));
+        }
+      });
+    }
+    
+    // Check analytics consent and show modal if not set
+    const analyticsConsent = localStorage.getItem('analytics-consent');
+    if (!analyticsConsent && process.env.REACT_APP_ENABLE_ANALYTICS === 'true') {
+      // Delay modal slightly so UI loads first
+      setTimeout(() => setShowAnalyticsConsent(true), 2000);
+    } else if (analyticsConsent === 'yes') {
+      initAnalytics(app);
+    }
+
+    (async () => {
+      try {
+        const token = await requestFcmToken();
+        if (token) {
+          console.log('Obtained FCM token:', token);
+          trackEvent('fcm_token_obtained');
+        }
+      } catch (e) {
+        console.warn('FCM token request failed', e);
+      }
+    })();
+    
+    listenForegroundMessages((payload) => {
+      // Display notification banner instead of toast
+      const notification = payload?.notification || {};
+      if (notification.title || notification.body) {
+        setNotificationBanner({
+          title: notification.title,
+          body: notification.body
+        });
+        // Auto-dismiss after 8 seconds
+        setTimeout(() => setNotificationBanner(null), 8000);
+      }
+    });
+    
+    // Cleanup: unsubscribe from Firestore listener on unmount
+    return () => {
+      if (unsubscribeListings) {
+        unsubscribeListings();
+      }
+    };
   }, []);
 
   // Guard: if someone navigates to 'add' without landlord auth, prompt to sign in
@@ -54,16 +132,37 @@ export default function RentalPlatform() {
 
   const loadData = async () => {
     try {
-      const listingsResult = localStorage.getItem('listings');
-      const conversationsResult = localStorage.getItem('conversations');
-      const userResult = localStorage.getItem('current-user');
+      // Try to load from Firestore first
+      const firestoreListings = await fetchListings();
+      if (firestoreListings && firestoreListings.length > 0) {
+        console.log('Loaded listings from Firestore');
+        setListings(firestoreListings);
+        // Also cache to localStorage for offline access
+        localStorage.setItem('listings', JSON.stringify(firestoreListings));
+      } else {
+        // Fall back to localStorage
+        const listingsResult = localStorage.getItem('listings');
+        if (listingsResult) {
+          console.log('Loaded listings from localStorage (Firestore empty or unavailable)');
+          setListings(JSON.parse(listingsResult));
+        }
+      }
       
-      if (listingsResult) setListings(JSON.parse(listingsResult));
-      if (conversationsResult) setConversations(JSON.parse(conversationsResult));
+      const userResult = localStorage.getItem('current-user');
+      const usersResult = localStorage.getItem('users');
       if (userResult) {
         const user = JSON.parse(userResult);
         setCurrentUser(user);
         setUserType(user.type);
+      }
+      if (usersResult) {
+        try {
+          const parsed = JSON.parse(usersResult);
+          setUsers(Array.isArray(parsed) ? parsed : []);
+        } catch (e) {
+          console.warn('Corrupt users array in storage, resetting');
+          setUsers([]);
+        }
       }
     } catch (error) {
       console.log('No existing data found, starting fresh');
@@ -125,46 +224,19 @@ export default function RentalPlatform() {
     }
   };
 
-  // Haversine formula to compute distance in kilometers between two coords
-  const haversineDistance = (lat1, lon1, lat2, lon2) => {
-    const toRad = (v) => (v * Math.PI) / 180;
-    const R = 6371; // km
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
-
-  const handleFindNearby = () => {
-    if (!navigator.geolocation) {
-      setNearbyStatus('Geolocation not supported');
-      return;
-    }
-    // Show consent modal before accessing location
-    setShowLocationConsent(true);
-  };
-
-  const handleLocationConsentAccept = () => {
-    setShowLocationConsent(false);
-    setNearbyStatus('Locating...');
-    navigator.geolocation.getCurrentPosition((pos) => {
-      const lat = pos.coords.latitude;
-      const lon = pos.coords.longitude;
-      setUserLocation({ lat, lon });
-      setNearbyMode(true);
-      setNearbyStatus('Nearby mode enabled');
-      setTimeout(() => setNearbyStatus(''), 2000);
-    }, (err) => {
-      console.error('Geolocation error', err);
-      setNearbyStatus('Could not get location');
-    }, { enableHighAccuracy: true, timeout: 10000 });
-  };
-
-  const clearNearby = () => {
-    setNearbyMode(false);
-    setUserLocation(null);
-    setNearbyStatus('');
+  // Helper: check for duplicate phone or email in registry (exclude an optional user id)
+  const isDuplicateContact = (phone, email, ignoreId = null) => {
+    const normalizedPhone = (phone || '').trim();
+    const normalizedEmail = (email || '').trim().toLowerCase();
+    if (!users || users.length === 0) return false;
+    return users.some(u => {
+      if (ignoreId && u.id === ignoreId) return false;
+      const uPhone = (u.phone || '').trim();
+      const uEmail = (u.email || '').trim().toLowerCase();
+      const phoneMatch = normalizedPhone && uPhone && uPhone === normalizedPhone;
+      const emailMatch = normalizedEmail && uEmail && uEmail === normalizedEmail;
+      return phoneMatch || emailMatch;
+    });
   };
 
   // Toast notification helper
@@ -173,21 +245,31 @@ export default function RentalPlatform() {
     setTimeout(() => setToast(null), 5000);
   };
 
+  const handleAnalyticsConsentAccept = () => {
+    localStorage.setItem('analytics-consent', 'yes');
+    setShowAnalyticsConsent(false);
+    const app = initFirebase();
+    initAnalytics(app);
+    trackEvent('analytics_consent_granted');
+    showToast('Analytics enabled', 'success', 'Thank you!');
+  };
+
+  const handleAnalyticsConsentDecline = () => {
+    localStorage.setItem('analytics-consent', 'no');
+    setShowAnalyticsConsent(false);
+    showToast('Analytics disabled', 'info');
+  };
+
   const saveListings = async (newListings) => {
     try {
       localStorage.setItem('listings', JSON.stringify(newListings));
       setListings(newListings);
+      // Broadcast to runtime service worker for offline snapshot caching
+      if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+        try { navigator.serviceWorker.controller.postMessage({ type: 'SYNC_LISTINGS', payload: newListings }); } catch {}
+      }
     } catch (error) {
       console.error('Error saving listings:', error);
-    }
-  };
-
-  const saveConversations = async (newConversations) => {
-    try {
-      localStorage.setItem('conversations', JSON.stringify(newConversations));
-      setConversations(newConversations);
-    } catch (error) {
-      console.error('Error saving conversations:', error);
     }
   };
 
@@ -238,16 +320,32 @@ export default function RentalPlatform() {
 
 const handleProfileSetup = async (profileData) => {
   try {
+    // Duplicate guard
+    if (isDuplicateContact(profileData.phone, profileData.email)) {
+      showToast('Phone or email already registered', 'error', 'Duplicate');
+      return;
+    }
     const userId = `user-${Date.now()}`;
     const user = { 
       id: userId, 
       type: userType, 
       ...profileData,
+      whatsapp: profileData.whatsapp || '',
+      notificationPrefs: { updates: true, marketing: false },
       createdAt: new Date().toISOString()
     };
     
     localStorage.setItem('current-user', JSON.stringify(user));
     setCurrentUser(user);
+    // Update users registry
+    const existingUsersRaw = localStorage.getItem('users');
+    let existingUsers = [];
+    if (existingUsersRaw) {
+      try { existingUsers = JSON.parse(existingUsersRaw); } catch { existingUsers = []; }
+    }
+    existingUsers.push(user);
+    localStorage.setItem('users', JSON.stringify(existingUsers));
+    setUsers(existingUsers);
     showToast('Profile created successfully!', 'success', 'Welcome!');
     setCurrentView('browse');
   } catch (error) {
@@ -258,9 +356,18 @@ const handleProfileSetup = async (profileData) => {
       id: userId, 
       type: userType, 
       ...profileData,
+      whatsapp: profileData.whatsapp || '',
       createdAt: new Date().toISOString()
     };
     setCurrentUser(user);
+    const existingUsersRaw = localStorage.getItem('users');
+    let existingUsers = [];
+    if (existingUsersRaw) {
+      try { existingUsers = JSON.parse(existingUsersRaw); } catch { existingUsers = []; }
+    }
+    existingUsers.push(user);
+    try { localStorage.setItem('users', JSON.stringify(existingUsers)); } catch {}
+    setUsers(existingUsers);
     showToast('Profile created (data may not be persisted)', 'error');
     setCurrentView('browse');
   }
@@ -268,16 +375,48 @@ const handleProfileSetup = async (profileData) => {
 
 const handleUpdateProfile = async (profileData) => {
   try {
+    // Duplicate guard (exclude current user id)
+    if (isDuplicateContact(profileData.phone, profileData.email, currentUser?.id)) {
+      showToast('Phone or email already used by another account', 'error', 'Duplicate');
+      return;
+    }
     const updatedUser = { ...currentUser, ...profileData };
     
     localStorage.setItem('current-user', JSON.stringify(updatedUser));
     setCurrentUser(updatedUser);
+    // Update registry entry
+    const existingUsersRaw = localStorage.getItem('users');
+    let existingUsers = [];
+    if (existingUsersRaw) {
+      try { existingUsers = JSON.parse(existingUsersRaw); } catch { existingUsers = []; }
+    }
+    const idx = existingUsers.findIndex(u => u.id === updatedUser.id);
+    if (idx !== -1) {
+      existingUsers[idx] = updatedUser;
+    } else {
+      existingUsers.push(updatedUser); // ensure presence
+    }
+    localStorage.setItem('users', JSON.stringify(existingUsers));
+    setUsers(existingUsers);
     showToast('Profile updated successfully!', 'success');
     setCurrentView('browse');
   } catch (error) {
     console.error('Error updating profile:', error);
     const updatedUser = { ...currentUser, ...profileData };
     setCurrentUser(updatedUser);
+    const existingUsersRaw = localStorage.getItem('users');
+    let existingUsers = [];
+    if (existingUsersRaw) {
+      try { existingUsers = JSON.parse(existingUsersRaw); } catch { existingUsers = []; }
+    }
+    const idx = existingUsers.findIndex(u => u.id === updatedUser.id);
+    if (idx !== -1) {
+      existingUsers[idx] = updatedUser;
+    } else {
+      existingUsers.push(updatedUser);
+    }
+    try { localStorage.setItem('users', JSON.stringify(existingUsers)); } catch {}
+    setUsers(existingUsers);
     showToast('Profile updated (data may not be persisted)', 'error');
     setCurrentView('browse');
   }
@@ -286,6 +425,10 @@ const handleUpdateProfile = async (profileData) => {
 const handleQuickAuth = async (profileData) => {
   // Lightweight auth (used by AuthModal) - create and persist a user
   try {
+    if (isDuplicateContact(profileData.phone, profileData.email)) {
+      showToast('Phone or email already registered', 'error', 'Duplicate');
+      return;
+    }
     const userId = `user-${Date.now()}`;
     const user = {
       id: userId,
@@ -294,11 +437,21 @@ const handleQuickAuth = async (profileData) => {
       phone: profileData.phone || '',
       email: profileData.email || '',
       photo: profileData.photo || '',
+      notificationPrefs: { updates: true, marketing: false },
       createdAt: new Date().toISOString()
     };
     localStorage.setItem('current-user', JSON.stringify(user));
     setCurrentUser(user);
     setUserType(user.type);
+    // registry update
+    const existingUsersRaw = localStorage.getItem('users');
+    let existingUsers = [];
+    if (existingUsersRaw) {
+      try { existingUsers = JSON.parse(existingUsersRaw); } catch { existingUsers = []; }
+    }
+    existingUsers.push(user);
+    localStorage.setItem('users', JSON.stringify(existingUsers));
+    setUsers(existingUsers);
     setShowAuthModal(false);
     // If landlord, route to onboarding to complete setup before posting
     if (user.type === 'landlord') {
@@ -309,6 +462,19 @@ const handleQuickAuth = async (profileData) => {
   } catch (err) {
     console.error('Auth failed', err);
   }
+};
+
+// Sign out helper so you can re-auth as renter for perspective preview
+const handleSignOut = () => {
+  try {
+    localStorage.removeItem('current-user');
+  } catch (e) {
+    console.warn('Could not clear localStorage current-user');
+  }
+  setCurrentUser(null);
+  setUserType(null);
+  setCurrentView('browse');
+  showToast('Signed out. You can now sign in as Renter.', 'info');
 };
 
 const handleCompleteOnboarding = async (onboardData) => {
@@ -325,11 +491,17 @@ const handleCompleteOnboarding = async (onboardData) => {
 };
 
 const handleAddListing = async (listingData) => {
-  const newListing = {
-    id: `listing-${Date.now()}`,
+  // Combine streetAddress and location into fullAddress for complete address storage
+  const fullAddress = [listingData.streetAddress, listingData.location]
+    .filter(Boolean)
+    .join(', ');
+  
+  const newListingData = {
     title: listingData.title,
     price: listingData.price,
     location: listingData.location,
+    streetAddress: listingData.streetAddress || '',
+    fullAddress: fullAddress || listingData.location || '', // Store complete address
     description: listingData.description,
     photos: listingData.photos || [],
     status: listingData.status || 'available',
@@ -337,66 +509,50 @@ const handleAddListing = async (listingData) => {
     amenities: listingData.amenities || [],
     latitude: listingData.latitude ?? null,
     longitude: listingData.longitude ?? null,
+    paymentMethod: listingData.paymentMethod || 'Bank and Cash',
+    premium: !!listingData.premium,
     landlordId: currentUser.id,
     landlordName: currentUser.name,
     landlordPhone: currentUser.phone,
     landlordEmail: currentUser.email,
     landlordPhoto: currentUser.photo,
-    createdAt: new Date().toISOString()
   };
 
+  try {
+    // Try to save to Firestore first
+    const firestoreId = await addListing(newListingData);
+    if (firestoreId) {
+      // Successfully saved to Firestore
+      const newListing = { ...newListingData, id: firestoreId, createdAt: new Date().toISOString() };
+      const updatedListings = [...listings, newListing];
+      setListings(updatedListings);
+      // Also cache locally
+      localStorage.setItem('listings', JSON.stringify(updatedListings));
+      showToast('Listing created and shared online!', 'success', 'Success!');
+    } else {
+      // Firestore not available, save locally only
+      const newListing = { ...newListingData, id: `listing-${Date.now()}`, createdAt: new Date().toISOString() };
+      const updatedListings = [...listings, newListing];
+      await saveListings(updatedListings);
+      showToast('Listing saved locally (offline mode)', 'info', 'Saved');
+    }
+  } catch (error) {
+    console.error('Error adding listing:', error);
+    // Fall back to local save
+    const newListing = { ...newListingData, id: `listing-${Date.now()}`, createdAt: new Date().toISOString() };
     const updatedListings = [...listings, newListing];
     await saveListings(updatedListings);
-    showToast('Listing created successfully!', 'success', 'Success!');
-    setCurrentView('browse');
-    // Scroll to top to see new listing
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+    showToast('Listing saved locally', 'info', 'Saved');
+  }
+  
+  setCurrentView('browse');
+  // Scroll to top to see new listing
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
 
-  const handleSendMessage = async (listingId, message) => {
-    const conversationId = `${currentUser.id}-${listingId}`;
-    const existingConv = conversations.find(c => c.id === conversationId);
-    
-    const newMessage = {
-      id: `msg-${Date.now()}`,
-      sender: currentUser.type,
-      text: message,
-      timestamp: new Date().toISOString()
-    };
-
-    let updatedConversations;
-    if (existingConv) {
-      updatedConversations = conversations.map(c => 
-        c.id === conversationId 
-          ? { ...c, messages: [...c.messages, newMessage] }
-          : c
-      );
-    } else {
-      const newConv = {
-        id: conversationId,
-        listingId,
-        renterId: currentUser.id,
-        messages: [newMessage]
-      };
-      updatedConversations = [...conversations, newConv];
-    }
-    
-    await saveConversations(updatedConversations);
-  };
+  // Messaging removed
 
 const filteredListings = listings
-  .map(listing => {
-    // attach distance if we have userLocation
-    if (userLocation && listing.latitude != null && listing.longitude != null) {
-      const d = haversineDistance(userLocation.lat, userLocation.lon, listing.latitude, listing.longitude);
-      return { ...listing, __distanceKm: d };
-    }
-    if (userLocation && (listing.latitude == null || listing.longitude == null)) {
-      // try to geocode-less accurate: leave distance undefined
-      return { ...listing };
-    }
-    return { ...listing };
-  })
   .filter(listing => {
     const matchesLocation = !searchLocation || 
       (listing.location || '').toLowerCase().includes(searchLocation.toLowerCase());
@@ -405,25 +561,11 @@ const filteredListings = listings
     const matchesAmenities = selectedAmenities.length === 0 || 
       selectedAmenities.every(amenity => listing.amenities?.includes(amenity));
 
-    let passesNearby = true;
-    if (nearbyMode && userLocation) {
-      // require listing to have coordinates to be included
-      if (listing.latitude != null && listing.longitude != null) {
-        const d = listing.__distanceKm ?? haversineDistance(userLocation.lat, userLocation.lon, listing.latitude, listing.longitude);
-        passesNearby = d <= nearbyRadius;
-      } else {
-        passesNearby = false;
-      }
-    }
-
-    return matchesLocation && matchesPrice && matchesAmenities && passesNearby;
+    return matchesLocation && matchesPrice && matchesAmenities;
   })
   .sort((a, b) => {
-    if (nearbyMode && userLocation) {
-      const da = a.__distanceKm ?? Infinity;
-      const db = b.__distanceKm ?? Infinity;
-      return da - db;
-    }
+    if (a.premium && !b.premium) return -1;
+    if (!a.premium && b.premium) return 1;
     if (sortBy === 'newest') {
       return new Date(b.createdAt) - new Date(a.createdAt);
     } else if (sortBy === 'cheapest') {
@@ -434,168 +576,115 @@ const filteredListings = listings
     return 0;
   });
 
-  const userConversations = currentUser
-    ? conversations.filter(conv => {
-        if (userType === 'landlord') {
-          const listing = listings.find(l => l.id === conv.listingId);
-          return listing && listing.landlordId === currentUser.id;
-        }
-        return conv.renterId === currentUser.id;
-      })
-    : [];
-
   // Allow guests to land on Browse by default. If userType isn't set,
   // show a gentle callout in the header (below) so users can pick a role
   // when they want to post or set up their profile.
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Modern Professional Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            {/* Logo */}
-            <h1 className="text-2xl font-bold">
-              <span className="text-blue-600">Room</span><span className="text-red-500">24</span>
-            </h1>
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-gray-100">
+      {/* Offline Indicator */}
+      <OfflineIndicator />
+      
+      {/* Back to Top Button */}
+      <BackToTop />
+      
+      <Header
+        currentUser={currentUser}
+        previewAsRenter={previewAsRenter}
+        setPreviewAsRenter={setPreviewAsRenter}
+        openAuthModal={openAuthModal}
+        handleSignOut={handleSignOut}
+        setCurrentView={setCurrentView}
+        unreadCount={unreadCount}
+        onOpenNotifications={() => setShowNotificationsPanel(true)}
+      />
 
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-4">
-              {!currentUser && (
-                <div className="flex items-center gap-3">
-                  <button onClick={() => openAuthModal('renter')} className="text-gray-600 hover:text-gray-800 px-3 py-2 rounded-lg">Sign in</button>
-                  <button onClick={() => openAuthModal('landlord')} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg">List Your Room</button>
-                </div>
-              )}
-              
-              {currentUser && (
-                <>
-                  <div className="flex items-center gap-2 text-sm mr-4">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold">
-                      {currentUser.name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-800">{currentUser.name}</p>
-                      <p className="text-xs text-gray-500">{currentUser.type === 'landlord' ? 'Property Owner' : 'Looking for a Room'}</p>
-                    </div>
-                  </div>
-                  
-                  {userConversations.length > 0 && (
-                    <button 
-                      onClick={() => setCurrentView('messages')}
-                      className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
-                      aria-label="Messages"
-                    >
-                      <MessageSquare className="w-6 h-6" />
-                      {userConversations.length > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                          {userConversations.length}
-                        </span>
-                      )}
-                    </button>
-                  )}
-                  
-                  <button 
-                    onClick={() => setCurrentView('profile')}
-                    className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
-                    aria-label="Profile"
-                  >
-                    <User className="w-6 h-6" />
-                  </button>
-                </>
-              )}
-            </div>
-
-            {/* Mobile: CTAs and Hamburger */}
-            <div className="flex md:hidden items-center gap-2">
-              {!currentUser ? (
-                <>
-                  <button onClick={() => openAuthModal('renter')} className="text-sm text-gray-600 hover:text-gray-800 px-2 py-1">Sign in</button>
-                  <button onClick={() => openAuthModal('landlord')} className="text-sm bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded">List Room</button>
-                </>
-              ) : (
-                <button 
-                  onClick={() => setShowMobileMenu(!showMobileMenu)}
-                  className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
-                  aria-label="Menu"
-                >
-                  {showMobileMenu ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Mobile Menu Dropdown */}
-          {currentUser && showMobileMenu && (
-            <div className="md:hidden mt-3 pb-3 border-t border-gray-200 pt-3 animate-slideDown">
-              <div className="flex items-center gap-3 mb-4 pb-3 border-b border-gray-100">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold">
-                  {currentUser.name.charAt(0)}
-                </div>
-                <div>
-                  <p className="font-medium text-gray-800">{currentUser.name}</p>
-                  <p className="text-xs text-gray-500">{currentUser.type === 'landlord' ? 'Property Owner' : 'Looking for a Room'}</p>
-                </div>
-              </div>
-              
-              <div className="space-y-1">
-                {userConversations.length > 0 && (
-                  <button 
-                    onClick={() => { setCurrentView('messages'); setShowMobileMenu(false); }}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                  >
-                    <MessageSquare className="w-5 h-5" />
-                    <span>Messages</span>
-                    {userConversations.length > 0 && (
-                      <span className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                        {userConversations.length}
-                      </span>
-                    )}
-                  </button>
-                )}
-                
-                <button 
-                  onClick={() => { setCurrentView('profile'); setShowMobileMenu(false); }}
-                  className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                >
-                  <User className="w-5 h-5" />
-                  <span>Profile</span>
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Notification Banner (Push Notifications) */}
+      {notificationBanner && (
+        <NotificationBanner
+          title={notificationBanner.title}
+          body={notificationBanner.body}
+          onClose={() => setNotificationBanner(null)}
+        />
+      )}
 
       {/* Toast Notification */}
       {toast && (
-        <div className={`fixed top-20 right-4 z-50 bg-white border-l-4 ${
-          toast.type === 'success' ? 'border-green-500' : 
-          toast.type === 'error' ? 'border-red-500' : 
-          'border-blue-500'
-        } rounded shadow-lg p-4 animate-slideInRight flex items-start gap-3 max-w-sm`}>
-          {toast.type === 'success' && <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />}
-          <div className="flex-1">
-            {toast.title && <p className="font-semibold text-gray-800 mb-1">{toast.title}</p>}
-            <p className="text-sm text-gray-600">{toast.message}</p>
+        <div className={`fixed top-20 right-4 z-50 max-w-sm w-full transition-all duration-300 ${
+          toast.type === 'error' ? 'bg-gradient-to-r from-rose-50 to-red-50 border-rose-400' :
+          toast.type === 'success' ? 'bg-gradient-to-r from-emerald-50 to-green-50 border-emerald-400' :
+          toast.type === 'warning' ? 'bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-400' :
+          'bg-gradient-to-r from-sky-50 to-blue-50 border-sky-400'
+        } border-l-4 rounded-xl shadow-2xl p-4 fade-in backdrop-blur-sm`}>
+          <div className="flex items-start gap-3">
+            <div className={`flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center shadow-sm ${
+              toast.type === 'error' ? 'bg-rose-500' :
+              toast.type === 'success' ? 'bg-emerald-500' :
+              toast.type === 'warning' ? 'bg-amber-500' :
+              'bg-sky-500'
+            }`}>
+              {toast.type === 'success' && <CheckCircle className="w-5 h-5 text-white" />}
+              {toast.type === 'error' && <span className="text-white font-bold text-sm">✕</span>}
+              {toast.type === 'warning' && <span className="text-white font-bold text-sm">!</span>}
+              {toast.type === 'info' && <span className="text-white font-bold text-sm">i</span>}
+            </div>
+            <div className="flex-1 min-w-0">
+              {toast.title && <p className={`font-bold mb-0.5 ${
+                toast.type === 'error' ? 'text-rose-800' :
+                toast.type === 'success' ? 'text-emerald-800' :
+                toast.type === 'warning' ? 'text-amber-800' :
+                'text-sky-800'
+              }`}>{toast.title}</p>}
+              <p className={`text-sm ${
+                toast.type === 'error' ? 'text-rose-700' :
+                toast.type === 'success' ? 'text-emerald-700' :
+                toast.type === 'warning' ? 'text-amber-700' :
+                'text-sky-700'
+              }`}>{toast.message}</p>
+            </div>
+            <button 
+              onClick={() => setToast(null)}
+              className={`flex-shrink-0 p-1.5 rounded-lg hover:bg-white/50 transition ${
+                toast.type === 'error' ? 'text-rose-500 hover:text-rose-700' :
+                toast.type === 'success' ? 'text-emerald-500 hover:text-emerald-700' :
+                toast.type === 'warning' ? 'text-amber-500 hover:text-amber-700' :
+                'text-sky-500 hover:text-sky-700'
+              }`}
+              aria-label="Close notification"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
-          <button 
-            onClick={() => setToast(null)}
-            className="text-gray-400 hover:text-gray-600"
-            aria-label="Close notification"
-          >
-            <X className="w-4 h-4" />
-          </button>
         </div>
       )}
 
-      <div className="max-w-6xl mx-auto pb-20">
+      <div id="main-content" className="max-w-7xl mx-auto pb-24 px-4 sm:px-6 lg:px-8" role="main">
         {currentView === 'setup-profile' && (
           <ProfileSetupView onSubmit={handleProfileSetup} userType={userType} />
         )}
 
         {currentView === 'profile' && currentUser && (
-          <ProfileView user={currentUser} onEdit={() => setCurrentView('edit-profile')} />
+          <ProfileView 
+            user={currentUser} 
+            onEdit={() => setCurrentView('edit-profile')} 
+            onUpdatePrefs={(prefs) => {
+              const updated = { ...currentUser, notificationPrefs: prefs };
+              setCurrentUser(updated);
+              try {
+                localStorage.setItem('current-user', JSON.stringify(updated));
+                // update registry
+                const raw = localStorage.getItem('users');
+                if (raw) {
+                  try {
+                    const arr = JSON.parse(raw);
+                    const idx = arr.findIndex(u => u.id === updated.id);
+                    if (idx !== -1) { arr[idx] = updated; localStorage.setItem('users', JSON.stringify(arr)); }
+                  } catch {}
+                }
+              } catch {}
+              showToast('Preferences updated', 'success');
+            }}
+          />
         )}
 
         {currentView === 'edit-profile' && currentUser && (
@@ -607,41 +696,26 @@ const filteredListings = listings
         )}
 
         {currentView === 'browse' && (
-          <BrowseView 
-            listings={filteredListings}
-            searchLocation={searchLocation}
-            setSearchLocation={setSearchLocation}
-            priceRange={priceRange}
-            setPriceRange={setPriceRange}
-            selectedAmenities={selectedAmenities}
-            setSelectedAmenities={setSelectedAmenities}
-            sortBy={sortBy}
-            setSortBy={setSortBy}
-            mapView={mapView}
-            setMapView={setMapView}
-            onSelectListing={setSelectedListing}
-            setCurrentView={setCurrentView}
-            currentUser={currentUser}
-            onRequireAuth={openAuthModal}
-            subscribeToArea={subscribeToArea}
-            onFindNearby={handleFindNearby}
-            nearbyRadius={nearbyRadius}
-            setNearbyRadius={setNearbyRadius}
-            nearbyMode={nearbyMode}
-            clearNearby={clearNearby}
-            userLocation={userLocation}
-            nearbyStatus={nearbyStatus}
-          />
+                    <BrowseView 
+                      listings={filteredListings}
+                      searchLocation={searchLocation}
+                      setSearchLocation={setSearchLocation}
+                      priceRange={priceRange}
+                      setPriceRange={setPriceRange}
+                      selectedAmenities={selectedAmenities}
+                      setSelectedAmenities={setSelectedAmenities}
+                      sortBy={sortBy}
+                      setSortBy={setSortBy}
+                      onSelectListing={setSelectedListing}
+                      setCurrentView={setCurrentView}
+                      currentUser={currentUser}
+                      onRequireAuth={openAuthModal}
+                      subscribeToArea={subscribeToArea}
+                      previewMode={previewAsRenter}
+                    />
         )}
 
-        {currentView === 'messages' && (
-          <MessagesView 
-            conversations={userConversations}
-            listings={listings}
-            userType={userType}
-            onSelectConversation={setSelectedConversation}
-          />
-        )}
+        {/* Messages view removed */}
 
         {currentView === 'add' && (
           <AddListingView
@@ -658,9 +732,27 @@ const filteredListings = listings
           <MyListingsView 
             listings={listings.filter(l => l.landlordId === currentUser.id)}
             onDelete={async (id) => {
+              try {
+                // Try to delete from Firestore first
+                const deleted = await deleteListing(id);
+                if (deleted) {
+                  showToast('Listing deleted', 'success');
+                }
+              } catch (error) {
+                console.error('Firestore delete failed:', error);
+              }
+              // Also update local state and localStorage
               const updated = listings.filter(l => l.id !== id);
-              await saveListings(updated);
+              setListings(updated);
+              localStorage.setItem('listings', JSON.stringify(updated));
             }}
+          />
+        )}
+
+        {currentView === 'favorites' && (
+          <FavoritesView
+            listings={listings}
+            onSelectListing={setSelectedListing}
           />
         )}
       </div>
@@ -675,21 +767,15 @@ const filteredListings = listings
             photo: selectedListing.landlordPhoto
           }}
           onClose={() => setSelectedListing(null)}
-          onSendMessage={handleSendMessage}
           userType={userType}
           currentUser={currentUser}
           onRequireAuth={openAuthModal}
+          previewMode={previewAsRenter}
+          showToast={showToast}
         />
       )}
 
-      {selectedConversation && (
-        <ConversationModal
-          conversation={selectedConversation}
-          listing={listings.find(l => l.id === selectedConversation.listingId)}
-          onClose={() => setSelectedConversation(null)}
-          onSendMessage={handleSendMessage}
-        />
-      )}
+      {/* Conversation modal removed */}
 
       {showAuthModal && (
         <AuthModal
@@ -703,46 +789,36 @@ const filteredListings = listings
         currentView={currentView}
         setCurrentView={setCurrentView}
         userType={userType}
-        messageCount={userConversations.length}
       />
 
-      {showLocationConsent && (
-        <LocationConsentModal
-          onAccept={handleLocationConsentAccept}
-          onDecline={() => setShowLocationConsent(false)}
+      {showPrivacyPolicy && (
+        <PrivacyPolicyModal onClose={() => setShowPrivacyPolicy(false)} />
+      )}
+
+      {showAnalyticsConsent && (
+        <AnalyticsConsentModal
+          onAccept={handleAnalyticsConsentAccept}
+          onDecline={handleAnalyticsConsentDecline}
         />
       )}
 
-      {/* Footer */}
-      <footer className="bg-gray-800 text-gray-300 py-8 mt-auto">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-6">
-            <div>
-              <h3 className="text-white font-bold text-lg mb-3">Room24</h3>
-              <p className="text-sm text-gray-400">Find your perfect room in South Africa. Connect with verified landlords and renters.</p>
-            </div>
-            <div>
-              <h4 className="text-white font-semibold mb-3">Legal</h4>
-              <ul className="space-y-2 text-sm">
-                <li><a href="#privacy" className="hover:text-white transition">Privacy Policy</a></li>
-                <li><a href="#terms" className="hover:text-white transition">Terms of Service</a></li>
-                <li><a href="#cookies" className="hover:text-white transition">Cookie Policy</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-white font-semibold mb-3">Contact</h4>
-              <ul className="space-y-2 text-sm">
-                <li><a href="mailto:support@room24.co.za" className="hover:text-white transition">support@room24.co.za</a></li>
-                <li><a href="#help" className="hover:text-white transition">Help Center</a></li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-gray-700 pt-6 text-sm text-gray-400">
-            <p>© {new Date().getFullYear()} Room24. All rights reserved.</p>
-            <p className="mt-2">By using this site, you agree to our use of location services and cookies for improved user experience.</p>
-          </div>
-        </div>
-      </footer>
+      {showNotificationsPanel && (
+        <NotificationsPanel
+          onClose={() => {
+            setShowNotificationsPanel(false);
+            setUnreadCount(getNotifications().filter(n => !n.read).length);
+          }}
+          onSelectListing={(listingId) => {
+            const listing = listings.find(l => (l.id || `${l.title}-${l.createdAt}`) === listingId);
+            if (listing) {
+              setSelectedListing(listing);
+            }
+            setShowNotificationsPanel(false);
+          }}
+        />
+      )}
+
+      <Footer onOpenPrivacy={() => setShowPrivacyPolicy(true)} />
     </div>
   );
 }
@@ -754,32 +830,84 @@ function ProfileSetupView({ onSubmit, userType }) {
     name: '',
     phone: '',
     email: '',
+    whatsapp: '',
     photo: ''
   });
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+
+  const validateField = (name, value, extras = {}) => {
+    const newErrors = { ...errors };
+    switch (name) {
+      case 'name':
+        if (!value || value.trim().length < 2) {
+          newErrors.name = 'Name must be at least 2 characters';
+        } else {
+          delete newErrors.name;
+        }
+        break;
+      case 'phone':
+        if (!value || !/^[+]?[-0-9()\s]{7,}$/.test(value.trim())) {
+          newErrors.phone = 'Enter a valid phone number (min 7 digits)';
+        } else {
+          delete newErrors.phone;
+        }
+        break;
+      case 'email':
+        if (!value || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value.trim())) {
+          newErrors.email = 'Enter a valid email address';
+        } else {
+          delete newErrors.email;
+        }
+        break;
+      case 'photo':
+        if (value === 'FILE_TOO_LARGE') {
+          newErrors.photo = 'Photo is too large (max 2MB)';
+        } else {
+          delete newErrors.photo;
+        }
+        break;
+      default:
+        break;
+    }
+    setErrors(newErrors);
+  };
 
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+        setFormData({ ...formData, photo: '' });
+        validateField('photo', 'FILE_TOO_LARGE');
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
         setFormData({ ...formData, photo: reader.result });
+        validateField('photo', reader.result);
       };
       reader.readAsDataURL(file);
     }
   };
 
   const handleSubmit = () => {
-    if (formData.name && formData.phone && formData.email) {
+    // Touch all fields
+    const allTouched = { name: true, phone: true, email: true, photo: true };
+    setTouched(allTouched);
+    validateField('name', formData.name);
+    validateField('phone', formData.phone);
+    validateField('email', formData.email);
+    if (Object.keys(errors).length === 0 && formData.name && formData.phone && formData.email) {
       onSubmit(formData);
     }
   };
 
   return (
-    <div className="p-4 min-h-screen bg-gray-50 pb-20">
+    <div className="p-4 min-h-screen bg-gradient-to-b from-slate-50 to-gray-100 pb-24">
       <div className="max-w-2xl mx-auto mt-8">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-800 mb-2">Complete Your Profile</h2>
+            <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Complete Your Profile</h2>
             <p className="text-gray-600">Help others know who you are</p>
           </div>
 
@@ -798,7 +926,7 @@ function ProfileSetupView({ onSubmit, userType }) {
                     <User className="w-16 h-16 text-blue-600" />
                   </div>
                 )}
-                <label className="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full cursor-pointer shadow-lg transition group">
+                <label className="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full cursor-pointer shadow-lg transition group" aria-label="Upload profile photo">
                   <Edit className="w-5 h-5" />
                   <input
                     type="file"
@@ -817,10 +945,14 @@ function ProfileSetupView({ onSubmit, userType }) {
                 type="text"
                 required
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => { setFormData({ ...formData, name: e.target.value }); if (touched.name) validateField('name', e.target.value); }}
+                onBlur={(e) => { setTouched({ ...touched, name: true }); validateField('name', e.target.value); }}
                 placeholder="Enter your full name"
-                className="w-full px-4 py-3 border border-gray-300 bg-white text-gray-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition placeholder-gray-400"
+                aria-invalid={errors.name ? 'true' : 'false'}
+                aria-describedby={errors.name ? 'profile-name-error' : undefined}
+                className={`w-full px-4 py-3 border-2 ${errors.name ? 'border-red-400' : 'border-gray-200'} bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition placeholder-gray-400`}
               />
+              {errors.name && touched.name && <p id="profile-name-error" className="mt-1 text-xs text-red-600">{errors.name}</p>}
             </div>
 
             <div>
@@ -831,11 +963,15 @@ function ProfileSetupView({ onSubmit, userType }) {
                   type="tel"
                   required
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  onChange={(e) => { setFormData({ ...formData, phone: e.target.value }); if (touched.phone) validateField('phone', e.target.value); }}
+                  onBlur={(e) => { setTouched({ ...touched, phone: true }); validateField('phone', e.target.value); }}
                   placeholder="e.g., +27 12 345 6789"
-                  className="w-full pl-11 pr-4 py-3 border border-gray-300 bg-white text-gray-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition placeholder-gray-400"
+                  aria-invalid={errors.phone ? 'true' : 'false'}
+                  aria-describedby={errors.phone ? 'profile-phone-error' : undefined}
+                  className={`w-full pl-11 pr-4 py-3 border-2 ${errors.phone ? 'border-red-400' : 'border-gray-200'} bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition placeholder-gray-400`}
                 />
               </div>
+              {errors.phone && touched.phone && <p id="profile-phone-error" className="mt-1 text-xs text-red-600">{errors.phone}</p>}
             </div>
 
             <div>
@@ -846,17 +982,36 @@ function ProfileSetupView({ onSubmit, userType }) {
                   type="email"
                   required
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) => { setFormData({ ...formData, email: e.target.value }); if (touched.email) validateField('email', e.target.value); }}
+                  onBlur={(e) => { setTouched({ ...touched, email: true }); validateField('email', e.target.value); }}
                   placeholder="your.email@example.com"
-                  className="w-full pl-11 pr-4 py-3 border border-gray-300 bg-white text-gray-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition placeholder-gray-400"
+                  aria-invalid={errors.email ? 'true' : 'false'}
+                  aria-describedby={errors.email ? 'profile-email-error' : undefined}
+                  className={`w-full pl-11 pr-4 py-3 border-2 ${errors.email ? 'border-red-400' : 'border-gray-200'} bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition placeholder-gray-400`}
                 />
               </div>
+              {errors.email && touched.email && <p id="profile-email-error" className="mt-1 text-xs text-red-600">{errors.email}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">WhatsApp (optional)</label>
+              <div className="relative">
+                <Phone className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
+                <input
+                  type="tel"
+                  value={formData.whatsapp}
+                  onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
+                  placeholder="e.g., +27 71 234 5678"
+                  className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition placeholder-gray-400"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Used to create a WhatsApp chat link on your listings.</p>
             </div>
 
             {/* Submit Button */}
             <button
               onClick={handleSubmit}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition mt-8 shadow-sm"
+              className="w-full bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-semibold py-3 rounded-xl transition mt-8 shadow-lg hover:shadow-xl"
             >
               Complete Setup
             </button>
@@ -867,66 +1022,146 @@ function ProfileSetupView({ onSubmit, userType }) {
   );
 }
 
-function ProfileView({ user, onEdit }) {
+function ProfileView({ user, onEdit, onUpdatePrefs }) {
+  const prefs = user.notificationPrefs || { updates: true, marketing: false };
+  const [localPrefs, setLocalPrefs] = React.useState(prefs);
+
+  const togglePref = (key) => {
+    const next = { ...localPrefs, [key]: !localPrefs[key] };
+    setLocalPrefs(next);
+    onUpdatePrefs && onUpdatePrefs(next);
+  };
+
   return (
-    <div className="p-4">
-      <div className="bg-white rounded-lg shadow p-6 max-w-xl mx-auto">
-        <div className="flex justify-between items-start mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">My Profile</h2>
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-gray-100 pb-24">
+      {/* Profile Header with Gradient */}
+      <div className="bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-500 pt-8 pb-20 px-4">
+        <div className="max-w-xl mx-auto flex justify-between items-start">
+          <h2 className="text-2xl font-bold text-white">My Profile</h2>
           <button
             onClick={onEdit}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition flex items-center gap-2"
+            className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2 rounded-xl transition-all duration-200 flex items-center gap-2 border border-white/30"
           >
             <Edit className="w-4 h-4" />
             Edit
           </button>
         </div>
+      </div>
 
-        <div className="flex flex-col items-center mb-6">
-          {user.photo ? (
-            <img src={user.photo} alt="Profile" className="w-32 h-32 rounded-full object-cover border-4 border-blue-500 mb-4" />
-          ) : (
-            <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center border-4 border-gray-300 mb-4">
-              <User className="w-16 h-16 text-gray-400" />
+      {/* Profile Card - Overlapping Header */}
+      <div className="px-4 -mt-16">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 max-w-xl mx-auto">
+          {/* Avatar & Name */}
+          <div className="flex flex-col items-center -mt-16 mb-6">
+            {user.photo ? (
+              <img 
+                src={user.photo} 
+                alt="Profile" 
+                className="w-28 h-28 rounded-2xl object-cover border-4 border-white shadow-lg mb-4" 
+              />
+            ) : (
+              <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center border-4 border-white shadow-lg mb-4">
+                <span className="text-4xl font-bold text-white">
+                  {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                </span>
+              </div>
+            )}
+            <h3 className="text-2xl font-bold text-gray-900">{user.name}</h3>
+            <span className="inline-flex items-center mt-2 px-4 py-1.5 bg-gradient-to-r from-teal-50 to-cyan-50 text-teal-700 rounded-full text-sm font-semibold border border-teal-100">
+              {user.type === 'landlord' ? (
+                <>
+                  <Home className="w-4 h-4 mr-1.5" />
+                  Landlord
+                </>
+              ) : (
+                <>
+                  <User className="w-4 h-4 mr-1.5" />
+                  Renter
+                </>
+              )}
+            </span>
+          </div>
+
+          {/* Contact Info Cards */}
+          <div className="space-y-3 mb-6">
+            <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-4 border border-gray-100 hover:border-gray-200 transition-colors">
+              <div className="flex items-center">
+                <div className="w-11 h-11 bg-gradient-to-br from-teal-100 to-cyan-100 rounded-xl flex items-center justify-center mr-4 shadow-sm">
+                  <Phone className="w-5 h-5 text-teal-600" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-0.5">Phone Number</p>
+                  <p className="font-semibold text-gray-800">{user.phone}</p>
+                </div>
+              </div>
             </div>
-          )}
-          <h3 className="text-2xl font-bold text-gray-800">{user.name}</h3>
-          <span className="inline-block mt-2 px-4 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
-            {user.type === 'landlord' ? 'Landlord' : 'Renter'}
-          </span>
-        </div>
 
-        <div className="space-y-4">
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center text-gray-600">
-              <Phone className="w-5 h-5 mr-3 text-blue-600" />
-              <div>
-                <p className="text-xs text-gray-500 mb-1">Phone Number</p>
-                <p className="font-semibold text-gray-800">{user.phone}</p>
+            <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-4 border border-gray-100 hover:border-gray-200 transition-colors">
+              <div className="flex items-center">
+                <div className="w-11 h-11 bg-gradient-to-br from-cyan-100 to-blue-100 rounded-xl flex items-center justify-center mr-4 shadow-sm">
+                  <Mail className="w-5 h-5 text-cyan-600" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-0.5">Email Address</p>
+                  <p className="font-semibold text-gray-800">{user.email}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-4 border border-gray-100 hover:border-gray-200 transition-colors">
+              <div className="flex items-center">
+                <div className="w-11 h-11 bg-gradient-to-br from-violet-100 to-purple-100 rounded-xl flex items-center justify-center mr-4 shadow-sm">
+                  <Calendar className="w-5 h-5 text-violet-600" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-0.5">Member Since</p>
+                  <p className="font-semibold text-gray-800">
+                    {new Date(user.createdAt).toLocaleDateString('en-ZA', { 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center text-gray-600">
-              <Mail className="w-5 h-5 mr-3 text-blue-600" />
-              <div>
-                <p className="text-xs text-gray-500 mb-1">Email Address</p>
-                <p className="font-semibold text-gray-800">{user.email}</p>
+          {/* Notification Preferences */}
+          <div className="bg-gradient-to-br from-teal-50 via-cyan-50 to-sky-50 rounded-xl p-5 border border-teal-100">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-sm">
+                <Bell className="w-5 h-5 text-white" />
               </div>
+              <h4 className="font-bold text-gray-800">Notification Preferences</h4>
             </div>
-          </div>
-
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center text-gray-600">
-              <User className="w-5 h-5 mr-3 text-blue-600" />
-              <div>
-                <p className="text-xs text-gray-500 mb-1">Member Since</p>
-                <p className="font-semibold text-gray-800">
-                  {new Date(user.createdAt).toLocaleDateString()}
-                </p>
-              </div>
+            <div className="space-y-3">
+              <label className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100 cursor-pointer hover:border-teal-200 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={localPrefs.updates}
+                  onChange={() => togglePref('updates')}
+                  className="w-5 h-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                />
+                <div>
+                  <p className="text-sm font-medium text-gray-800">Room Alerts</p>
+                  <p className="text-xs text-gray-500">Get notified about new rooms in your saved areas</p>
+                </div>
+              </label>
+              <label className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100 cursor-pointer hover:border-teal-200 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={localPrefs.marketing}
+                  onChange={() => togglePref('marketing')}
+                  className="w-5 h-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                />
+                <div>
+                  <p className="text-sm font-medium text-gray-800">Tips & Updates</p>
+                  <p className="text-xs text-gray-500">Occasional features and helpful content</p>
+                </div>
+              </label>
             </div>
+            <p className="text-[11px] text-gray-500 mt-3 text-center">Changes save automatically • You can opt out anytime</p>
           </div>
         </div>
       </div>
@@ -946,44 +1181,102 @@ function LandlordOnboardingView({ onComplete, onCancel, currentUser }) {
   };
 
   return (
-    <div className="p-4 min-h-screen bg-gray-50 pb-20">
-      <div className="max-w-2xl mx-auto mt-8">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-          <div className="flex items-center gap-6 mb-6">
-            <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 text-2xl font-bold">
-              {currentUser && currentUser.name ? currentUser.name.charAt(0) : 'L'}
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-800">Welcome, {currentUser?.name || 'Landlord'}</h2>
-              <p className="text-gray-600">A few details to get your listings live and increase trust with renters.</p>
-            </div>
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-gray-100 pb-24">
+      {/* Header Banner */}
+      <div className="bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-500 pt-8 pb-16 px-4">
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/30">
+            <span className="text-4xl font-bold text-white">
+              {currentUser?.name?.charAt(0)?.toUpperCase() || 'L'}
+            </span>
           </div>
+          <h2 className="text-2xl font-bold text-white mb-2">Welcome, {currentUser?.name || 'Landlord'}!</h2>
+          <p className="text-teal-100">Complete your profile to start listing properties</p>
+        </div>
+      </div>
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-1">Display Name *</label>
-              <input value={form.businessName} onChange={(e) => setForm({ ...form, businessName: e.target.value })} className="w-full px-4 py-3 border border-gray-300 rounded-lg" />
-              <p className="text-xs text-gray-500 mt-1">This name is shown to renters on your listings and messages.</p>
+      {/* Form Card */}
+      <div className="px-4 -mt-8">
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+            {/* Progress Steps */}
+            <div className="flex items-center justify-center gap-2 mb-8">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-teal-600 text-white rounded-full flex items-center justify-center text-sm font-bold">1</div>
+                <span className="text-sm font-medium text-gray-700">Profile Details</span>
+              </div>
+              <div className="w-8 h-0.5 bg-gray-200"></div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center text-sm font-bold">2</div>
+                <span className="text-sm text-gray-400">Start Listing</span>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-1">How do you want to receive payments?</label>
-              <input value={form.bankDetails} onChange={(e) => setForm({ ...form, bankDetails: e.target.value })} placeholder="Bank account or payment details (optional)" className="w-full px-4 py-3 border border-gray-300 rounded-lg" />
-            </div>
+            <div className="space-y-5">
+              <div>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">Display Name *</label>
+                <input 
+                  value={form.businessName} 
+                  onChange={(e) => setForm({ ...form, businessName: e.target.value })} 
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all" 
+                  placeholder="Your name or business name"
+                />
+                <p className="text-xs text-gray-500 mt-1.5">This name is shown to renters on your listings and messages.</p>
+              </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-1">ID Number (optional)</label>
-              <input value={form.idNumber} onChange={(e) => setForm({ ...form, idNumber: e.target.value })} className="w-full px-4 py-3 border border-gray-300 rounded-lg" />
-            </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">Payment Details (Optional)</label>
+                <input 
+                  value={form.bankDetails} 
+                  onChange={(e) => setForm({ ...form, bankDetails: e.target.value })} 
+                  placeholder="Bank account or preferred payment method" 
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all" 
+                />
+                <p className="text-xs text-gray-500 mt-1.5">Private - only shown to confirmed renters.</p>
+              </div>
 
-            <div className="flex items-start gap-2">
-              <input type="checkbox" checked={form.agree} onChange={(e) => setForm({ ...form, agree: e.target.checked })} />
-              <div className="text-sm text-gray-600">I confirm I am authorised to list these properties and agree to the <button type="button" onClick={(e) => e.preventDefault()} className="text-blue-600 underline p-0">terms of service</button>.</div>
-            </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">ID Number (Optional)</label>
+                <input 
+                  value={form.idNumber} 
+                  onChange={(e) => setForm({ ...form, idNumber: e.target.value })} 
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all" 
+                  placeholder="For verification purposes"
+                />
+                <p className="text-xs text-gray-500 mt-1.5">Verified landlords get a trust badge on their listings.</p>
+              </div>
 
-            <div className="flex gap-3 pt-4">
-              <button onClick={onCancel} className="flex-1 bg-gray-100 hover:bg-gray-200 py-3 rounded">Cancel</button>
-              <button onClick={handleSubmit} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded">Complete and Start Listing</button>
+              <div className="bg-gradient-to-r from-teal-50 to-cyan-50 rounded-xl p-4 border border-teal-100">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={form.agree} 
+                    onChange={(e) => setForm({ ...form, agree: e.target.checked })} 
+                    className="mt-1 w-5 h-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                  />
+                  <span className="text-sm text-gray-700">
+                    I confirm I am authorised to list these properties and agree to the{' '}
+                    <button type="button" onClick={(e) => e.preventDefault()} className="text-teal-600 hover:text-teal-700 font-medium underline">
+                      terms of service
+                    </button>.
+                  </span>
+                </label>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button 
+                  onClick={onCancel} 
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3.5 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleSubmit} 
+                  className="flex-1 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-semibold py-3.5 rounded-xl transition-all shadow-md hover:shadow-lg"
+                >
+                  Complete & Start Listing
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -997,8 +1290,41 @@ function EditProfileView({ user, onSubmit, onCancel }) {
     name: user.name || '',
     phone: user.phone || '',
     email: user.email || '',
+    whatsapp: user.whatsapp || '',
     photo: user.photo || ''
   });
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+
+  const validateField = (name, value, extras = {}) => {
+    const newErrors = { ...errors };
+    switch (name) {
+      case 'name':
+        if (!value || value.trim().length < 2) {
+          newErrors.name = 'Name must be at least 2 characters';
+        } else {
+          delete newErrors.name;
+        }
+        break;
+      case 'phone':
+        if (!value || !/^[+]?[-0-9()\s]{7,}$/.test(value.trim())) {
+          newErrors.phone = 'Enter a valid phone number';
+        } else {
+          delete newErrors.phone;
+        }
+        break;
+      case 'email':
+        if (!value || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value.trim())) {
+          newErrors.email = 'Enter a valid email';
+        } else {
+          delete newErrors.email;
+        }
+        break;
+      default:
+        break;
+    }
+    setErrors(newErrors);
+  };
 
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
@@ -1012,17 +1338,21 @@ function EditProfileView({ user, onSubmit, onCancel }) {
   };
 
   const handleSubmit = () => {
-    if (formData.name && formData.phone && formData.email) {
+    setTouched({ name: true, phone: true, email: true });
+    validateField('name', formData.name);
+    validateField('phone', formData.phone);
+    validateField('email', formData.email);
+    if (Object.keys(errors).length === 0 && formData.name && formData.phone && formData.email) {
       onSubmit(formData);
     }
   };
 
   return (
-    <div className="p-4 min-h-screen bg-gray-50 pb-20">
+    <div className="p-4 min-h-screen bg-gradient-to-b from-slate-50 to-gray-100 pb-24">
       <div className="max-w-2xl mx-auto mt-8">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-bold text-gray-800">Edit Profile</h2>
+            <h2 className="text-3xl font-extrabold text-gray-900">Edit Profile</h2>
             <button onClick={onCancel} className="text-gray-400 hover:text-gray-600 transition">
               <X className="w-6 h-6" />
             </button>
@@ -1039,7 +1369,7 @@ function EditProfileView({ user, onSubmit, onCancel }) {
                     <User className="w-16 h-16 text-blue-600" />
                   </div>
                 )}
-                <label className="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full cursor-pointer shadow-lg transition">
+                <label className="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full cursor-pointer shadow-lg transition" aria-label="Upload new profile photo">
                   <Edit className="w-5 h-5" />
                   <input
                     type="file"
@@ -1058,9 +1388,13 @@ function EditProfileView({ user, onSubmit, onCancel }) {
                 type="text"
                 required
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 bg-white text-gray-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition placeholder-gray-400"
+                onChange={(e) => { setFormData({ ...formData, name: e.target.value }); if (touched.name) validateField('name', e.target.value); }}
+                onBlur={(e) => { setTouched({ ...touched, name: true }); validateField('name', e.target.value); }}
+                aria-invalid={errors.name ? 'true' : 'false'}
+                aria-describedby={errors.name ? 'edit-name-error' : undefined}
+                className={`w-full px-4 py-3 border-2 ${errors.name ? 'border-red-400' : 'border-gray-200'} bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition placeholder-gray-400`}
               />
+              {errors.name && touched.name && <p id="edit-name-error" className="mt-1 text-xs text-red-600">{errors.name}</p>}
             </div>
 
             <div>
@@ -1071,10 +1405,14 @@ function EditProfileView({ user, onSubmit, onCancel }) {
                   type="tel"
                   required
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full pl-11 pr-4 py-3 border border-gray-300 bg-white text-gray-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition placeholder-gray-400"
+                  onChange={(e) => { setFormData({ ...formData, phone: e.target.value }); if (touched.phone) validateField('phone', e.target.value); }}
+                  onBlur={(e) => { setTouched({ ...touched, phone: true }); validateField('phone', e.target.value); }}
+                  aria-invalid={errors.phone ? 'true' : 'false'}
+                  aria-describedby={errors.phone ? 'edit-phone-error' : undefined}
+                  className={`w-full pl-11 pr-4 py-3 border-2 ${errors.phone ? 'border-red-400' : 'border-gray-200'} bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition placeholder-gray-400`}
                 />
               </div>
+              {errors.phone && touched.phone && <p id="edit-phone-error" className="mt-1 text-xs text-red-600">{errors.phone}</p>}
             </div>
 
             <div>
@@ -1085,23 +1423,42 @@ function EditProfileView({ user, onSubmit, onCancel }) {
                   type="email"
                   required
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full pl-11 pr-4 py-3 border border-gray-300 bg-white text-gray-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition placeholder-gray-400"
+                  onChange={(e) => { setFormData({ ...formData, email: e.target.value }); if (touched.email) validateField('email', e.target.value); }}
+                  onBlur={(e) => { setTouched({ ...touched, email: true }); validateField('email', e.target.value); }}
+                  aria-invalid={errors.email ? 'true' : 'false'}
+                  aria-describedby={errors.email ? 'edit-email-error' : undefined}
+                  className={`w-full pl-11 pr-4 py-3 border-2 ${errors.email ? 'border-red-400' : 'border-gray-200'} bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition placeholder-gray-400`}
                 />
               </div>
+              {errors.email && touched.email && <p id="edit-email-error" className="mt-1 text-xs text-red-600">{errors.email}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">WhatsApp (optional)</label>
+              <div className="relative">
+                <Phone className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
+                <input
+                  type="tel"
+                  value={formData.whatsapp}
+                  onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
+                  placeholder="e.g., +27 71 234 5678"
+                  className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition placeholder-gray-400"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Used to create a WhatsApp chat link on your listings.</p>
             </div>
 
             {/* Action Buttons */}
             <div className="flex gap-3 pt-6 border-t border-gray-200">
               <button
                 onClick={onCancel}
-                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 rounded-lg transition"
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 rounded-xl transition"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSubmit}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition shadow-sm"
+                className="flex-1 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-semibold py-3 rounded-xl transition shadow-lg"
               >
                 Save Changes
               </button>
@@ -1113,365 +1470,306 @@ function EditProfileView({ user, onSubmit, onCancel }) {
   );
 }
 
-function BrowseView({ 
-  listings, 
-  searchLocation, 
-  setSearchLocation, 
-  priceRange, 
-  setPriceRange,
-  selectedAmenities,
-  setSelectedAmenities,
-  sortBy,
-  setSortBy,
-  mapView,
-  setMapView,
-  onSelectListing,
-  setCurrentView,
-  currentUser, onRequireAuth, subscribeToArea,
-  onFindNearby, nearbyRadius, setNearbyRadius, nearbyMode, clearNearby, userLocation, nearbyStatus
-}) {
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+/* BrowseView extracted to components/BrowseView.jsx */
+
+function FavoritesView({ listings, onSelectListing }) {
+  const [favorites, setFavorites] = useState([]);
+
+  useEffect(() => {
+    try {
+      const rawFavorites = localStorage.getItem('favorites');
+      if (rawFavorites) {
+        const arr = JSON.parse(rawFavorites);
+        if (Array.isArray(arr)) setFavorites(arr);
+      }
+    } catch {}
+  }, []);
+
+  const toggleFavorite = (listingId) => {
+    setFavorites(prev => {
+      const updated = prev.filter(id => id !== listingId);
+      try {
+        localStorage.setItem('favorites', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
+
+  const favoriteListings = listings.filter(l => favorites.includes(l.id));
 
   return (
-    <div className="bg-gray-50 min-h-screen pb-20">
-      {/* Hero Search Section */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          {/* Main Search Bar */}
-          <div className="mb-6">
-            <div className="flex gap-3">
-              <div className="flex-1 relative">
-                <MapPin className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search by location, suburb, or area..."
-                  value={searchLocation}
-                  onChange={(e) => setSearchLocation(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition font-semibold shadow-sm">
-                  Search
-                </button>
-
-                <button
-                  onClick={() => {
-                    if (!searchLocation || searchLocation.trim() === '') {
-                      alert('Enter a location to subscribe to updates for that area.');
-                      return;
-                    }
-                    if (!currentUser) {
-                      onRequireAuth && onRequireAuth('renter');
-                      return;
-                    }
-                    subscribeToArea && subscribeToArea(currentUser.id, searchLocation.trim());
-                  }}
-                  className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition text-sm"
-                >
-                  Subscribe to area
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => onFindNearby && onFindNearby()}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
-                >
-                  Find Nearby
-                </button>
-
-                <select value={nearbyRadius} onChange={(e) => setNearbyRadius(parseInt(e.target.value))} className="text-sm bg-gray-50 border border-gray-200 px-3 py-2 rounded-lg text-gray-700">
-                  <option value={1}>1 km</option>
-                  <option value={3}>3 km</option>
-                  <option value={5}>5 km</option>
-                  <option value={10}>10 km</option>
-                </select>
-
-                {nearbyMode && (
-                  <button onClick={clearNearby} className="bg-white border border-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm">Clear</button>
-                )}
-
-                <div className="text-sm text-gray-600">
-                  {nearbyStatus}
-                </div>
-              </div>
+    <div className="p-4 min-h-screen bg-gradient-to-b from-slate-50 to-gray-100 pb-24">
+      <div className="max-w-7xl mx-auto mt-8">
+        <div className="mb-8">
+          <div className="flex items-center gap-4 mb-3">
+            <div className="w-14 h-14 bg-gradient-to-br from-rose-100 to-pink-100 rounded-2xl flex items-center justify-center shadow-sm">
+              <Heart className="w-7 h-7 text-rose-500 fill-rose-500" />
             </div>
-          </div>
-
-          {/* Smart Filters Row */}
-          <div className="flex gap-2 mb-4 flex-wrap items-center">
-            {/* Price Range */}
-            <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200">
-              <span className="text-sm text-gray-600 font-medium">R{priceRange[0].toLocaleString()} - R{priceRange[1].toLocaleString()}</span>
-              <select
-                value={priceRange[0]}
-                onChange={(e) => setPriceRange([parseInt(e.target.value), priceRange[1]])}
-                className="text-xs bg-transparent border-l border-gray-300 pl-2 text-gray-600 focus:outline-none"
-              >
-                <option value="0">Min</option>
-                <option value="500">R500</option>
-                <option value="1000">R1000</option>
-                <option value="1500">R1500</option>
-              </select>
-            </div>
-
-            {/* Sort */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Sort:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="text-sm bg-gray-50 border border-gray-200 px-3 py-2 rounded-lg text-gray-700 focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="newest">Newest</option>
-                <option value="cheapest">Cheapest</option>
-                <option value="expensive">Most Expensive</option>
-              </select>
-            </div>
-
-            {/* More Filters Button */}
-            <button
-              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium px-3 py-2 rounded-lg hover:bg-blue-50 transition"
-            >
-              {showAdvancedFilters ? '✕ Close Filters' : '⚙️ More Filters'}
-            </button>
-          </div>
-
-          {/* Advanced Filters (Collapsible) */}
-          {showAdvancedFilters && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                <div>
-                  <label className="text-sm font-semibold text-gray-700 block mb-2">Property Type</label>
-                  <select className="w-full text-sm border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500">
-                    <option>Any</option>
-                    <option>Room</option>
-                    <option>Apartment</option>
-                    <option>House</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-semibold text-gray-700 block mb-2">Max Price</label>
-                  <select
-                    value={priceRange[1]}
-                    onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
-                    className="w-full text-sm border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="10000">Up to R10,000</option>
-                    <option value="5000">Up to R5,000</option>
-                    <option value="3000">Up to R3,000</option>
-                    <option value="2000">Up to R2,000</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Call-to-Action Section */}
-      {listings.length > 0 && (
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6 mb-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-bold text-gray-800 mb-1">Have a room to rent?</h3>
-                <p className="text-gray-600 text-sm">Join thousands of landlords earning with Room24</p>
-              </div>
-              <button 
-                onClick={() => setCurrentView('add')}
-                className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-semibold transition shadow-md">
-                List Your Room
-              </button>
+            <div>
+              <h2 className="text-3xl font-extrabold text-gray-900">Saved Listings</h2>
+              <p className="text-gray-600">
+                {favoriteListings.length === 0
+                  ? 'Your favorites will appear here'
+                  : `${favoriteListings.length} saved ${favoriteListings.length === 1 ? 'listing' : 'listings'}`}
+              </p>
             </div>
           </div>
         </div>
-      )}
 
-      {/* Map / List Toggle - only relevant when there are listings */}
-      {listings.length > 0 && (
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex justify-between items-center mb-4">
-            <p className="text-sm text-gray-600">
-              {mapView ? 'Click markers to view details' : `Showing ${listings.length} results`}
+        {favoriteListings.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
+            <div className="w-24 h-24 bg-gradient-to-br from-rose-50 to-pink-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Heart className="w-12 h-12 text-rose-300" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">No saved listings yet</h3>
+            <p className="text-gray-500 text-sm mb-6 max-w-md mx-auto">
+              Browse rooms and tap the heart icon to save your favorites. They'll appear here for easy access.
             </p>
-            <button
-              onClick={() => setMapView(!mapView)}
-              className="text-sm px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition flex items-center gap-2"
-            >
-              <MapPin className="w-4 h-4" />
-              {mapView ? 'Show List' : 'Show Map'}
-            </button>
-          </div>
-          {mapView && (
-              <MapView
-                listings={listings}
-                onMarkerClick={(l) => onSelectListing(l)}
-                userLocation={userLocation}
-                nearbyRadius={nearbyRadius}
-                fullHeight={true}
-              />
-          )}
-        </div>
-      )}
-
-      {/* Results Section */}
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">
-            {listings.length === 0 ? 'No rooms available' : `${listings.length} Rooms Available`}
-          </h2>
-          <p className="text-sm text-gray-500 mt-1">Find your perfect room today</p>
-        </div>
-
-        {listings.length === 0 ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-            <Home className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-            <p className="text-gray-600 font-medium mb-2">No rooms match your search</p>
-            <p className="text-gray-500 text-sm mb-4">Try adjusting your filters or search in a different location</p>
-            <button
-              onClick={() => {
-                setSearchLocation('');
-                setPriceRange([0, 10000]);
-              }}
-              className="text-blue-600 hover:text-blue-700 font-medium text-sm"
-            >
-              Clear all filters
-            </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            {listings.map(listing => (
-              <ListingCard key={listing.id} listing={listing} onClick={() => onSelectListing(listing)} />
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {favoriteListings.map(listing => {
+              const ListingCard = require('./components/ListingCard').default;
+              return (
+                <ListingCard
+                  key={listing.id}
+                  listing={listing}
+                  onClick={() => onSelectListing(listing)}
+                  isFavorite={true}
+                  onToggleFavorite={toggleFavorite}
+                />
+              );
+            })}
           </div>
         )}
       </div>
     </div>
   );
 }
-function ListingCard({ listing, onClick }) {
-  return (
-    <div 
-      onClick={onClick}
-      className="bg-white rounded-lg shadow hover:shadow-xl transition-all duration-200 cursor-pointer overflow-hidden border border-gray-100 hover:border-blue-300 group"
-    >
-      {/* Image Container */}
-      {listing.photos && listing.photos.length > 0 ? (
-        <div className="relative bg-gray-200 aspect-video overflow-hidden">
-          <img 
-            src={listing.photos[0]} 
-            alt="Room" 
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 skeleton"
-            onLoad={(e) => e.target.classList.remove('skeleton')}
-          />
-          <div className="absolute top-3 right-3 flex gap-2">
-            {listing.photos.length > 1 && (
-              <div className="bg-black bg-opacity-60 text-white px-2 py-1 rounded-md text-xs font-semibold">
-                {listing.photos.length} 📸
-              </div>
-            )}
-            {/* Availability Badge */}
-            <div className={`px-2 py-1 rounded-md text-xs font-semibold ${
-              listing.status === 'available' 
-                ? 'bg-green-500 text-white' 
-                : 'bg-gray-700 text-white'
-            }`}>
-              {listing.status === 'available' ? 'Available' : 'Rented'}
-            </div>
-          </div>
-          <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-5 transition-opacity" />
-        </div>
-      ) : (
-        <div className="bg-gradient-to-br from-gray-200 to-gray-300 aspect-video flex items-center justify-center relative">
-          <Home className="w-12 h-12 text-gray-400" />
-          {/* Availability Badge for no-photo cards */}
-          <div className={`absolute top-3 right-3 px-2 py-1 rounded-md text-xs font-semibold ${
-            listing.status === 'available' 
-              ? 'bg-green-500 text-white' 
-              : 'bg-gray-700 text-white'
-          }`}>
-            {listing.status === 'available' ? 'Available' : 'Rented'}
-          </div>
-        </div>
-      )}
 
-      {/* Content */}
-      <div className="p-4">
-        {/* Title & Price Header */}
-        <div className="mb-3">
-          <h3 className="font-bold text-lg text-gray-800 group-hover:text-blue-600 transition mb-1 line-clamp-2">
-            {listing.title}
-          </h3>
-          <p className="text-red-600 font-bold text-xl">R{listing.price.toLocaleString()}/month</p>
-        </div>
-
-        {/* Location */}
-        <div className="flex items-center text-gray-600 text-sm mb-3 pb-3 border-b border-gray-100">
-          <MapPin className="w-4 h-4 mr-2 text-blue-500 flex-shrink-0" />
-          <span className="truncate">{listing.location}</span>
-          {typeof listing.__distanceKm === 'number' && (
-            <span className="ml-2 text-xs text-gray-500">• {listing.__distanceKm.toFixed(1)} km</span>
-          )}
-        </div>
-
-        {/* Description */}
-        <p className="text-gray-600 text-sm line-clamp-2 mb-3">
-          {listing.description}
-        </p>
-
-        {/* Amenities */}
-        {listing.amenities && listing.amenities.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-4">
-            {listing.amenities.slice(0, 3).map((amenity, index) => (
-              <span key={index} className="inline-block bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded-full font-medium">
-                {amenity}
-              </span>
-            ))}
-            {listing.amenities.length > 3 && (
-              <span className="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full font-medium">
-                +{listing.amenities.length - 3}
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* CTA Button */}
-        <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-semibold text-sm transition">
-          View Details
-        </button>
-      </div>
-    </div>
-  );
-}
+const createDefaultListingForm = () => ({
+  title: '',
+  price: '',
+  location: '',
+  streetAddress: '',
+  description: '',
+  photos: [],
+  status: 'available',
+  availableDate: new Date().toISOString().split('T')[0],
+  amenities: [],
+  latitude: null,
+  longitude: null,
+  paymentMethod: 'Bank and Cash',
+  roomType: 'private',
+  leaseDuration: '7-12',
+  petFriendly: false,
+  genderPreference: 'any',
+  premium: false
+});
 
 function AddListingView({ onSubmit, onCancel, currentUser, userType, onRequireAuth, onRequireOnboarding }) {
   const GEOCODER_KEY = process.env.REACT_APP_GEOCODER_API_KEY;
   const GEOCODER_PROVIDER = (process.env.REACT_APP_GEOCODER_PROVIDER || '').toLowerCase();
 
-  const [formData, setFormData] = useState({
-    title: '',
-    price: '',
-    location: '',
-    streetAddress: '',
-    description: '',
-    photos: [],
-    status: 'available',
-    availableDate: new Date().toISOString().split('T')[0],
-    amenities: [],
-    latitude: null,
-    longitude: null
+  const landlordId = currentUser?.id;
+  const [formData, setFormData] = useState(() => {
+    const base = createDefaultListingForm();
+    if (landlordId) {
+      const saved = loadListingTemplate(landlordId);
+      if (saved) {
+        return {
+          ...base,
+          ...saved,
+          amenities: Array.isArray(saved.amenities) ? saved.amenities : base.amenities,
+          petFriendly: saved.petFriendly ?? base.petFriendly,
+          premium: saved.premium ?? base.premium,
+          photos: []
+        };
+      }
+    }
+    return base;
   });
   const [geocodingStatus, setGecodingStatus] = useState('');
   const [errors, setErrors] = useState({});
+  const [showPhotoEditor, setShowPhotoEditor] = useState(false);
+  const reverseGeocodeCacheRef = React.useRef({});
+  const [lastGeocodeSource, setLastGeocodeSource] = useState(null); // 'cached' | 'mapbox' | 'proxy' | 'direct' | 'coords-only' | 'manual-geocode'
+  const [fullAddressInput, setFullAddressInput] = useState('');
+  const [isFullAddressEditing, setIsFullAddressEditing] = useState(false);
+
+  useEffect(() => {
+    if (!landlordId) return;
+    const saved = loadListingTemplate(landlordId);
+    if (saved) {
+      setFormData(prev => ({
+        ...prev,
+        ...saved,
+        amenities: Array.isArray(saved.amenities) ? saved.amenities : [],
+        petFriendly: saved.petFriendly ?? false,
+        premium: saved.premium ?? false,
+        photos: []
+      }));
+    } else {
+      setFormData(createDefaultListingForm());
+    }
+  }, [landlordId]);
+
+  useEffect(() => {
+    if (!landlordId || userType !== 'landlord') return;
+    saveListingTemplate(landlordId, formData);
+  }, [formData, landlordId, userType]);
+
+  // Warn user before leaving if form has unsaved data
+  useEffect(() => {
+    const hasFormData = formData.title || formData.description || formData.photos?.length > 0;
+    
+    const handleBeforeUnload = (e) => {
+      if (hasFormData) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+    
+    if (hasFormData) {
+      window.addEventListener('beforeunload', handleBeforeUnload);
+    }
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [formData.title, formData.description, formData.photos]);
+
+  // Helper: fetch with graceful fallbacks when third-party APIs lack CORS headers
+  const corsFallbackTransforms = useMemo(() => [
+    (url) => url.startsWith('https://cors.isomorphic-git.org/') ? url : `https://cors.isomorphic-git.org/${url}`,
+    (url) => url.startsWith('https://corsproxy.io/?') ? url : `https://corsproxy.io/?${encodeURIComponent(url)}`
+  ], []);
+
+  const fetchWithCorsFallback = useCallback(async (url, options = {}) => {
+    const cloneOptions = () => {
+      const base = { ...options };
+      if (options.headers) base.headers = { ...options.headers };
+      return base;
+    };
+
+    const attempt = async (targetUrl) => {
+      const resp = await fetch(targetUrl, cloneOptions());
+      if (!resp.ok) throw new Error(`Request failed with status ${resp.status}`);
+      return resp;
+    };
+
+    try {
+      return await attempt(url);
+    } catch (err) {
+      if (options.signal?.aborted) throw err;
+      let lastError = err;
+      for (const transform of corsFallbackTransforms) {
+        try {
+          const proxiedUrl = transform(url);
+          return await attempt(proxiedUrl);
+        } catch (proxyErr) {
+          lastError = proxyErr;
+          if (options.signal?.aborted) break;
+        }
+      }
+      throw lastError;
+    }
+  }, [corsFallbackTransforms]);
+
+  // Forward geocode helper for manual address lookups
+  const forwardGeocodeAddress = async (query) => {
+    if (!query || query.trim().length < 3) return [];
+
+    // 1. Mapbox (if configured)
+    if (GEOCODER_PROVIDER === 'mapbox' && GEOCODER_KEY) {
+      try {
+        const resp = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${GEOCODER_KEY}&limit=3&country=za&types=address,place,locality`);
+        const data = await resp.json();
+        if (data?.features?.length) {
+          return data.features.map(f => ({
+            lat: f.center ? f.center[1] : f.geometry?.coordinates?.[1],
+            lon: f.center ? f.center[0] : f.geometry?.coordinates?.[0],
+            label: f.place_name || f.text,
+            source: 'mapbox'
+          })).filter(entry => typeof entry.lat === 'number' && typeof entry.lon === 'number');
+        }
+      } catch (err) {
+        console.warn('Mapbox forward geocode failed', err);
+      }
+    }
+
+    // 2. maps.co (CORS-friendly)
+    try {
+      const mapsResp = await fetch(`https://geocode.maps.co/search?q=${encodeURIComponent(query)}&limit=3`);
+      if (mapsResp.ok) {
+        const mapsData = await mapsResp.json();
+        if (Array.isArray(mapsData) && mapsData.length) {
+          return mapsData.slice(0, 3).map(entry => ({
+            lat: parseFloat(entry.lat),
+            lon: parseFloat(entry.lon),
+            label: entry.display_name || entry.name,
+            source: 'maps.co'
+          }));
+        }
+      }
+    } catch (mapsErr) {
+      console.warn('maps.co forward geocode failed', mapsErr);
+    }
+
+    // 3. Local proxy (if running)
+    const API_BASE = (process.env.REACT_APP_PROXY_BASE || (window.location && window.location.port === '8443' ? 'https://localhost:4443' : ''));
+    if (API_BASE) {
+      try {
+        const proxyResp = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(query)}`);
+        if (proxyResp.ok) {
+          const proxyData = await proxyResp.json();
+          if (Array.isArray(proxyData) && proxyData.length) {
+            return proxyData.slice(0, 3).map(entry => ({
+              lat: parseFloat(entry.lat),
+              lon: parseFloat(entry.lon),
+              label: entry.display_name,
+              source: API_BASE.includes('localhost') ? 'local-proxy' : 'proxy'
+            }));
+          }
+        }
+      } catch (proxyErr) {
+        console.warn('Local proxy forward geocode failed', proxyErr);
+      }
+    }
+
+    // 4. Direct Nominatim fallback (may still be blocked, but last resort)
+    try {
+      const directResp = await fetchWithCorsFallback(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(query)}`, {
+        headers: {
+          'User-Agent': 'room-rental-platform/1.0 (direct fallback)',
+          'Accept': 'application/json'
+        }
+      });
+      if (directResp.ok) {
+        const directData = await directResp.json();
+        if (Array.isArray(directData) && directData.length) {
+          return directData.slice(0, 3).map(entry => ({
+            lat: parseFloat(entry.lat),
+            lon: parseFloat(entry.lon),
+            label: entry.display_name,
+            source: 'direct'
+          }));
+        }
+      }
+    } catch (directErr) {
+      console.warn('Direct nominatim forward geocode failed', directErr);
+    }
+
+    return [];
+  };
 
   const availableAmenities = [
     'WiFi', 'Parking', 'Kitchen', 'Laundry', 'Air Conditioning', 
     'Heating', 'TV', 'Furnished', 'Pet Friendly', 'Garden'
   ];
 
-  const validateField = (name, value) => {
+  const validateField = (name, value, extras = {}) => {
     const newErrors = { ...errors };
     
     switch (name) {
@@ -1493,13 +1791,18 @@ function AddListingView({ onSubmit, onCancel, currentUser, userType, onRequireAu
           delete newErrors.price;
         }
         break;
-      case 'location':
-        if (!value || value.trim().length < 3) {
-          newErrors.location = 'Location is required (min 3 characters)';
+      case 'location': {
+        const streetText = (extras.streetAddress ?? formData.streetAddress ?? '').trim();
+        const areaText = (extras.location ?? value ?? '').trim();
+        if (!streetText || streetText.length < 3) {
+          newErrors.location = 'Add the street or stand number (e.g., 5170 Molefe St)';
+        } else if (!areaText || areaText.length < 3) {
+          newErrors.location = 'Add the suburb, city, and postal code (e.g., Ivory Park, Midrand, 1693)';
         } else {
           delete newErrors.location;
         }
         break;
+      }
       case 'description':
         if (value && value.length > 500) {
           newErrors.description = 'Description is too long (max 500 characters)';
@@ -1514,63 +1817,22 @@ function AddListingView({ onSubmit, onCancel, currentUser, userType, onRequireAu
     setErrors(newErrors);
   };
 
-  // Geocode address using Nominatim (OpenStreetMap)
-  // Use browser geolocation and reverse-geocode to fill address/coords
-  const geolocateCurrentPosition = () => {
-    if (!navigator.geolocation) {
-      setGecodingStatus('Geolocation not supported by your browser');
-      return;
-    }
+  
 
-    setGecodingStatus('Locating...');
-    navigator.geolocation.getCurrentPosition(async (pos) => {
-      const lat = pos.coords.latitude;
-      const lon = pos.coords.longitude;
-      setFormData({ ...formData, latitude: lat, longitude: lon });
-
-      // Reverse geocode to get a readable address
-      try {
-        if (GEOCODER_PROVIDER === 'mapbox' && GEOCODER_KEY) {
-          const rev = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json?access_token=${GEOCODER_KEY}&limit=1&country=za`);
-          const revData = await rev.json();
-          if (revData && revData.features && revData.features.length > 0) {
-            const place = revData.features[0].place_name || '';
-            const parts = place.split(',').map(p => p.trim());
-            const street = parts.slice(0, 2).join(', ');
-            const area = parts.slice(2, 4).join(', ');
-            setFormData(prev => ({ ...prev, streetAddress: street || prev.streetAddress, location: area || prev.location }));
-            setGecodingStatus('✓ Current location set');
-            setTimeout(() => setGecodingStatus(''), 2500);
-            return;
-          }
-        } else {
-          const rev = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
-          const revData = await rev.json();
-          if (revData) {
-            const display = revData.display_name || '';
-            // Try to split display name into street and area
-            const parts = display.split(',').map(p => p.trim());
-            const street = parts.slice(0, 2).join(', ');
-            const area = parts.slice(2, 4).join(', ');
-            setFormData(prev => ({ ...prev, streetAddress: street || prev.streetAddress, location: area || prev.location }));
-            setGecodingStatus('✓ Current location set');
-            setTimeout(() => setGecodingStatus(''), 2500);
-            return;
-          }
+  // Load persisted reverse geocode cache
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('reverse-geocode-cache');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          reverseGeocodeCacheRef.current = parsed;
         }
-
-      } catch (e) {
-        console.error('Reverse geocode failed', e);
       }
+    } catch (e) { /* ignore */ }
+  }, []);
 
-      setGecodingStatus('✓ Coordinates obtained');
-      setTimeout(() => setGecodingStatus(''), 2000);
-    }, (err) => {
-      console.error('Geolocation error', err);
-      setGecodingStatus('Could not get your location');
-    }, { enableHighAccuracy: true, timeout: 10000 });
-  };
-
+  // Geocode address using Nominatim (OpenStreetMap)
   const geocodeAddress = async () => {
     if (!formData.streetAddress) {
       setGecodingStatus('Please enter a street address');
@@ -1580,89 +1842,42 @@ function AddListingView({ onSubmit, onCancel, currentUser, userType, onRequireAu
     setGecodingStatus('Finding coordinates...');
     try {
       const fullAddress = `${formData.streetAddress}, ${formData.location}, South Africa`;
-      // Try Mapbox if configured
-      if (GEOCODER_PROVIDER === 'mapbox' && GEOCODER_KEY) {
-        try {
-          const resp = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(fullAddress)}.json?access_token=${GEOCODER_KEY}&limit=1&country=za`);
-          const data = await resp.json();
-          if (data && data.features && data.features.length > 0) {
-            const [lon, lat] = data.features[0].center || [];
-            setFormData({ ...formData, latitude: parseFloat(lat), longitude: parseFloat(lon) });
-            setGecodingStatus('✓ Address found (Mapbox)!');
-            setTimeout(() => setGecodingStatus(''), 2000);
-            return;
-          }
-        } catch (err) {
-          console.warn('Mapbox geocoding failed, falling back to Nominatim', err);
-        }
-      }
-
-      // Default / fallback: Nominatim
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`
-      );
-      const results = await response.json();
+      const results = await forwardGeocodeAddress(fullAddress);
 
       if (results.length > 0) {
-        const { lat, lon } = results[0];
+        const best = results[0];
         setFormData({ 
           ...formData, 
-          latitude: parseFloat(lat), 
-          longitude: parseFloat(lon) 
+          latitude: parseFloat(best.lat), 
+          longitude: parseFloat(best.lon) 
         });
-        setGecodingStatus('✓ Address found!');
+        setGecodingStatus(`✓ Address found!`);
         setTimeout(() => setGecodingStatus(''), 2000);
+        setLastGeocodeSource(best.source || 'manual-geocode');
+        return;
+      }
+
+      setGecodingStatus('Address not found. Trying with area only...');
+      const areaResults = await forwardGeocodeAddress(`${formData.location}, South Africa`);
+      if (areaResults.length > 0) {
+        const bestArea = areaResults[0];
+        setFormData({ 
+          ...formData, 
+          latitude: parseFloat(bestArea.lat), 
+          longitude: parseFloat(bestArea.lon) 
+        });
+        setGecodingStatus('✓ Area found!');
+        setTimeout(() => setGecodingStatus(''), 2000);
+        setLastGeocodeSource(bestArea.source || 'manual-geocode');
       } else {
-        setGecodingStatus('Address not found. Trying with area only...');
-        // Fallback: just use the area/city
-        const areaResponse = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(formData.location + ', South Africa')}`
-        );
-        const areaResults = await areaResponse.json();
-        if (areaResults.length > 0) {
-          const { lat, lon } = areaResults[0];
-          setFormData({ 
-            ...formData, 
-            latitude: parseFloat(lat), 
-            longitude: parseFloat(lon) 
-          });
-          setGecodingStatus('✓ Area found!');
-          setTimeout(() => setGecodingStatus(''), 2000);
-        } else {
-          setGecodingStatus('Could not find location');
-        }
+        setGecodingStatus('Could not find location');
       }
     } catch (error) {
       console.error('Geocoding error:', error);
       setGecodingStatus('Error finding address. Check your connection.');
+      setLastGeocodeSource(null);
     }
   };
-
-  // Draggable preview marker component for Add Listing
-  function DraggablePreview({ lat, lng }) {
-    const [pos, setPos] = useState(lat && lng ? [lat, lng] : null);
-    useEffect(() => {
-      if (lat && lng) setPos([lat, lng]);
-    }, [lat, lng]);
-
-    if (!pos) return null;
-    return (
-      <MapContainer center={pos} zoom={15} className="w-full h-48 rounded-lg" whenCreated={() => {}}>
-        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-        <Marker
-          position={pos}
-          draggable={true}
-          eventHandlers={{
-            dragend: (e) => {
-              const ll = e.target.getLatLng();
-              setPos([ll.lat, ll.lng]);
-              setFormData(prev => ({ ...prev, latitude: ll.lat, longitude: ll.lng }));
-            }
-          }}
-        />
-      </MapContainer>
-    );
-  }
 
   const toggleAmenity = (amenity) => {
     if (formData.amenities.includes(amenity)) {
@@ -1672,28 +1887,9 @@ function AddListingView({ onSubmit, onCancel, currentUser, userType, onRequireAu
     }
   };
 
-  const handlePhotoUpload = (e) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const readers = files.map(file => new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
-      reader.readAsDataURL(file);
-    }));
-
-    Promise.all(readers).then(images => {
-      const combined = [...formData.photos, ...images].slice(0, 5); // cap at 5
-      setFormData({ ...formData, photos: combined });
-    });
-  };
-
-  const removePhoto = (index) => {
-    const newPhotos = formData.photos.filter((_, i) => i !== index);
-    setFormData({ ...formData, photos: newPhotos });
-  };
-
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // Enforce auth and onboarding checks before allowing submission
     if (!currentUser) {
       onRequireAuth && onRequireAuth('landlord');
@@ -1713,7 +1909,10 @@ function AddListingView({ onSubmit, onCancel, currentUser, userType, onRequireAu
     // Validate all fields
     validateField('title', formData.title);
     validateField('price', formData.price);
-    validateField('location', formData.location);
+    validateField('location', formData.location, {
+      location: formData.location,
+      streetAddress: formData.streetAddress
+    });
     validateField('description', formData.description);
 
     if (!formData.title || formData.title.trim().length < 5) {
@@ -1732,146 +1931,319 @@ function AddListingView({ onSubmit, onCancel, currentUser, userType, onRequireAu
       return;
     }
 
-    onSubmit(formData);
+    setIsSubmitting(true);
+    try {
+      await onSubmit(formData);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const googleMapsQuery = [formData.streetAddress, formData.location, 'South Africa']
+    .filter(Boolean)
+    .join(', ');
+  const googleMapsUrl = googleMapsQuery
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(googleMapsQuery)}`
+    : '';
+  const combinedFormAddress = [formData.streetAddress, formData.location]
+    .map(part => (part || '').trim())
+    .filter(Boolean)
+    .join(', ');
+
+  useEffect(() => {
+    if (isFullAddressEditing) return;
+    setFullAddressInput(prev => (prev === combinedFormAddress ? prev : combinedFormAddress));
+  }, [combinedFormAddress, isFullAddressEditing]);
+
+  const handleFullAddressChange = (value) => {
+    setFullAddressInput(value);
+    if (!value || value.length < 3) {
+      setFormData(prev => ({ ...prev, streetAddress: '', location: '' }));
+      validateField('location', '');
+      return;
+    }
+
+    const parts = value
+      .split(',')
+      .map(part => part.trim())
+      .filter(Boolean);
+
+    if (parts.length === 0) {
+      setFormData(prev => ({ ...prev, streetAddress: '', location: '' }));
+      validateField('location', '');
+      return;
+    }
+
+    let street = parts[0] || '';
+    let derivedLocation = parts.slice(1).join(', ');
+
+    if (!derivedLocation) {
+      const words = street.split(/\s+/).filter(Boolean);
+      if (words.length >= 4) {
+        // Guess that the last few tokens describe the suburb/city/postal portion.
+        const locationWordCount = Math.min(4, Math.ceil(words.length / 2));
+        derivedLocation = words.slice(-locationWordCount).join(' ');
+        street = words.slice(0, words.length - locationWordCount).join(' ');
+      } else {
+        derivedLocation = street;
+      }
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      streetAddress: street,
+      location: derivedLocation
+    }));
+    validateField('location', derivedLocation || street, {
+      location: derivedLocation,
+      streetAddress: street
+    });
+  };
+
+  const handleResetSavedTemplate = () => {
+    if (!landlordId) return;
+    clearListingTemplate(landlordId);
+    const blank = createDefaultListingForm();
+    setFormData(blank);
+    setFullAddressInput('');
   };
 
   return (
-    <div className="p-4 bg-gray-50 min-h-screen pb-20">
+    <div className="p-4 bg-gradient-to-b from-slate-50 to-gray-100 min-h-screen pb-24">
       <div className="max-w-3xl mx-auto mt-8">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-bold text-gray-800">Post a Room</h2>
-            <button onClick={onCancel} className="text-gray-400 hover:text-gray-600 transition">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-3xl font-extrabold text-gray-900">Post a Room</h2>
+            <button onClick={onCancel} className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100">
               <X className="w-6 h-6" />
             </button>
           </div>
 
+          {/* Progress Indicator */}
+          <div className="mb-8">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium text-gray-600">Form Progress</span>
+              <span className="text-sm font-semibold text-teal-600">
+                {(() => {
+                  let completed = 0;
+                  const total = 5;
+                  if (formData.title && formData.title.trim().length >= 5) completed++;
+                  if (formData.price && parseFloat(formData.price) >= 500) completed++;
+                  if (formData.streetAddress && formData.location) completed++;
+                  if (formData.description && formData.description.length >= 10) completed++;
+                  if (formData.photos && formData.photos.length > 0) completed++;
+                  return `${completed}/${total} completed`;
+                })()}
+              </span>
+            </div>
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full transition-all duration-500"
+                style={{
+                  width: `${(() => {
+                    let completed = 0;
+                    if (formData.title && formData.title.trim().length >= 5) completed++;
+                    if (formData.price && parseFloat(formData.price) >= 500) completed++;
+                    if (formData.streetAddress && formData.location) completed++;
+                    if (formData.description && formData.description.length >= 10) completed++;
+                    if (formData.photos && formData.photos.length > 0) completed++;
+                    return (completed / 5) * 100;
+                  })()}%`
+                }}
+              />
+            </div>
+          </div>
+
           <div className="space-y-6">
+            {currentUser?.type === 'landlord' && (
+              <div className="bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-200 text-teal-800 text-sm rounded-xl p-4 flex items-start gap-3">
+                <CheckCircle className="w-5 h-5 text-teal-600 mt-0.5" />
+                <div className="space-y-2">
+                  <p>
+                    We remember your latest listing details (address, price, and more) so you only need to upload fresh photos next time.
+                    Update any field below and we'll save it automatically.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleResetSavedTemplate}
+                    className="text-xs font-semibold text-teal-700 underline hover:text-teal-900 transition-colors"
+                  >
+                    Reset saved info
+                  </button>
+                </div>
+              </div>
+            )}
             {/* Title */}
             <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">Room Title *</label>
-              <input
-                type="text"
-                required
-                value={formData.title}
-                onChange={(e) => {
-                  setFormData({ ...formData, title: e.target.value });
-                  validateField('title', e.target.value);
-                }}
-                onBlur={(e) => validateField('title', e.target.value)}
-                placeholder="e.g., Cozy backroom with bathroom"
-                className={`w-full px-4 py-3 border ${errors.title ? 'border-red-500' : 'border-gray-300'} bg-white text-gray-800 rounded-lg focus:ring-2 ${errors.title ? 'focus:ring-red-500' : 'focus:ring-blue-500'} focus:border-transparent transition placeholder-gray-400`}
-              />
-              {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
+                Room Title *
+                {formData.title && formData.title.trim().length >= 5 && !errors.title && (
+                  <span className="ml-2 text-green-600 text-xs">✓ Looks good</span>
+                )}
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  required
+                  value={formData.title}
+                  onChange={(e) => {
+                    setFormData({ ...formData, title: e.target.value });
+                    validateField('title', e.target.value);
+                  }}
+                  onBlur={(e) => validateField('title', e.target.value)}
+                  placeholder="e.g., Cozy backroom with private bathroom"
+                  className={`w-full px-4 py-3 pr-10 border-2 ${
+                    errors.title ? 'border-red-400 bg-red-50' : 
+                    formData.title && formData.title.trim().length >= 5 ? 'border-teal-400 bg-teal-50/30' : 
+                    'border-gray-200'
+                  } text-gray-800 rounded-xl focus:ring-2 ${
+                    errors.title ? 'focus:ring-red-400' : 'focus:ring-teal-400'
+                  } focus:border-transparent transition-all placeholder-gray-400`}
+                />
+                {formData.title && formData.title.trim().length >= 5 && !errors.title && (
+                  <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-teal-600" />
+                )}
+              </div>
+              {errors.title && <p className="text-red-500 text-xs mt-1 flex items-center gap-1"><span>⚠</span> {errors.title}</p>}
             </div>
 
             {/* Price */}
             <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">Monthly Price (R) *</label>
-              <input
-                type="number"
-                required
-                value={formData.price}
-                onChange={(e) => {
-                  setFormData({ ...formData, price: e.target.value });
-                  validateField('price', e.target.value);
-                }}
-                onBlur={(e) => validateField('price', e.target.value)}
-                placeholder="e.g., 2500"
-                className={`w-full px-4 py-3 border ${errors.price ? 'border-red-500' : 'border-gray-300'} bg-white text-gray-800 rounded-lg focus:ring-2 ${errors.price ? 'focus:ring-red-500' : 'focus:ring-blue-500'} focus:border-transparent transition placeholder-gray-400`}
-              />
-              {errors.price && <p className="text-red-500 text-xs mt-1">{errors.price}</p>}
-            </div>
-
-            {/* Location and Street Address */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-2">Area / City *</label>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
+                Monthly Price (R) *
+                {formData.price && parseFloat(formData.price) >= 500 && parseFloat(formData.price) <= 50000 && !errors.price && (
+                  <span className="ml-2 text-green-600 text-xs">✓ Valid price</span>
+                )}
+              </label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">R</span>
                 <input
-                  type="text"
+                  type="number"
                   required
-                  value={formData.location}
+                  value={formData.price}
                   onChange={(e) => {
-                    setFormData({ ...formData, location: e.target.value });
-                    validateField('location', e.target.value);
+                    setFormData({ ...formData, price: e.target.value });
+                    validateField('price', e.target.value);
                   }}
-                  onBlur={(e) => validateField('location', e.target.value)}
-                  placeholder="e.g., Soweto, Johannesburg"
-                  className={`w-full px-4 py-3 border ${errors.location ? 'border-red-500' : 'border-gray-300'} bg-white text-gray-800 rounded-lg focus:ring-2 ${errors.location ? 'focus:ring-red-500' : 'focus:ring-blue-500'} focus:border-transparent transition placeholder-gray-400`}
+                  onBlur={(e) => validateField('price', e.target.value)}
+                  placeholder="2500"
+                  min="500"
+                  max="50000"
+                  className={`w-full pl-10 pr-4 py-3 border-2 ${
+                    errors.price ? 'border-red-400 bg-red-50' : 
+                    formData.price && parseFloat(formData.price) >= 500 && parseFloat(formData.price) <= 50000 ? 'border-teal-400 bg-teal-50/30' : 
+                    'border-gray-200'
+                  } text-gray-800 rounded-xl focus:ring-2 ${
+                    errors.price ? 'focus:ring-red-400' : 'focus:ring-teal-400'
+                  } focus:border-transparent transition-all placeholder-gray-400`}
                 />
-                {errors.location && <p className="text-red-500 text-xs mt-1">{errors.location}</p>}
+                {formData.price && parseFloat(formData.price) >= 500 && parseFloat(formData.price) <= 50000 && !errors.price && (
+                  <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-teal-600" />
+                )}
               </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-2">Street Address</label>
-                <input
-                  type="text"
-                  value={formData.streetAddress}
-                  onChange={(e) => setFormData({ ...formData, streetAddress: e.target.value })}
-                  placeholder="e.g., 123 Main Street"
-                  className="w-full px-4 py-3 border border-gray-300 bg-white text-gray-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition placeholder-gray-400"
-                />
-              </div>
+              {errors.price && <p className="text-red-500 text-xs mt-1 flex items-center gap-1"><span>⚠</span> {errors.price}</p>}
+              {!errors.price && formData.price && (
+                <p className="text-gray-500 text-xs mt-1">Suggested range: R500 - R50,000 per month</p>
+              )}
             </div>
 
-            {/* Geocode Section - More Prominent */}
-            <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
+            {/* Full Address */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-1">Full South African Address *</label>
+              <p className="text-xs text-gray-500 mb-2">Example: 5170 Molefe St, Ivory Park, Midrand, 1693</p>
+              <textarea
+                required
+                rows="2"
+                value={fullAddressInput}
+                onChange={(e) => handleFullAddressChange(e.target.value)}
+                onFocus={() => setIsFullAddressEditing(true)}
+                onBlur={(e) => { setIsFullAddressEditing(false); handleFullAddressChange(e.target.value); }}
+                placeholder="Type the full street + suburb + city + postal code"
+                className={`w-full px-4 py-3 border-2 ${errors.location ? 'border-red-400' : 'border-gray-200'} bg-white text-gray-800 rounded-xl focus:ring-2 ${errors.location ? 'focus:ring-red-400' : 'focus:ring-teal-400'} focus:border-transparent transition placeholder-gray-400`}
+              />
+              {errors.location && <p className="text-red-500 text-xs mt-1" aria-live="assertive">{errors.location}</p>}
+              {!errors.location && (
+                <p className="text-gray-500 text-xs mt-1">
+                  Include the street/stand number plus suburb, city, and postal code. Commas are optional; we will split it for you.
+                </p>
+              )}
+            </div>
+
+            {/* Geocode Section - Manual confirmation only */}
+            <div className="bg-gradient-to-br from-teal-50 to-cyan-50 border-2 border-teal-200 rounded-xl p-6">
               <div className="flex items-start gap-3 mb-4">
-                <MapPin className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
+                <MapPin className="w-6 h-6 text-teal-600 flex-shrink-0 mt-1" />
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-1">Set Location on Map</h3>
-                  <p className="text-sm text-gray-600">Help renters find your listing by pinpointing its exact location.</p>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-1">Confirm Your Address</h3>
+                  <p className="text-sm text-gray-600">
+                    Type the exact street + suburb above, then tap <strong>Look Up Address</strong> if you0d like us to fetch coordinates for your Google Maps preview.
+                  </p>
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-3 items-center mb-4">
+              <div className="flex flex-wrap gap-3 items-start">
                 <button
                   type="button"
                   onClick={geocodeAddress}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-sm font-semibold transition shadow-sm flex items-center gap-2"
+                  className="w-full md:w-auto bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-300 px-6 py-3 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2"
                 >
                   <MapPin className="w-4 h-4" />
-                  Find on Map
+                  Look Up Address
                 </button>
 
-                <button
-                  type="button"
-                  onClick={geolocateCurrentPosition}
-                  className="bg-white hover:bg-gray-50 border-2 border-gray-300 text-gray-800 px-6 py-3 rounded-lg text-sm font-semibold transition shadow-sm flex items-center gap-2"
-                >
-                  <MapPin className="w-4 h-4" />
-                  Use Current Location
-                </button>
-
-                <div className="text-sm flex-1">
+                <div className="text-sm flex-1 min-w-[220px]">
                   {geocodingStatus && (
-                    <span className={`${geocodingStatus.startsWith('✓') ? 'text-green-600 font-semibold' : 'text-gray-700'} flex items-center gap-1`}>
+                    <span className={`${geocodingStatus.startsWith('✓') ? 'text-green-600 font-semibold' : geocodingStatus.startsWith('⚠️') ? 'text-amber-600' : 'text-gray-700'} flex items-center gap-1`}>
                       {geocodingStatus.startsWith('✓') && <CheckCircle className="w-4 h-4" />}
                       {geocodingStatus}
+                      {lastGeocodeSource === 'cached' && (
+                        <span className="ml-2 inline-block px-2 py-1 text-[10px] rounded bg-purple-100 text-purple-600 font-semibold">CACHED</span>
+                      )}
+                      {lastGeocodeSource === 'mapbox' && (
+                        <span className="ml-2 inline-block px-2 py-1 text-[10px] rounded bg-blue-100 text-blue-600 font-semibold">MAPBOX</span>
+                      )}
+                      {lastGeocodeSource === 'maps.co' && (
+                        <span className="ml-2 inline-block px-2 py-1 text-[10px] rounded bg-indigo-100 text-indigo-600 font-semibold">MAPS.CO</span>
+                      )}
+                      {lastGeocodeSource === 'proxy' && (
+                        <span className="ml-2 inline-block px-2 py-1 text-[10px] rounded bg-green-100 text-green-600 font-semibold">PROXY</span>
+                      )}
+                      {lastGeocodeSource === 'direct' && (
+                        <span className="ml-2 inline-block px-2 py-1 text-[10px] rounded bg-yellow-100 text-yellow-700 font-semibold">FALLBACK</span>
+                      )}
                     </span>
                   )}
                   {formData.latitude && formData.longitude && !geocodingStatus && (
                     <span className="text-green-600 font-semibold flex items-center gap-1">
                       <CheckCircle className="w-4 h-4" />
-                      Location set: {formData.latitude.toFixed(4)}, {formData.longitude.toFixed(4)}
+                      Coordinates saved: {formData.latitude.toFixed(4)}, {formData.longitude.toFixed(4)}
+                      {lastGeocodeSource === 'cached' && (
+                        <span className="ml-2 inline-block px-2 py-1 text-[10px] rounded bg-purple-100 text-purple-600 font-semibold">CACHED</span>
+                      )}
+                      {lastGeocodeSource === 'maps.co' && (
+                        <span className="ml-2 inline-block px-2 py-1 text-[10px] rounded bg-indigo-100 text-indigo-600 font-semibold">MAPS.CO</span>
+                      )}
                     </span>
+                  )}
+                  {googleMapsUrl && (
+                    <div className="mt-3 bg-white border border-gray-200 rounded-lg p-3 text-xs text-gray-600">
+                      <span className="block text-gray-800 font-semibold mb-1">Preview this address</span>
+                      <a
+                        href={googleMapsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-teal-700 font-semibold hover:text-teal-900 underline"
+                      >
+                        <MapPin className="w-3 h-3" /> Open in Google Maps
+                      </a>
+                      <span className="block mt-2 text-[11px] text-gray-500">Renters will see the same button under your listing.</span>
+                    </div>
                   )}
                 </div>
               </div>
-
-              {/* Draggable preview map */}
-              <div className="mt-4">
-                {(formData.latitude && formData.longitude) ? (
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-800 mb-2">Fine-tune Location (drag pin)</label>
-                    <DraggablePreview lat={formData.latitude} lng={formData.longitude} />
-                  </div>
-                ) : (
-                  <div className="text-sm text-gray-600 bg-white border border-gray-200 rounded-lg p-4 text-center">
-                    <MapPin className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                    No location set yet. Click "Find on Map" or "Use Current Location" to place a pin.
-                  </div>
-                )}
+              <div className="mt-4 text-sm text-gray-600 bg-white border border-dashed border-gray-300 rounded-lg p-4">
+                <p className="font-semibold text-gray-800 mb-1">Manual address confirmed</p>
+                <p>We now rely on the address you type here. Use Google Maps above if you want to double-check directions.</p>
               </div>
             </div>
 
@@ -1882,7 +2254,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, userType, onRequireAu
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 bg-white text-gray-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                  className="w-full px-4 py-3 border-2 border-gray-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition"
                 >
                   <option value="available">Available</option>
                   <option value="rented">Rented</option>
@@ -1895,9 +2267,94 @@ function AddListingView({ onSubmit, onCancel, currentUser, userType, onRequireAu
                   type="date"
                   value={formData.availableDate}
                   onChange={(e) => setFormData({ ...formData, availableDate: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 bg-white text-gray-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                  className="w-full px-4 py-3 border-2 border-gray-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition"
                 />
               </div>
+            </div>
+
+            {/* Payment Method */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">Payment Method</label>
+              <select
+                value={formData.paymentMethod}
+                onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
+                className="w-full px-4 py-3 border-2 border-gray-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition"
+              >
+                <option value="Bank and Cash">Bank and Cash</option>
+                <option value="Cash Only">Cash Only</option>
+                <option value="Bank Only">Bank Only</option>
+              </select>
+            </div>
+
+            {/* Room Type and Lease Duration - Two columns */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">Room Type</label>
+                <select
+                  value={formData.roomType}
+                  onChange={(e) => setFormData({ ...formData, roomType: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition"
+                >
+                  <option value="private">Private Room</option>
+                  <option value="shared">Shared Room</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">Lease Duration (months)</label>
+                <select
+                  value={formData.leaseDuration}
+                  onChange={(e) => setFormData({ ...formData, leaseDuration: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition"
+                >
+                  <option value="1-3">1-3 months</option>
+                  <option value="4-6">4-6 months</option>
+                  <option value="7-12">7-12 months</option>
+                  <option value="12+">12+ months</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Pet Friendly and Gender Preference */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={formData.petFriendly}
+                  onChange={(e) => setFormData({ ...formData, petFriendly: e.target.checked })}
+                  id="petFriendly"
+                  className="w-5 h-5 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                />
+                <label htmlFor="petFriendly" className="text-sm font-medium text-gray-700">
+                  🐾 Pet Friendly
+                </label>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">Gender Preference</label>
+                <select
+                  value={formData.genderPreference}
+                  onChange={(e) => setFormData({ ...formData, genderPreference: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition"
+                >
+                  <option value="any">Any</option>
+                  <option value="male">Male Only</option>
+                  <option value="female">Female Only</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Premium Flag */}
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={!!formData.premium}
+                onChange={(e) => setFormData({ ...formData, premium: e.target.checked })}
+                id="premiumFlag"
+              />
+              <label htmlFor="premiumFlag" className="text-sm font-medium text-gray-700">
+                Premium listing (highlight & priority sorting)
+              </label>
             </div>
 
             {/* Description */}
@@ -1919,7 +2376,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, userType, onRequireAu
                 onBlur={(e) => validateField('description', e.target.value)}
                 placeholder="Describe the room, amenities, rules, and any other details..."
                 rows="4"
-                className={`w-full px-4 py-3 border ${errors.description ? 'border-red-500' : 'border-gray-300'} bg-white text-gray-800 rounded-lg focus:ring-2 ${errors.description ? 'focus:ring-red-500' : 'focus:ring-blue-500'} focus:border-transparent transition placeholder-gray-400`}
+                className={`w-full px-4 py-3 border-2 ${errors.description ? 'border-red-400' : 'border-gray-200'} bg-white text-gray-800 rounded-xl focus:ring-2 ${errors.description ? 'focus:ring-red-400' : 'focus:ring-teal-400'} focus:border-transparent transition placeholder-gray-400`}
               />
               {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
             </div>
@@ -1933,10 +2390,10 @@ function AddListingView({ onSubmit, onCancel, currentUser, userType, onRequireAu
                     key={amenity}
                     type="button"
                     onClick={() => toggleAmenity(amenity)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                    className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
                       formData.amenities.includes(amenity)
-                        ? 'bg-blue-600 text-white shadow-sm'
-                        : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200'
+                        ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md'
+                        : 'bg-gray-100 text-gray-700 border-2 border-gray-200 hover:border-teal-300 hover:bg-teal-50'
                     }`}
                   >
                     {amenity}
@@ -1948,47 +2405,88 @@ function AddListingView({ onSubmit, onCancel, currentUser, userType, onRequireAu
             {/* Photos */}
             <div>
               <label className="block text-sm font-semibold text-gray-800 mb-2">Photos (Max 5)</label>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handlePhotoUpload}
-                disabled={formData.photos.length >= 5}
-                className="w-full px-4 py-3 border border-gray-300 bg-white text-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition cursor-pointer"
-              />
+              <div 
+                className="relative border-2 border-dashed border-gray-300 bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-6 hover:border-teal-400 hover:bg-teal-50/30 transition-all duration-300 cursor-pointer group"
+                onClick={() => setShowPhotoEditor(true)}
+              >
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-gradient-to-br from-teal-100 to-cyan-100 rounded-2xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
+                    <span className="text-3xl">📷</span>
+                  </div>
+                  <p className="text-gray-700 font-semibold mb-1">
+                    {formData.photos.length === 0 ? 'Add Photos' : `${formData.photos.length}/5 Photos Added`}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Click to upload • JPG, PNG up to 5MB each
+                  </p>
+                  {formData.photos.length === 0 && (
+                    <p className="text-xs text-teal-600 mt-2 font-medium">
+                      Tip: Listings with photos get 3x more views!
+                    </p>
+                  )}
+                </div>
+              </div>
               {formData.photos.length > 0 && (
                 <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3">
                   {formData.photos.map((photo, index) => (
                     <div key={index} className="relative group">
+                      {index === 0 && (
+                        <div className="absolute top-2 left-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-xs px-2 py-1 rounded-full font-semibold z-10">
+                          Cover
+                        </div>
+                      )}
                       <img 
                         src={photo} 
                         alt={`Preview ${index + 1}`} 
-                        className="w-full h-32 object-cover rounded-lg border border-gray-200 shadow-sm" 
+                        className="w-full h-32 object-cover rounded-xl border-2 border-gray-200 shadow-sm" 
                       />
-                      <button
-                        type="button"
-                        onClick={() => removePhoto(index)}
-                        className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
                     </div>
                   ))}
                 </div>
               )}
-              {formData.photos.length >= 5 && (
-                <p className="text-sm text-gray-500 mt-2">Maximum 5 photos reached</p>
-              )}
+              <button
+                type="button"
+                onClick={() => setShowPhotoEditor(true)}
+                className="mt-3 text-sm text-teal-600 hover:text-teal-700 font-medium"
+              >
+                {formData.photos.length > 0 ? '✏️ Edit Photos' : ''}
+              </button>
             </div>
+
+            {showPhotoEditor && (
+              <PhotoEditor
+                photos={formData.photos}
+                onPhotosChange={(newPhotos) => setFormData({ ...formData, photos: newPhotos })}
+                onClose={() => setShowPhotoEditor(false)}
+                maxPhotos={5}
+              />
+            )}
 
             {/* Submit Button */}
             <div className="border-t border-gray-200 pt-6">
               <button
                 onClick={handleSubmit}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition shadow-sm"
+                disabled={isSubmitting || Object.keys(errors).length > 0}
+                className={`w-full font-semibold py-3.5 rounded-xl transition-all shadow-lg relative ${
+                  isSubmitting || Object.keys(errors).length > 0
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white hover:shadow-xl hover:shadow-teal-500/25'
+                }`}
               >
-                Post Room
+                {isSubmitting ? (
+                  <>
+                    <span className="opacity-0">Post Room</span>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  </>
+                ) : (
+                  'Post Room'
+                )}
               </button>
+              {Object.keys(errors).length > 0 && (
+                <p className="text-red-500 text-xs mt-2 text-center">Please fix the errors above before submitting</p>
+              )}
             </div>
           </div>
         </div>
@@ -1997,523 +2495,326 @@ function AddListingView({ onSubmit, onCancel, currentUser, userType, onRequireAu
   );
 }
 
-function MessagesView({ conversations, listings, userType, onSelectConversation }) {
-  return (
-    <div className="p-4">
-      <h2 className="text-2xl font-bold mb-4 text-gray-800">Messages</h2>
-      <div className="space-y-3">
-        {conversations.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
-            <MessageSquare className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-            <p>No messages yet.</p>
-          </div>
-        ) : (
-          conversations.map(conv => {
-            const listing = listings.find(l => l.id === conv.listingId);
-            const lastMessage = conv.messages[conv.messages.length - 1];
-            return (
-              <div
-                key={conv.id}
-                onClick={() => onSelectConversation(conv)}
-                className="bg-white rounded-lg shadow p-4 cursor-pointer hover:shadow-lg transition"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-semibold text-gray-800">{listing?.title || 'Room'}</h3>
-                  <span className="text-xs text-gray-500">
-                    {new Date(lastMessage.timestamp).toLocaleDateString()}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-600 line-clamp-2">{lastMessage.text}</p>
-              </div>
-            );
-          })
-        )}
-      </div>
-    </div>
-  );
-}
+// MessagesView removed - using direct contact instead
 
 function MyListingsView({ listings, onDelete }) {
   return (
-    <div className="p-4">
-      <h2 className="text-2xl font-bold mb-4 text-gray-800">My Listings</h2>
-      <div className="space-y-4">
+    <div className="p-4 min-h-screen bg-gradient-to-b from-slate-50 to-gray-100 pb-24">
+      <div className="max-w-7xl mx-auto mt-8">
+        {/* Landlord reminder banner */}
+        {listings.length > 0 && (
+          <div className="mb-6 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 shadow-sm">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-amber-800 mb-1">Found a tenant?</h3>
+                <p className="text-amber-700 text-sm leading-relaxed">
+                  Remember to <span className="font-medium">delete your listing</span> once you've found a tenant. 
+                  This will stop new calls and messages from other renters looking at your ad.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="mb-8">
+          <div className="flex items-center gap-4 mb-3">
+            <div className="w-14 h-14 bg-gradient-to-br from-teal-100 to-cyan-100 rounded-2xl flex items-center justify-center shadow-sm">
+              <Home className="w-7 h-7 text-teal-600" />
+            </div>
+            <div>
+              <h2 className="text-3xl font-extrabold text-gray-900">My Listings</h2>
+              <p className="text-gray-600">
+                {listings.length === 0
+                  ? 'Your properties will appear here'
+                  : `${listings.length} active ${listings.length === 1 ? 'listing' : 'listings'}`}
+              </p>
+            </div>
+          </div>
+        </div>
+
         {listings.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
-            <Home className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-            <p>You haven't posted any rooms yet.</p>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
+            <div className="w-24 h-24 bg-gradient-to-br from-teal-50 to-cyan-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Home className="w-12 h-12 text-teal-400" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">No Listings Yet</h3>
+            <p className="text-gray-500 text-sm mb-6 max-w-md mx-auto">
+              Start earning by posting your first room. It only takes a few minutes!
+            </p>
+            <button
+              onClick={() => window.location.hash = '#add'}
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-semibold px-6 py-3 rounded-xl transition-all shadow-md hover:shadow-lg"
+            >
+              <PlusCircle className="w-5 h-5" />
+              Post Your First Room
+            </button>
           </div>
         ) : (
-          listings.map(listing => (
-            <div key={listing.id} className="bg-white rounded-lg shadow p-4">
-{listing.photos && listing.photos.length > 0 && (
-  <div className="relative mb-3">
-    <img src={listing.photos[0]} alt="Room" className="w-full h-32 object-cover rounded-lg" />
-    {listing.photos.length > 1 && (
-      <div className="absolute top-2 right-2 bg-black bg-opacity-60 text-white px-2 py-1 rounded text-xs">
-        {listing.photos.length} photos
-      </div>
-    )}
-  </div>
-)}
-              <h3 className="font-bold text-lg mb-1">{listing.title}</h3>
-              <div className="text-blue-600 font-bold mb-2">R{listing.price}/month</div>
-              <div className="flex items-center text-gray-600 text-sm mb-3">
-                <MapPin className="w-4 h-4 mr-1" />
-                {listing.location}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {listings.map(listing => (
+              <div key={listing.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
+                {listing.photos && listing.photos.length > 0 && (
+                  <div className="relative">
+                    <img src={listing.photos[0]} alt="Room" className="w-full h-48 object-cover" />
+                    {listing.photos.length > 1 && (
+                      <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-xs font-medium">
+                        {listing.photos.length} photos
+                      </div>
+                    )}
+                    <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                      listing.status === 'available' 
+                        ? 'bg-emerald-500 text-white' 
+                        : 'bg-gray-500 text-white'
+                    }`}>
+                      {listing.status === 'available' ? 'Active' : 'Rented'}
+                    </div>
+                  </div>
+                )}
+                <div className="p-5">
+                  <h3 className="font-bold text-lg text-gray-900 mb-1 line-clamp-1">{listing.title}</h3>
+                  <div className="text-teal-600 font-bold text-xl mb-2">R{listing.price?.toLocaleString()}/month</div>
+                  <div className="flex items-center text-gray-500 text-sm mb-4">
+                    <MapPin className="w-4 h-4 mr-1.5 text-gray-400" />
+                    <span className="line-clamp-1">{listing.location}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => onDelete(listing.id)}
+                      className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium py-2.5 rounded-xl transition-colors text-sm"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
               </div>
-              <button
-                onClick={() => onDelete(listing.id)}
-                className="w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg transition"
-              >
-                Delete Listing
-              </button>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </div>
     </div>
   );
 }
 
-function ListingDetailModal({ listing, landlord, onClose, onSendMessage, userType, currentUser, onRequireAuth }) {
-  const [message, setMessage] = useState('');
-  const [showContact, setShowContact] = useState(false);
-  const [showGallery, setShowGallery] = useState(false);
-  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
 
-  const handleNavigate = (direction, index) => {
-    if (direction === 'next' && currentPhotoIndex < listing.photos.length - 1) {
-      setCurrentPhotoIndex(currentPhotoIndex + 1);
-    } else if (direction === 'prev' && currentPhotoIndex > 0) {
-      setCurrentPhotoIndex(currentPhotoIndex - 1);
-    } else if (direction === 'goto') {
-      setCurrentPhotoIndex(index);
-    }
-  };
+// Inline message box component with validation for listing detail view
+// ListingInlineMessageBox removed
 
-  const handleSend = () => {
-    if (message.trim() && userType === 'renter') {
-      onSendMessage(listing.id, message);
-      setMessage('');
-      alert('Message sent to landlord!');
-      onClose();
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-800">Room Details</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <div className="p-4">
-{listing.photos && listing.photos.length > 0 && (
-  <div className="relative mb-4 cursor-pointer" onClick={() => setShowGallery(true)}>
-    <img src={listing.photos[currentPhotoIndex]} alt="Room" className="w-full h-64 object-cover rounded-lg" />
-    {listing.photos.length > 1 && (
-      <div className="absolute bottom-3 right-3 bg-black bg-opacity-60 text-white px-3 py-1 rounded-full text-sm flex items-center gap-1">
-        <Search className="w-4 h-4" />
-        View all {listing.photos.length} photos
-      </div>
-    )}
-    {listing.photos.length > 1 && (
-      <div className="absolute bottom-3 left-3 flex gap-1">
-        {listing.photos.map((_, index) => (
-          <div
-            key={index}
-            className={`w-2 h-2 rounded-full ${
-              index === currentPhotoIndex ? 'bg-white' : 'bg-white bg-opacity-50'
-            }`}
-          />
-        ))}
-      </div>
-    )}
-  </div>
-)}
-
-{showGallery && listing.photos && (
-  <PhotoGallery
-    photos={listing.photos}
-    currentIndex={currentPhotoIndex}
-    onClose={() => setShowGallery(false)}
-    onNavigate={handleNavigate}
-  />
-)}
-          
-          <h3 className="text-2xl font-bold mb-2 text-gray-800">{listing.title}</h3>
-          <div className="text-blue-600 font-bold text-2xl mb-4">R{listing.price}/month</div>
-          
-          <div className="flex items-center text-gray-600 mb-4">
-            <MapPin className="w-5 h-5 mr-2" />
-            <span className="text-lg">{listing.location}</span>
-          </div>
-
-          <div className="bg-gray-50 rounded-lg p-4 mb-4">
-            <h4 className="font-semibold mb-2 text-gray-700">Description</h4>
-            <p className="text-gray-600">{listing.description || 'No description provided.'}</p>
-          </div>
-
-          {userType === 'renter' && landlord && (
-            <div className="bg-blue-50 rounded-lg p-4 mb-4">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="font-semibold text-gray-700">Landlord Information</h4>
-                {currentUser ? (
-                  <button
-                    onClick={() => setShowContact(!showContact)}
-                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                  >
-                    {showContact ? 'Hide' : 'Show'} Contact
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => onRequireAuth && onRequireAuth('renter')}
-                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                  >
-                    Sign in to view contact
-                  </button>
-                )}
-              </div>
-
-              <div className="flex items-center mb-3">
-                {landlord.photo ? (
-                  <img src={landlord.photo} alt={landlord.name} className="w-12 h-12 rounded-full object-cover mr-3" />
-                ) : (
-                  <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center mr-3">
-                    <User className="w-6 h-6 text-gray-600" />
-                  </div>
-                )}
-                <div>
-                  <p className="font-semibold text-gray-800">{landlord.name}</p>
-                  <p className="text-xs text-gray-500">Property Owner</p>
-                </div>
-              </div>
-
-              {currentUser && showContact && (
-                <div className="space-y-2 pt-3 border-t border-blue-100">
-                  <div className="flex items-center text-sm">
-                    <Phone className="w-4 h-4 mr-2 text-blue-600" />
-                    <a href={`tel:${landlord.phone}`} className="text-blue-600 hover:underline">
-                      {landlord.phone}
-                    </a>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <Mail className="w-4 h-4 mr-2 text-blue-600" />
-                    <a href={`mailto:${landlord.email}`} className="text-blue-600 hover:underline">
-                      {landlord.email}
-                    </a>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {userType === 'renter' && (
-            <div className="border-t pt-4">
-              <h4 className="font-semibold mb-3 text-gray-700">Send a Message</h4>
-              {currentUser ? (
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Type your message..."
-                    className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <button
-                    onClick={handleSend}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition flex items-center"
-                  >
-                    <Send className="w-5 h-5" />
-                  </button>
-                </div>
-              ) : (
-                <div className="flex">
-                  <button
-                    onClick={() => onRequireAuth && onRequireAuth('renter')}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition"
-                  >
-                    Sign in to message
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ConversationModal({ conversation, listing, onClose, onSendMessage }) {
-  const [message, setMessage] = useState('');
-
-  const handleSend = () => {
-    if (message.trim()) {
-      onSendMessage(listing.id, message);
-      setMessage('');
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] flex flex-col">
-        <div className="bg-white border-b p-4 flex items-center">
-          <button onClick={onClose} className="mr-3 text-gray-500 hover:text-gray-700">
-            <ArrowLeft className="w-6 h-6" />
-          </button>
-          <div>
-            <h2 className="font-bold text-gray-800">{listing?.title}</h2>
-            <p className="text-sm text-gray-600">{listing?.location}</p>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {conversation.messages.map(msg => (
-            <div
-              key={msg.id}
-              className={`flex ${msg.sender === 'landlord' ? 'justify-start' : 'justify-end'}`}
-            >
-              <div
-                className={`max-w-xs px-4 py-2 rounded-lg ${
-                  msg.sender === 'landlord'
-                    ? 'bg-gray-200 text-gray-800'
-                    : 'bg-blue-600 text-white'
-                }`}
-              >
-                <p>{msg.text}</p>
-                <span className="text-xs opacity-75">
-                  {new Date(msg.timestamp).toLocaleTimeString()}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="border-t p-4 flex gap-2">
-          <input
-            type="text"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Type a message..."
-            className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-          <button
-            onClick={handleSend}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition"
-          >
-            <Send className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+// ConversationModal removed
 
 function AuthModal({ defaultType = 'renter', onClose, onSubmit }) {
   const [form, setForm] = useState({ name: '', phone: '', email: '', type: defaultType, photo: '' });
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = () => {
-    if (!form.name || !form.email) {
-      alert('Please add a name and email');
-      return;
+  const validateForm = () => {
+    const newErrors = {};
+    if (!form.name || form.name.trim().length < 2) {
+      newErrors.name = 'Name must be at least 2 characters';
     }
-    onSubmit(form);
+    if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
+    setIsSubmitting(true);
+    try {
+      await onSubmit(form);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg w-full max-w-md p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold">Sign in / Create account</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+    <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-start sm:items-center justify-center p-4 pt-16 sm:pt-4 z-50 overflow-y-auto">
+      <div className="bg-white rounded-2xl w-full max-w-md p-8 my-auto shadow-2xl fade-in border border-gray-100">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-8">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
+                <Home className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xl font-extrabold">
+                <span className="bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">Room</span>
+                <span className="text-rose-500">24</span>
+              </span>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mt-4">Welcome!</h3>
+            <p className="text-sm text-gray-500 mt-1">Sign in or create your account</p>
+          </div>
+          <button 
+            onClick={onClose} 
+            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-5">
+          {/* Name */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Full name</label>
-            <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2 border rounded" />
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Full name *</label>
+            <input 
+              type="text" 
+              value={form.name} 
+              onChange={(e) => { setForm({ ...form, name: e.target.value }); setErrors({ ...errors, name: '' }); }}
+              className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500 ${
+                errors.name ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-gray-300'
+              }`}
+              placeholder="John Doe"
+            />
+            {errors.name && <p className="text-rose-500 text-xs mt-1.5 flex items-center gap-1"><span>⚠</span>{errors.name}</p>}
           </div>
 
+          {/* Email */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
-            <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full px-3 py-2 border rounded" />
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Email *</label>
+            <input 
+              type="email" 
+              value={form.email} 
+              onChange={(e) => { setForm({ ...form, email: e.target.value }); setErrors({ ...errors, email: '' }); }}
+              className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500 ${
+                errors.email ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-gray-300'
+              }`}
+              placeholder="john@example.com"
+            />
+            {errors.email && <p className="text-rose-500 text-xs mt-1.5 flex items-center gap-1"><span>⚠</span>{errors.email}</p>}
           </div>
 
+          {/* Phone */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Phone (optional)</label>
-            <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full px-3 py-2 border rounded" />
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Phone <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <input 
+              type="tel" 
+              value={form.phone} 
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              className="w-full px-4 py-3 border-2 border-gray-200 hover:border-gray-300 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500"
+              placeholder="+27 12 345 6789"
+            />
           </div>
 
+          {/* User Type */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">I am a</label>
-            <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="w-full px-3 py-2 border rounded">
-              <option value="renter">Looking for a room</option>
-              <option value="landlord">Listing rooms</option>
-            </select>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">I am a</label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, type: 'renter' })}
+                className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+                  form.type === 'renter' 
+                    ? 'border-teal-500 bg-gradient-to-br from-teal-50 to-cyan-50 text-teal-700 shadow-md' 
+                    : 'border-gray-200 hover:border-gray-300 text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <Search className={`w-6 h-6 ${form.type === 'renter' ? 'text-teal-500' : ''}`} />
+                <span className="text-sm font-semibold">Looking for a room</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, type: 'landlord' })}
+                className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+                  form.type === 'landlord' 
+                    ? 'border-rose-500 bg-gradient-to-br from-rose-50 to-pink-50 text-rose-700 shadow-md' 
+                    : 'border-gray-200 hover:border-gray-300 text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <Home className={`w-6 h-6 ${form.type === 'landlord' ? 'text-rose-500' : ''}`} />
+                <span className="text-sm font-semibold">Listing rooms</span>
+              </button>
+            </div>
           </div>
 
+          {/* Buttons */}
           <div className="flex gap-3 pt-4">
-            <button onClick={onClose} className="flex-1 bg-gray-100 hover:bg-gray-200 py-2 rounded">Cancel</button>
-            <button onClick={handleSubmit} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded">Continue</button>
+            <button 
+              onClick={onClose} 
+              className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-xl transition-colors"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className={`flex-1 font-bold py-3 rounded-xl transition-all relative ${
+                isSubmitting 
+                  ? 'bg-teal-400 cursor-not-allowed' 
+                  : 'bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-lg hover:shadow-xl hover:shadow-teal-500/25'
+              }`}
+            >
+              {isSubmitting ? (
+                <>
+                  <span className="opacity-0">Continue</span>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  </div>
+                </>
+              ) : (
+                'Continue →'
+              )}
+            </button>
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
 
-function LocationConsentModal({ onAccept, onDecline }) {
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
-        <div className="flex items-center gap-3 mb-4">
-          <MapPin className="w-8 h-8 text-blue-600" />
-          <h3 className="text-xl font-bold text-gray-800">Location Access</h3>
-        </div>
-        
-        <p className="text-gray-600 mb-4">
-          Room24 would like to access your location to show nearby rental listings. Your location data:
-        </p>
-        
-        <ul className="text-sm text-gray-600 mb-6 space-y-2">
-          <li className="flex items-start gap-2">
-            <span className="text-green-600 mt-0.5">✓</span>
-            <span>Is only used to calculate distances to listings</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-green-600 mt-0.5">✓</span>
-            <span>Is not stored on our servers</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-green-600 mt-0.5">✓</span>
-            <span>Is not shared with third parties</span>
-          </li>
-        </ul>
-
-        <div className="flex gap-3">
-          <button
-            onClick={onDecline}
-            className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 rounded-lg transition"
-          >
-            Not Now
-          </button>
-          <button
-            onClick={onAccept}
-            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition"
-          >
-            Allow
-          </button>
-        </div>
-        
-        <p className="text-xs text-gray-500 mt-4 text-center">
-          You can change this permission anytime in your browser settings.
+        {/* Footer */}
+        <p className="text-xs text-gray-400 text-center mt-6">
+          By continuing, you agree to our <button className="text-teal-600 hover:underline">Terms of Service</button> and <button className="text-teal-600 hover:underline">Privacy Policy</button>
         </p>
       </div>
     </div>
   );
 }
 
-function PhotoGallery({ photos, currentIndex, onClose, onNavigate }) {
-  return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
-      <div className="flex justify-between items-center p-4 text-white">
-        <span className="text-sm">{currentIndex + 1} / {photos.length}</span>
-        <button onClick={onClose} className="hover:bg-gray-800 p-2 rounded-full">
-          <X className="w-6 h-6" />
-        </button>
-      </div>
-
-      <div className="flex-1 flex items-center justify-center relative">
-        {currentIndex > 0 && (
-          <button
-            onClick={() => onNavigate('prev')}
-            className="absolute left-4 bg-black bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-70 z-10"
-          >
-            <ArrowLeft className="w-6 h-6" />
-          </button>
-        )}
-
-        <img
-          src={photos[currentIndex]}
-          alt=""
-          className="max-w-full max-h-full object-contain"
-        />
-
-        {currentIndex < photos.length - 1 && (
-          <button
-            onClick={() => onNavigate('next')}
-            className="absolute right-4 bg-black bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-70 z-10"
-          >
-            <ArrowLeft className="w-6 h-6 transform rotate-180" />
-          </button>
-        )}
-      </div>
-
-      <div className="p-4 flex gap-2 overflow-x-auto">
-        {photos.map((photo, index) => (
-          <img
-            key={index}
-            src={photo}
-            alt={`Thumbnail ${index + 1}`}
-            onClick={() => onNavigate('goto', index)}
-            className={`w-16 h-16 object-cover rounded cursor-pointer ${
-              index === currentIndex ? 'ring-2 ring-blue-500' : 'opacity-60'
-            }`}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-
-
-function BottomNav({ currentView, setCurrentView, userType, messageCount }) {
+function BottomNav({ currentView, setCurrentView, userType }) {
   const navItems = [
-    { id: 'browse', label: 'Browse', icon: Search, show: true },
-    { id: 'messages', label: 'Messages', icon: MessageSquare, badge: messageCount, show: true },
-    { id: 'add', label: 'List Room', icon: PlusCircle, show: userType === 'landlord' },
-    { id: 'my-listings', label: 'My Rooms', icon: Home, show: userType === 'landlord' },
-    { id: 'profile', label: 'Profile', icon: User, show: true }
+    { id: 'browse', label: 'Browse', icon: <Search className="w-5 h-5" />, activeColor: 'teal' },
+    { id: 'add', label: 'List', icon: <PlusCircle className="w-5 h-5" />, requiresLandlord: true, activeColor: 'rose' },
+    { id: 'favorites', label: 'Saved', icon: <Heart className="w-5 h-5" />, activeColor: 'rose' },
+    { id: 'profile', label: 'Profile', icon: <User className="w-5 h-5" />, activeColor: 'blue' }
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-2xl">
-      <div className="max-w-7xl mx-auto flex justify-around">
-        {navItems
-          .filter(item => item.show)
-          .map(item => {
-            const Icon = item.icon;
-            const isActive = currentView === item.id || (item.id === 'profile' && currentView === 'edit-profile');
-            
-            return (
-              <button
-                key={item.id}
-                onClick={() => setCurrentView(item.id)}
-                className={`flex-1 flex flex-col items-center justify-center py-3 px-2 transition relative border-t-2 ${
-                  isActive
-                    ? 'border-blue-600 text-blue-600 bg-blue-50'
-                    : 'border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-                }`}
-              >
-                <div className="relative">
-                  <Icon className="w-6 h-6" />
-                  {item.badge && item.badge > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                      {item.badge > 99 ? '99+' : item.badge}
-                    </span>
-                  )}
-                </div>
-                <span className="text-xs mt-1 font-medium">{item.label}</span>
-              </button>
-            );
-          })}
+    <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 px-4 py-2 z-20 md:hidden safe-area-bottom">
+      <div className="grid grid-cols-4 gap-1 max-w-md mx-auto">
+        {navItems.map(item => {
+          const disabled = item.requiresLandlord && userType !== 'landlord';
+          const isActive = currentView === item.id;
+          const colorClasses = {
+            teal: 'text-teal-600 bg-teal-50',
+            rose: 'text-rose-600 bg-rose-50',
+            blue: 'text-blue-600 bg-blue-50'
+          };
+          return (
+            <button
+              key={item.id}
+              type="button"
+              disabled={disabled}
+              onClick={() => !disabled && setCurrentView(item.id)}
+              className={`flex flex-col items-center gap-0.5 py-2 px-1 rounded-xl transition-all duration-200 ${
+                disabled 
+                  ? 'opacity-40 cursor-not-allowed' 
+                  : 'active:scale-95'
+              } ${
+                isActive 
+                  ? `${colorClasses[item.activeColor]} font-semibold` 
+                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <span className={`transition-transform duration-200 ${isActive ? 'scale-110' : ''}`}>
+                {item.icon}
+              </span>
+              <span className="text-[10px] font-medium">{item.label}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

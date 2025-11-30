@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Room24 PWA Test Suite</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #0d9488;
+            border-bottom: 3px solid #0d9488;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section h2 {
+            color: #333;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.pass { background: #d1fae5; color: #065f46; }
+        .status.fail { background: #fee2e2; color: #991b1b; }
+        .status.pending { background: #fef3c7; color: #92400e; }
+        button {
+            background: #0d9488;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px 5px 5px 0;
+        }
+        button:hover {
+            background: #0f766e;
+        }
+        button:disabled {
+            background: #cbd5e1;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8fafc;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .instructions {
+            background: #dbeafe;
+            border-left: 4px solid #3b82f6;
+            padding: 12px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        .network-urls {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 12px;
+            margin: 10px 0;
+        }
+        .network-urls code {
+            background: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 Room24 PWA Test Suite</h1>
+    
+    <div class="network-urls">
+        <strong>📱 Mobile Testing:</strong><br>
+        Open this URL on your phone: <code id="networkUrl">Loading...</code>
+        <button onclick="copyNetworkUrl()">Copy URL</button>
+    </div>
+
+    <div class="test-section">
+        <h2>
+            <span id="sw-status" class="status pending">PENDING</span>
+            1. Service Worker Registration
+        </h2>
+        <div class="instructions">
+            The service worker should be registered and active in production builds.
+        </div>
+        <button onclick="testServiceWorker()">Run Test</button>
+        <div id="sw-result" class="result" style="display:none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>
+            <span id="pwa-status" class="status pending">PENDING</span>
+            2. PWA Installability
+        </h2>
+        <div class="instructions">
+            Check if the browser recognizes this as an installable PWA. Look for the install icon in the address bar.
+        </div>
+        <button onclick="testPWAInstall()">Check Manifest</button>
+        <button onclick="triggerInstall()">Trigger Install</button>
+        <div id="pwa-result" class="result" style="display:none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>
+            <span id="storage-status" class="status pending">PENDING</span>
+            3. Analytics Consent (localStorage)
+        </h2>
+        <div class="instructions">
+            Test the analytics consent flow by clearing localStorage and checking for the modal.
+        </div>
+        <button onclick="checkConsent()">Check Current Consent</button>
+        <button onclick="clearConsent()">Clear Consent</button>
+        <button onclick="window.location.reload()">Reload Page</button>
+        <div id="storage-result" class="result" style="display:none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>
+            <span id="firebase-status" class="status pending">PENDING</span>
+            4. Firebase Configuration
+        </h2>
+        <div class="instructions">
+            Verify Firebase is configured correctly (check console for initialization messages).
+        </div>
+        <button onclick="testFirebase()">Check Firebase</button>
+        <div id="firebase-result" class="result" style="display:none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>
+            <span id="notification-status" class="status pending">PENDING</span>
+            5. Notification Banner (Simulated)
+        </h2>
+        <div class="instructions">
+            This simulates a push notification by dispatching a custom event. Check if NotificationBanner appears.
+        </div>
+        <button onclick="simulateNotification()">Simulate Notification</button>
+        <div id="notification-result" class="result" style="display:none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>
+            <span id="cache-status" class="status pending">PENDING</span>
+            6. Service Worker Cache
+        </h2>
+        <div class="instructions">
+            Check if service worker has precached assets (static resources).
+        </div>
+        <button onclick="testCache()">Check Cache</button>
+        <div id="cache-result" class="result" style="display:none;"></div>
+    </div>
+
+    <script>
+        let deferredPrompt;
+
+        // Capture the install prompt event
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            console.log('✅ beforeinstallprompt event fired - PWA is installable');
+        });
+
+        // Get network URL
+        fetch('/').then(response => {
+            const url = new URL(window.location.href);
+            const networkUrl = `http://${url.hostname}:${url.port}`;
+            document.getElementById('networkUrl').textContent = networkUrl;
+        });
+
+        function copyNetworkUrl() {
+            const url = document.getElementById('networkUrl').textContent;
+            navigator.clipboard.writeText(url);
+            alert('URL copied to clipboard!');
+        }
+
+        async function testServiceWorker() {
+            const resultDiv = document.getElementById('sw-result');
+            const statusSpan = document.getElementById('sw-status');
+            resultDiv.style.display = 'block';
+            
+            try {
+                if ('serviceWorker' in navigator) {
+                    const registration = await navigator.serviceWorker.getRegistration();
+                    
+                    if (registration) {
+                        const state = registration.active ? registration.active.state : 'no active worker';
+                        resultDiv.textContent = `✅ Service Worker Registered\n\nScope: ${registration.scope}\nState: ${state}\nUpdate Found: ${registration.waiting ? 'Yes' : 'No'}`;
+                        statusSpan.className = 'status pass';
+                        statusSpan.textContent = 'PASS';
+                    } else {
+                        resultDiv.textContent = '❌ No service worker registered\n\nNote: Service workers only work in production builds and require HTTPS (or localhost).';
+                        statusSpan.className = 'status fail';
+                        statusSpan.textContent = 'FAIL';
+                    }
+                } else {
+                    resultDiv.textContent = '❌ Service Worker API not supported in this browser';
+                    statusSpan.className = 'status fail';
+                    statusSpan.textContent = 'FAIL';
+                }
+            } catch (error) {
+                resultDiv.textContent = `❌ Error: ${error.message}`;
+                statusSpan.className = 'status fail';
+                statusSpan.textContent = 'FAIL';
+            }
+        }
+
+        async function testPWAInstall() {
+            const resultDiv = document.getElementById('pwa-result');
+            const statusSpan = document.getElementById('pwa-status');
+            resultDiv.style.display = 'block';
+            
+            try {
+                const response = await fetch('/manifest.json');
+                const manifest = await response.json();
+                
+                resultDiv.textContent = `✅ Manifest Found\n\nApp Name: ${manifest.name}\nShort Name: ${manifest.short_name}\nTheme Color: ${manifest.theme_color}\nIcons: ${manifest.icons.length} icons\nStart URL: ${manifest.start_url}\n\nInstallable: ${deferredPrompt ? 'YES' : 'PENDING (wait for browser check)'}`;
+                statusSpan.className = 'status pass';
+                statusSpan.textContent = 'PASS';
+            } catch (error) {
+                resultDiv.textContent = `❌ Error: ${error.message}`;
+                statusSpan.className = 'status fail';
+                statusSpan.textContent = 'FAIL';
+            }
+        }
+
+        async function triggerInstall() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`User response to install prompt: ${outcome}`);
+                deferredPrompt = null;
+            } else {
+                alert('Install prompt not available. This may mean:\n1. App is already installed\n2. Browser hasn\'t determined installability yet\n3. Not accessed via HTTPS (required for PWA)');
+            }
+        }
+
+        function checkConsent() {
+            const resultDiv = document.getElementById('storage-result');
+            const statusSpan = document.getElementById('storage-status');
+            resultDiv.style.display = 'block';
+            
+            const consent = localStorage.getItem('analytics-consent');
+            const allKeys = Object.keys(localStorage);
+            
+            resultDiv.textContent = `Analytics Consent: ${consent || '(not set)'}\n\nAll localStorage keys:\n${allKeys.join('\n') || '(empty)'}`;
+            statusSpan.className = 'status pass';
+            statusSpan.textContent = 'CHECKED';
+        }
+
+        function clearConsent() {
+            localStorage.removeItem('analytics-consent');
+            alert('Analytics consent cleared! Reload the page to see the consent modal again.');
+        }
+
+        function testFirebase() {
+            const resultDiv = document.getElementById('firebase-result');
+            const statusSpan = document.getElementById('firebase-status');
+            resultDiv.style.display = 'block';
+            
+            // Check if Firebase is loaded in the main app
+            const firebaseCheck = `Firebase is initialized in the React app.\n\nTo verify:\n1. Open browser DevTools Console\n2. Look for Firebase initialization messages\n3. Check Network tab for Firebase API calls\n\nEnvironment variables needed:\n- REACT_APP_FIREBASE_API_KEY\n- REACT_APP_FIREBASE_AUTH_DOMAIN\n- REACT_APP_FIREBASE_PROJECT_ID\n- etc. (see .env.example)\n\nNote: This test page can't access React app's Firebase instance.`;
+            
+            resultDiv.textContent = firebaseCheck;
+            statusSpan.className = 'status pending';
+            statusSpan.textContent = 'INFO';
+        }
+
+        function simulateNotification() {
+            const resultDiv = document.getElementById('notification-result');
+            const statusSpan = document.getElementById('notification-status');
+            resultDiv.style.display = 'block';
+            
+            resultDiv.textContent = `📱 Simulated Notification\n\nNote: The NotificationBanner component is rendered in the React app (localhost:3001).\n\nTo test it:\n1. Open the main app (localhost:3001)\n2. Open DevTools Console\n3. Run this command:\n\n   // Simulate FCM message\n   window.dispatchEvent(new CustomEvent('fcm-message', {\n     detail: {\n       notification: {\n         title: 'Test Notification',\n         body: 'This is a test message from the console'\n       }\n     }\n   }));\n\n4. The NotificationBanner should appear at the top\n5. It should auto-dismiss after 8 seconds`;
+            
+            statusSpan.className = 'status pending';
+            statusSpan.textContent = 'INFO';
+        }
+
+        async function testCache() {
+            const resultDiv = document.getElementById('cache-result');
+            const statusSpan = document.getElementById('cache-status');
+            resultDiv.style.display = 'block';
+            
+            try {
+                const cacheNames = await caches.keys();
+                
+                if (cacheNames.length > 0) {
+                    let cacheInfo = `✅ ${cacheNames.length} Cache(s) Found:\n\n`;
+                    
+                    for (const name of cacheNames) {
+                        const cache = await caches.open(name);
+                        const keys = await cache.keys();
+                        cacheInfo += `\n${name}:\n  ${keys.length} cached resources\n`;
+                    }
+                    
+                    resultDiv.textContent = cacheInfo;
+                    statusSpan.className = 'status pass';
+                    statusSpan.textContent = 'PASS';
+                } else {
+                    resultDiv.textContent = '⚠️ No caches found yet\n\nThis is normal on first load. The service worker will cache resources as you navigate.';
+                    statusSpan.className = 'status pending';
+                    statusSpan.textContent = 'PENDING';
+                }
+            } catch (error) {
+                resultDiv.textContent = `❌ Error: ${error.message}`;
+                statusSpan.className = 'status fail';
+                statusSpan.textContent = 'FAIL';
+            }
+        }
+
+        // Auto-run service worker test on load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                testServiceWorker();
+                testPWAInstall();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

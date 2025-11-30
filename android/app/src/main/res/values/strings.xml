@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">room24</string>
+    <string name="title_activity_main">room24</string>
+    <string name="package_name">com.room24.app</string>
+    <string name="custom_url_scheme">com.room24.app</string>
+</resources>
