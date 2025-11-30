@@ -34,7 +34,10 @@ import {
   RecaptchaVerifier,
   signInWithPhoneNumber,
   PhoneAuthProvider,
-  linkWithCredential
+  linkWithCredential,
+  linkWithPopup,
+  EmailAuthProvider,
+  fetchSignInMethodsForEmail
 } from 'firebase/auth';
 
 const firebaseConfig = {
@@ -272,6 +275,70 @@ export function clearRecaptcha() {
     recaptchaVerifier = null;
   }
   confirmationResult = null;
+}
+
+// ===========================
+// ACCOUNT LINKING FUNCTIONS
+// ===========================
+
+// Get linked providers for current user
+export function getLinkedProviders() {
+  const auth = getAuthInstance();
+  if (!auth?.currentUser) return [];
+  
+  return auth.currentUser.providerData.map(provider => provider.providerId);
+}
+
+// Link Google account to existing user
+export async function linkGoogleAccount() {
+  const auth = getAuthInstance();
+  if (!auth?.currentUser) throw new Error('No user logged in');
+  
+  try {
+    const provider = new GoogleAuthProvider();
+    const result = await linkWithPopup(auth.currentUser, provider);
+    console.log('Google account linked successfully');
+    return result.user;
+  } catch (error) {
+    console.error('Error linking Google account:', error);
+    if (error.code === 'auth/credential-already-in-use') {
+      throw new Error('This Google account is already linked to another user');
+    }
+    throw error;
+  }
+}
+
+// Link email/password to existing user (e.g., if they signed up with Google/Phone)
+export async function linkEmailPassword(email, password) {
+  const auth = getAuthInstance();
+  if (!auth?.currentUser) throw new Error('No user logged in');
+  
+  try {
+    const credential = EmailAuthProvider.credential(email, password);
+    const result = await linkWithCredential(auth.currentUser, credential);
+    console.log('Email/password linked successfully');
+    return result.user;
+  } catch (error) {
+    console.error('Error linking email/password:', error);
+    if (error.code === 'auth/email-already-in-use') {
+      throw new Error('This email is already linked to another account');
+    }
+    throw error;
+  }
+}
+
+// Check what sign-in methods are available for an email
+export async function getSignInMethodsForEmail(email) {
+  const auth = getAuthInstance();
+  if (!auth) return [];
+  
+  try {
+    const methods = await fetchSignInMethodsForEmail(auth, email);
+    return methods;
+  } catch (error) {
+    console.error('Error fetching sign-in methods:', error);
+    return [];
+  }
 }
 
 // Get current user

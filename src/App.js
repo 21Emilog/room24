@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { initFirebase, initAnalytics, requestFcmToken, listenForegroundMessages, trackEvent, fetchListings, addListing, deleteListing, subscribeToListings, isFirestoreEnabled, subscribeToAuthState, getUserProfile, saveUserProfile, initRecaptcha, sendPhoneOTP, verifyPhoneOTP, clearRecaptcha } from './firebase';
-import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut } from 'lucide-react';
+import { initFirebase, initAnalytics, requestFcmToken, listenForegroundMessages, trackEvent, fetchListings, addListing, deleteListing, subscribeToListings, isFirestoreEnabled, subscribeToAuthState, getUserProfile, saveUserProfile, initRecaptcha, sendPhoneOTP, verifyPhoneOTP, clearRecaptcha, getLinkedProviders, linkGoogleAccount } from './firebase';
+import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2 } from 'lucide-react';
 import Header from './components/Header';
 import ListingDetailModal from './components/ListingDetailModal';
 import Footer from './components/Footer';
@@ -757,6 +757,16 @@ const filteredListings = listings
             }}
             onEdit={() => setCurrentView('edit-profile')} 
             onSignOut={handleSignOut}
+            linkedProviders={getLinkedProviders()}
+            onLinkGoogle={async () => {
+              await linkGoogleAccount();
+              // Refresh to show updated providers
+              window.location.reload();
+            }}
+            onLinkPhone={() => {
+              // Open auth modal for phone linking
+              showToast('Phone linking coming soon!', 'info');
+            }}
             onUpdatePrefs={async (prefs) => {
               if (currentUser?.uid) {
                 try {
@@ -1110,15 +1120,42 @@ function ProfileSetupView({ onSubmit, userType }) {
   );
 }
 
-function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut }) {
+function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, onLinkGoogle, onLinkPhone }) {
   const prefs = user.notificationPrefs || { updates: true, marketing: false };
   const [localPrefs, setLocalPrefs] = React.useState(prefs);
+  const [linkingInProgress, setLinkingInProgress] = React.useState(null);
+  const [linkError, setLinkError] = React.useState('');
+  const [linkSuccess, setLinkSuccess] = React.useState('');
 
   const togglePref = (key) => {
     const next = { ...localPrefs, [key]: !localPrefs[key] };
     setLocalPrefs(next);
     onUpdatePrefs && onUpdatePrefs(next);
   };
+
+  const handleLinkGoogle = async () => {
+    if (!onLinkGoogle) return;
+    setLinkingInProgress('google');
+    setLinkError('');
+    setLinkSuccess('');
+    try {
+      await onLinkGoogle();
+      setLinkSuccess('Google account linked successfully!');
+    } catch (err) {
+      setLinkError(err.message || 'Failed to link Google account');
+    } finally {
+      setLinkingInProgress(null);
+    }
+  };
+
+  const handleLinkPhone = () => {
+    if (!onLinkPhone) return;
+    onLinkPhone();
+  };
+
+  const hasGoogle = linkedProviders?.includes('google.com');
+  const hasPhone = linkedProviders?.includes('phone');
+  const hasPassword = linkedProviders?.includes('password');
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-gray-100 pb-24">
@@ -1250,6 +1287,98 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut }) {
               </label>
             </div>
             <p className="text-[11px] text-gray-500 mt-3 text-center">Changes save automatically • You can opt out anytime</p>
+          </div>
+
+          {/* Account Linking Section */}
+          <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-violet-50 rounded-xl p-5 border border-blue-100 mt-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-sm">
+                <Link2 className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h4 className="font-bold text-gray-800">Linked Accounts</h4>
+                <p className="text-xs text-gray-500">Connect multiple sign-in methods</p>
+              </div>
+            </div>
+
+            {/* Success/Error Messages */}
+            {linkSuccess && (
+              <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />
+                {linkSuccess}
+              </div>
+            )}
+            {linkError && (
+              <div className="mb-3 p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-sm flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4" />
+                {linkError}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              {/* Google */}
+              <div className={`flex items-center justify-between p-3 bg-white rounded-lg border ${hasGoogle ? 'border-green-200' : 'border-gray-100'}`}>
+                <div className="flex items-center gap-3">
+                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                  </svg>
+                  <span className="font-medium text-gray-700">Google</span>
+                </div>
+                {hasGoogle ? (
+                  <span className="text-xs font-medium text-green-600 flex items-center gap-1">
+                    <CheckCircle className="w-4 h-4" /> Linked
+                  </span>
+                ) : (
+                  <button
+                    onClick={handleLinkGoogle}
+                    disabled={linkingInProgress === 'google'}
+                    className="text-xs font-medium text-blue-600 hover:text-blue-700 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {linkingInProgress === 'google' ? 'Linking...' : 'Link'}
+                  </button>
+                )}
+              </div>
+
+              {/* Phone */}
+              <div className={`flex items-center justify-between p-3 bg-white rounded-lg border ${hasPhone ? 'border-green-200' : 'border-gray-100'}`}>
+                <div className="flex items-center gap-3">
+                  <Phone className="w-5 h-5 text-green-600" />
+                  <span className="font-medium text-gray-700">Phone</span>
+                </div>
+                {hasPhone ? (
+                  <span className="text-xs font-medium text-green-600 flex items-center gap-1">
+                    <CheckCircle className="w-4 h-4" /> Linked
+                  </span>
+                ) : (
+                  <button
+                    onClick={handleLinkPhone}
+                    className="text-xs font-medium text-blue-600 hover:text-blue-700 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                  >
+                    Link
+                  </button>
+                )}
+              </div>
+
+              {/* Email/Password */}
+              <div className={`flex items-center justify-between p-3 bg-white rounded-lg border ${hasPassword ? 'border-green-200' : 'border-gray-100'}`}>
+                <div className="flex items-center gap-3">
+                  <Mail className="w-5 h-5 text-blue-600" />
+                  <span className="font-medium text-gray-700">Email & Password</span>
+                </div>
+                {hasPassword ? (
+                  <span className="text-xs font-medium text-green-600 flex items-center gap-1">
+                    <CheckCircle className="w-4 h-4" /> Linked
+                  </span>
+                ) : (
+                  <span className="text-xs text-gray-400">Coming soon</span>
+                )}
+              </div>
+            </div>
+
+            <p className="text-[11px] text-gray-500 mt-3 text-center">Link accounts to sign in with any method</p>
           </div>
 
           {/* Sign Out Button */}
