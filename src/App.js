@@ -60,7 +60,7 @@ export default function RentalPlatform() {
     signUp: async (email, password, displayName, userTypeParam = 'renter') => {
       const firebaseUser = await signUpWithEmail(email, password, displayName);
       
-      // Create user profile in Firestore (non-blocking - don't fail signup if this fails)
+      // Create user profile in Firestore
       const profileData = {
         email: firebaseUser.email,
         displayName: displayName || firebaseUser.displayName,
@@ -72,11 +72,22 @@ export default function RentalPlatform() {
       };
       
       try {
-        await saveUserProfile(firebaseUser.uid, profileData);
+        // Add timeout to prevent infinite hang
+        const savePromise = saveUserProfile(firebaseUser.uid, profileData);
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Profile save timeout')), 10000)
+        );
+        await Promise.race([savePromise, timeoutPromise]);
       } catch (profileError) {
         console.warn('Could not save user profile to Firestore:', profileError);
-        // Continue anyway - user is authenticated, profile can be saved later
+        // Still set the profile locally so user type is correct
       }
+      
+      // Immediately update local state with the correct user type
+      // This ensures the user is a landlord even if Firestore save is slow
+      setUserProfile(profileData);
+      setUserType(userTypeParam);
+      
       return firebaseUser;
     },
     signIn: async (email, password) => {
@@ -89,7 +100,7 @@ export default function RentalPlatform() {
       let profile = await getUserProfile(firebaseUser.uid);
       
       if (!profile) {
-        // Create new profile for Google user (non-blocking)
+        // Create new profile for Google user
         const profileData = {
           email: firebaseUser.email,
           displayName: firebaseUser.displayName || '',
@@ -101,10 +112,23 @@ export default function RentalPlatform() {
         };
         
         try {
-          await saveUserProfile(firebaseUser.uid, profileData);
+          // Add timeout to prevent infinite hang
+          const savePromise = saveUserProfile(firebaseUser.uid, profileData);
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Profile save timeout')), 10000)
+          );
+          await Promise.race([savePromise, timeoutPromise]);
         } catch (profileError) {
           console.warn('Could not save Google user profile to Firestore:', profileError);
         }
+        
+        // Set local state immediately
+        setUserProfile(profileData);
+        setUserType(userTypeParam);
+      } else {
+        // Existing user - use their saved profile
+        setUserProfile(profile);
+        setUserType(profile.userType || 'renter');
       }
       
       return firebaseUser;
@@ -209,8 +233,9 @@ export default function RentalPlatform() {
         try {
           const profile = await getUserProfile(firebaseUser.uid);
           if (profile) {
-            setUserProfile(profile);
-            setUserType(profile.userType || 'renter');
+            // Only update if we don't already have a profile set (avoid overwriting during signup)
+            setUserProfile(prev => prev || profile);
+            setUserType(prev => prev || profile.userType || 'renter');
           }
         } catch (err) {
           console.error('Error fetching user profile:', err);
