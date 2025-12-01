@@ -778,7 +778,12 @@ const filteredListings = listings
       <BackToTop />
       
       <Header
-        currentUser={currentUser}
+        currentUser={currentUser ? {
+          ...currentUser,
+          name: userProfile?.displayName || currentUser.displayName || 'User',
+          type: userType || 'renter',
+          photo: userProfile?.photoURL || currentUser.photoURL || null
+        } : null}
         previewAsRenter={previewAsRenter}
         setPreviewAsRenter={setPreviewAsRenter}
         openAuthModal={openAuthModal}
@@ -861,6 +866,7 @@ const filteredListings = listings
               photo: userProfile?.photoURL || currentUser?.photoURL || '',
               type: userProfile?.userType || userType || 'renter',
               notificationPrefs: userProfile?.notificationPrefs || { updates: true, marketing: false },
+              createdAt: userProfile?.createdAt || currentUser?.metadata?.creationTime || new Date().toISOString(),
             }}
             onEdit={() => setCurrentView('edit-profile')} 
             onSignOut={handleSignOut}
@@ -1352,11 +1358,14 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
                 <div>
                   <p className="text-xs font-medium text-gray-500 mb-0.5">Member Since</p>
                   <p className="font-semibold text-gray-800">
-                    {new Date(user.createdAt).toLocaleDateString('en-ZA', { 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })}
+                    {user.createdAt && !isNaN(new Date(user.createdAt).getTime())
+                      ? new Date(user.createdAt).toLocaleDateString('en-ZA', { 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        })
+                      : 'Just joined!'
+                    }
                   </p>
                 </div>
               </div>
