@@ -58,7 +58,7 @@ export default function RentalPlatform() {
     signUp: async (email, password, displayName, userTypeParam = 'renter', phone = '') => {
       const firebaseUser = await signUpWithEmail(email, password, displayName);
       
-      // Create user profile in Firestore
+      // Create user profile in Firestore (non-blocking - don't fail signup if this fails)
       const profileData = {
         email: firebaseUser.email,
         displayName: displayName || firebaseUser.displayName,
@@ -69,7 +69,12 @@ export default function RentalPlatform() {
         landlordComplete: userTypeParam === 'renter',
       };
       
-      await saveUserProfile(firebaseUser.uid, profileData);
+      try {
+        await saveUserProfile(firebaseUser.uid, profileData);
+      } catch (profileError) {
+        console.warn('Could not save user profile to Firestore:', profileError);
+        // Continue anyway - user is authenticated, profile can be saved later
+      }
       return firebaseUser;
     },
     signIn: async (email, password) => {
@@ -82,7 +87,7 @@ export default function RentalPlatform() {
       let profile = await getUserProfile(firebaseUser.uid);
       
       if (!profile) {
-        // Create new profile for Google user
+        // Create new profile for Google user (non-blocking)
         const profileData = {
           email: firebaseUser.email,
           displayName: firebaseUser.displayName || '',
@@ -93,7 +98,11 @@ export default function RentalPlatform() {
           landlordComplete: userTypeParam === 'renter',
         };
         
-        await saveUserProfile(firebaseUser.uid, profileData);
+        try {
+          await saveUserProfile(firebaseUser.uid, profileData);
+        } catch (profileError) {
+          console.warn('Could not save Google user profile to Firestore:', profileError);
+        }
       }
       
       return firebaseUser;
@@ -113,7 +122,7 @@ export default function RentalPlatform() {
       let profile = await getUserProfile(firebaseUser.uid);
       
       if (!profile) {
-        // Create new profile for phone user
+        // Create new profile for phone user (non-blocking)
         const profileData = {
           email: '',
           displayName: displayName || firebaseUser.phoneNumber,
@@ -124,7 +133,11 @@ export default function RentalPlatform() {
           landlordComplete: userTypeParam === 'renter',
         };
         
-        await saveUserProfile(firebaseUser.uid, profileData);
+        try {
+          await saveUserProfile(firebaseUser.uid, profileData);
+        } catch (profileError) {
+          console.warn('Could not save phone user profile to Firestore:', profileError);
+        }
       }
       
       return firebaseUser;
@@ -3030,7 +3043,15 @@ function AuthModal({ defaultType = 'renter', onClose, onSuccess, authFunctions }
     } catch (err) {
       console.error('Auth error:', err);
       let errorMessage = 'An error occurred. Please try again.';
-      if (err.code === 'auth/invalid-phone-number') {
+      if (err.code === 'auth/email-already-in-use') {
+        errorMessage = 'This email is already registered. Please sign in instead.';
+      } else if (err.code === 'auth/invalid-email') {
+        errorMessage = 'Invalid email address format.';
+      } else if (err.code === 'auth/weak-password') {
+        errorMessage = 'Password is too weak. Please use at least 6 characters.';
+      } else if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        errorMessage = 'Invalid email or password. Please check and try again.';
+      } else if (err.code === 'auth/invalid-phone-number') {
         errorMessage = 'Invalid phone number format. Please use format: 0XX XXX XXXX';
       } else if (err.code === 'auth/too-many-requests') {
         errorMessage = 'Too many attempts. Please try again later.';
@@ -3038,6 +3059,8 @@ function AuthModal({ defaultType = 'renter', onClose, onSuccess, authFunctions }
         errorMessage = 'Invalid code. Please check and try again.';
       } else if (err.code === 'auth/code-expired') {
         errorMessage = 'Code expired. Please request a new one.';
+      } else if (err.code === 'auth/network-request-failed') {
+        errorMessage = 'Network error. Please check your connection.';
       } else if (err.message) {
         errorMessage = err.message;
       }
