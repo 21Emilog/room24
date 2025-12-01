@@ -62,13 +62,13 @@ export default function Header({ currentUser, previewAsRenter, setPreviewAsRente
                 >
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center text-white font-bold shadow-md ring-2 ring-white group-hover:shadow-lg transition-all duration-200 overflow-hidden">
                     {currentUser.photo ? (
-                      <img src={currentUser.photo} alt={currentUser.name} className="w-full h-full object-cover" />
+                      <img src={currentUser.photo} alt={currentUser.name || 'User'} className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-sm">{currentUser.name.charAt(0).toUpperCase()}</span>
+                      <span className="text-sm">{currentUser?.name?.charAt(0)?.toUpperCase() || 'U'}</span>
                     )}
                   </div>
                   <div className="hidden lg:block">
-                    <p className="font-semibold text-gray-800 leading-tight group-hover:text-teal-600 transition text-sm">{currentUser.name}</p>
+                    <p className="font-semibold text-gray-800 leading-tight group-hover:text-teal-600 transition text-sm">{currentUser.name || 'User'}</p>
                     <p className="text-xs text-gray-500 leading-tight flex items-center gap-1.5">
                       {previewAsRenter ? (
                         <><span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span> Preview Mode</>
@@ -154,13 +154,13 @@ export default function Header({ currentUser, previewAsRenter, setPreviewAsRente
             <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-100 px-1">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center text-white font-bold text-lg shadow-md">
                 {currentUser.photo ? (
-                  <img src={currentUser.photo} alt={currentUser.name} className="w-full h-full rounded-xl object-cover" />
+                  <img src={currentUser.photo} alt={currentUser.name || 'User'} className="w-full h-full rounded-xl object-cover" />
                 ) : (
-                  currentUser.name.charAt(0).toUpperCase()
+                  currentUser?.name?.charAt(0)?.toUpperCase() || 'U'
                 )}
               </div>
               <div>
-                <p className="font-semibold text-gray-800">{currentUser.name}</p>
+                <p className="font-semibold text-gray-800">{currentUser.name || 'User'}</p>
                 <p className="text-xs text-gray-500 flex items-center gap-1.5">
                   <span className={`w-2 h-2 rounded-full ${currentUser.type === 'landlord' ? 'bg-teal-500' : 'bg-blue-500'}`}></span>
                   {currentUser.type === 'landlord' ? 'Property Owner' : 'Looking for a Room'}
