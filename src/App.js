@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { initFirebase, initAnalytics, requestFcmToken, listenForegroundMessages, trackEvent, fetchListings, addListing, deleteListing, subscribeToListings, isFirestoreEnabled, subscribeToAuthState, getUserProfile, saveUserProfile, getLinkedProviders, linkGoogleAccount } from './firebase';
+import { initFirebase, initAnalytics, requestFcmToken, listenForegroundMessages, trackEvent, subscribeToAuthState, getLinkedProviders, linkGoogleAccount } from './firebase';
 import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone } from 'lucide-react';
 import Header from './components/Header';
 import ListingDetailModal from './components/ListingDetailModal';
@@ -55,7 +55,7 @@ export default function RentalPlatform() {
     setShowAuthModal(true);
   };
 
-  // Auth functions to pass to AuthModal
+  // Auth functions to pass to AuthModal - Uses localStorage only (no Firestore)
   const authFunctions = {
     signUp: async (email, password, displayName, userTypeParam = 'renter') => {
       const firebaseUser = await signUpWithEmail(email, password, displayName);
@@ -63,7 +63,7 @@ export default function RentalPlatform() {
       // Create user profile data
       const profileData = {
         email: firebaseUser.email,
-        displayName: displayName || firebaseUser.displayName,
+        displayName: displayName || firebaseUser.displayName || '',
         userType: userTypeParam,
         phone: '',
         photoURL: firebaseUser.photoURL || '',
@@ -71,39 +71,56 @@ export default function RentalPlatform() {
         landlordComplete: userTypeParam === 'renter',
       };
       
-      // Immediately update local state with the correct user type
-      setUserProfile(profileData);
-      setUserType(userTypeParam);
-      
-      // Store in localStorage as backup (Firestore is unreliable)
+      // Store ONLY in localStorage (skip Firestore completely)
       localStorage.setItem(`user-type-${firebaseUser.uid}`, userTypeParam);
       localStorage.setItem(`user-profile-${firebaseUser.uid}`, JSON.stringify(profileData));
+      if (userTypeParam === 'renter') {
+        localStorage.setItem(`landlord-complete-${firebaseUser.uid}`, 'true');
+      }
       
-      // Save to Firestore in background (don't wait for it)
-      saveUserProfile(firebaseUser.uid, profileData)
-        .then(() => console.log('Profile saved to Firestore'))
-        .catch(err => console.warn('Could not save profile to Firestore:', err));
+      // Update local state
+      setUserProfile(profileData);
+      setUserType(userTypeParam);
       
       return firebaseUser;
     },
     signIn: async (email, password) => {
-      return await signInWithEmail(email, password);
+      const firebaseUser = await signInWithEmail(email, password);
+      
+      // Load profile from localStorage
+      const localProfile = localStorage.getItem(`user-profile-${firebaseUser.uid}`);
+      const localUserType = localStorage.getItem(`user-type-${firebaseUser.uid}`);
+      
+      if (localProfile) {
+        try {
+          const parsed = JSON.parse(localProfile);
+          setUserProfile(parsed);
+          setUserType(parsed.userType || localUserType || 'renter');
+        } catch (e) {
+          console.warn('Could not parse local profile');
+        }
+      }
+      
+      return firebaseUser;
     },
     signInGoogle: async (userTypeParam = 'renter') => {
       const firebaseUser = await signInWithGoogle();
       
-      // Check if user profile exists (with timeout)
-      let profile = null;
-      try {
-        const getProfilePromise = getUserProfile(firebaseUser.uid);
-        const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(null), 3000));
-        profile = await Promise.race([getProfilePromise, timeoutPromise]);
-      } catch (err) {
-        console.warn('Could not fetch profile:', err);
-      }
+      // Check localStorage for existing profile
+      const localProfile = localStorage.getItem(`user-profile-${firebaseUser.uid}`);
+      const localUserType = localStorage.getItem(`user-type-${firebaseUser.uid}`);
       
-      if (!profile) {
-        // Create new profile for Google user
+      if (localProfile) {
+        // Existing user - use saved profile
+        try {
+          const parsed = JSON.parse(localProfile);
+          setUserProfile(parsed);
+          setUserType(parsed.userType || localUserType || 'renter');
+        } catch (e) {
+          console.warn('Could not parse local profile');
+        }
+      } else {
+        // New Google user - create profile
         const profileData = {
           email: firebaseUser.email,
           displayName: firebaseUser.displayName || '',
@@ -114,18 +131,12 @@ export default function RentalPlatform() {
           landlordComplete: userTypeParam === 'renter',
         };
         
-        // Set local state immediately
+        // Store in localStorage only
+        localStorage.setItem(`user-type-${firebaseUser.uid}`, userTypeParam);
+        localStorage.setItem(`user-profile-${firebaseUser.uid}`, JSON.stringify(profileData));
+        
         setUserProfile(profileData);
         setUserType(userTypeParam);
-        
-        // Save to Firestore in background (don't wait)
-        saveUserProfile(firebaseUser.uid, profileData)
-          .then(() => console.log('Google profile saved to Firestore'))
-          .catch(err => console.warn('Could not save Google profile:', err));
-      } else {
-        // Existing user - use their saved profile
-        setUserProfile(profile);
-        setUserType(profile.userType || 'renter');
       }
       
       return firebaseUser;
@@ -219,15 +230,15 @@ export default function RentalPlatform() {
 
   useEffect(() => {
     loadData();
-    // Initialize Firebase + FCM token fetch (deferred until user interaction if desired)
+    // Initialize Firebase (for Auth only)
     const app = initFirebase();
     
-    // Set up Firebase Auth listener
+    // Set up Firebase Auth listener - profile data comes from localStorage only
     const unsubscribeAuth = subscribeToAuthState(async (firebaseUser) => {
       if (firebaseUser) {
         setCurrentUser(firebaseUser);
         
-        // Try to get profile from localStorage first (faster, works offline)
+        // Get profile from localStorage ONLY (no Firestore)
         const localProfile = localStorage.getItem(`user-profile-${firebaseUser.uid}`);
         const localUserType = localStorage.getItem(`user-type-${firebaseUser.uid}`);
         const localOnboardingComplete = localStorage.getItem(`landlord-complete-${firebaseUser.uid}`);
@@ -238,27 +249,28 @@ export default function RentalPlatform() {
             if (localOnboardingComplete) {
               parsed.landlordComplete = true;
             }
-            setUserProfile(prev => prev || parsed);
-            setUserType(prev => prev || localUserType || parsed.userType || 'renter');
+            setUserProfile(parsed);
+            setUserType(localUserType || parsed.userType || 'renter');
           } catch (e) {
             console.warn('Could not parse local profile:', e);
+            // Create default profile
+            setUserProfile({ displayName: firebaseUser.displayName || '', email: firebaseUser.email });
+            setUserType(localUserType || 'renter');
           }
+        } else {
+          // No local profile - create minimal one from Firebase Auth data
+          const newProfile = {
+            displayName: firebaseUser.displayName || '',
+            email: firebaseUser.email || '',
+            userType: localUserType || 'renter',
+            createdAt: new Date().toISOString(),
+            landlordComplete: localOnboardingComplete === 'true',
+          };
+          setUserProfile(newProfile);
+          setUserType(localUserType || 'renter');
+          // Save it
+          localStorage.setItem(`user-profile-${firebaseUser.uid}`, JSON.stringify(newProfile));
         }
-        
-        // Also try Firestore (but don't block on it)
-        getUserProfile(firebaseUser.uid)
-          .then(profile => {
-            if (profile) {
-              // Merge with localStorage data
-              const merged = { ...profile };
-              if (localOnboardingComplete) {
-                merged.landlordComplete = true;
-              }
-              setUserProfile(prev => ({ ...prev, ...merged }));
-              setUserType(prev => prev || profile.userType || 'renter');
-            }
-          })
-          .catch(err => console.warn('Could not fetch Firestore profile:', err));
       } else {
         setCurrentUser(null);
         setUserProfile(null);
@@ -267,16 +279,15 @@ export default function RentalPlatform() {
       setAuthLoading(false);
     });
     
-    // Set up real-time listener for Firestore listings
-    let unsubscribeListings = null;
-    if (isFirestoreEnabled()) {
-      unsubscribeListings = subscribeToListings((firestoreListings) => {
-        if (firestoreListings && firestoreListings.length >= 0) {
-          setListings(firestoreListings);
-          // Cache locally for offline access
-          localStorage.setItem('listings', JSON.stringify(firestoreListings));
-        }
-      });
+    // Skip Firestore listings listener - use localStorage only
+    // Load listings from localStorage
+    const listingsResult = localStorage.getItem('listings');
+    if (listingsResult) {
+      try {
+        setListings(JSON.parse(listingsResult));
+      } catch (e) {
+        console.warn('Could not parse listings from localStorage');
+      }
     }
     
     // Check analytics consent and show modal if not set
@@ -313,13 +324,10 @@ export default function RentalPlatform() {
       }
     });
     
-    // Cleanup: unsubscribe from listeners on unmount
+    // Cleanup: unsubscribe from auth listener on unmount
     return () => {
       if (unsubscribeAuth) {
         unsubscribeAuth();
-      }
-      if (unsubscribeListings) {
-        unsubscribeListings();
       }
     };
   }, []);
@@ -349,20 +357,11 @@ export default function RentalPlatform() {
 
   const loadData = async () => {
     try {
-      // Try to load from Firestore first
-      const firestoreListings = await fetchListings();
-      if (firestoreListings && firestoreListings.length > 0) {
-        console.log('Loaded listings from Firestore');
-        setListings(firestoreListings);
-        // Also cache to localStorage for offline access
-        localStorage.setItem('listings', JSON.stringify(firestoreListings));
-      } else {
-        // Fall back to localStorage
-        const listingsResult = localStorage.getItem('listings');
-        if (listingsResult) {
-          console.log('Loaded listings from localStorage (Firestore empty or unavailable)');
-          setListings(JSON.parse(listingsResult));
-        }
+      // Load listings from localStorage only (no Firestore)
+      const listingsResult = localStorage.getItem('listings');
+      if (listingsResult) {
+        console.log('Loaded listings from localStorage');
+        setListings(JSON.parse(listingsResult));
       }
       
       const userResult = localStorage.getItem('current-user');
@@ -658,24 +657,27 @@ const handleCompleteOnboarding = async (onboardData) => {
   // Update local state immediately
   setUserProfile(prev => ({ ...prev, landlordComplete: true, landlordInfo: onboardData }));
   
-  // Store in localStorage as backup (Firestore is unreliable)
+  // Store in localStorage ONLY (no Firestore)
   if (currentUser?.uid) {
     localStorage.setItem(`landlord-complete-${currentUser.uid}`, 'true');
     localStorage.setItem(`landlord-info-${currentUser.uid}`, JSON.stringify(onboardData));
+    
+    // Also update the full profile in localStorage
+    const existingProfile = localStorage.getItem(`user-profile-${currentUser.uid}`);
+    if (existingProfile) {
+      try {
+        const parsed = JSON.parse(existingProfile);
+        parsed.landlordComplete = true;
+        parsed.landlordInfo = onboardData;
+        localStorage.setItem(`user-profile-${currentUser.uid}`, JSON.stringify(parsed));
+      } catch (e) {
+        console.warn('Could not update profile in localStorage');
+      }
+    }
   }
   
   setCurrentView('add');
   showToast('Profile complete! You can now create listings.', 'success');
-  
-  // Save to Firestore in background (don't block UI)
-  if (currentUser?.uid) {
-    saveUserProfile(currentUser.uid, { 
-      landlordComplete: true, 
-      landlordInfo: onboardData 
-    })
-      .then(() => console.log('Onboarding saved to Firestore'))
-      .catch(err => console.warn('Could not save onboarding to Firestore:', err));
-  }
 };
 
 const handleAddListing = async (listingData) => {
@@ -689,7 +691,7 @@ const handleAddListing = async (listingData) => {
     price: listingData.price,
     location: listingData.location,
     streetAddress: listingData.streetAddress || '',
-    fullAddress: fullAddress || listingData.location || '', // Store complete address
+    fullAddress: fullAddress || listingData.location || '',
     description: listingData.description,
     photos: listingData.photos || [],
     status: listingData.status || 'available',
@@ -699,7 +701,6 @@ const handleAddListing = async (listingData) => {
     longitude: listingData.longitude ?? null,
     paymentMethod: listingData.paymentMethod || 'Bank and Cash',
     premium: !!listingData.premium,
-    // Use Firebase UID for landlordId
     landlordId: currentUser?.uid || currentUser?.id,
     landlordName: userProfile?.displayName || currentUser?.displayName || '',
     landlordPhone: userProfile?.phone || '',
@@ -707,35 +708,18 @@ const handleAddListing = async (listingData) => {
     landlordPhoto: userProfile?.photoURL || currentUser?.photoURL || '',
   };
 
-  try {
-    // Try to save to Firestore first
-    const firestoreId = await addListing(newListingData);
-    if (firestoreId) {
-      // Successfully saved to Firestore
-      const newListing = { ...newListingData, id: firestoreId, createdAt: new Date().toISOString() };
-      const updatedListings = [...listings, newListing];
-      setListings(updatedListings);
-      // Also cache locally
-      localStorage.setItem('listings', JSON.stringify(updatedListings));
-      showToast('Listing created and shared online!', 'success', 'Success!');
-    } else {
-      // Firestore not available, save locally only
-      const newListing = { ...newListingData, id: `listing-${Date.now()}`, createdAt: new Date().toISOString() };
-      const updatedListings = [...listings, newListing];
-      await saveListings(updatedListings);
-      showToast('Listing saved locally (offline mode)', 'info', 'Saved');
-    }
-  } catch (error) {
-    console.error('Error adding listing:', error);
-    // Fall back to local save
-    const newListing = { ...newListingData, id: `listing-${Date.now()}`, createdAt: new Date().toISOString() };
-    const updatedListings = [...listings, newListing];
-    await saveListings(updatedListings);
-    showToast('Listing saved locally', 'info', 'Saved');
-  }
+  // Save to localStorage ONLY (no Firestore)
+  const newListing = { 
+    ...newListingData, 
+    id: `listing-${Date.now()}`, 
+    createdAt: new Date().toISOString() 
+  };
+  const updatedListings = [...listings, newListing];
+  setListings(updatedListings);
+  localStorage.setItem('listings', JSON.stringify(updatedListings));
+  showToast('Listing created successfully!', 'success', 'Success!');
   
   setCurrentView('browse');
-  // Scroll to top to see new listing
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
@@ -919,8 +903,16 @@ const filteredListings = listings
             onUpdatePrefs={async (prefs) => {
               if (currentUser?.uid) {
                 try {
-                  await saveUserProfile(currentUser.uid, { notificationPrefs: prefs });
+                  // Save to localStorage only
                   setUserProfile(prev => ({ ...prev, notificationPrefs: prefs }));
+                  if (currentUser?.uid) {
+                    const existingProfile = localStorage.getItem(`user-profile-${currentUser.uid}`);
+                    if (existingProfile) {
+                      const parsed = JSON.parse(existingProfile);
+                      parsed.notificationPrefs = prefs;
+                      localStorage.setItem(`user-profile-${currentUser.uid}`, JSON.stringify(parsed));
+                    }
+                  }
                   showToast('Preferences updated', 'success');
                 } catch (err) {
                   console.error('Failed to update prefs:', err);
@@ -976,19 +968,11 @@ const filteredListings = listings
           <MyListingsView 
             listings={listings.filter(l => l.landlordId === currentUser.uid || l.landlordId === currentUser.id)}
             onDelete={async (id) => {
-              try {
-                // Try to delete from Firestore first
-                const deleted = await deleteListing(id);
-                if (deleted) {
-                  showToast('Listing deleted', 'success');
-                }
-              } catch (error) {
-                console.error('Firestore delete failed:', error);
-              }
-              // Also update local state and localStorage
+              // Delete from localStorage only
               const updated = listings.filter(l => l.id !== id);
               setListings(updated);
               localStorage.setItem('listings', JSON.stringify(updated));
+              showToast('Listing deleted', 'success');
             }}
           />
         )}
