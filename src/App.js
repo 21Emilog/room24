@@ -38,6 +38,7 @@ export default function RentalPlatform() {
   const [authLoading, setAuthLoading] = useState(true); // Loading state for auth
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authDefaultType, setAuthDefaultType] = useState('renter');
+  const [authDefaultMode, setAuthDefaultMode] = useState('signin');
   // Mobile menu state moved into Header component
   const [toast, setToast] = useState(null);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
@@ -48,8 +49,9 @@ export default function RentalPlatform() {
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
 
-  const openAuthModal = (type = 'renter') => {
+  const openAuthModal = (type = 'renter', mode = 'signin') => {
     setAuthDefaultType(type);
+    setAuthDefaultMode(mode);
     setShowAuthModal(true);
   };
 
@@ -961,6 +963,7 @@ const filteredListings = listings
       {showAuthModal && (
         <AuthModal
           defaultType={authDefaultType}
+          defaultMode={authDefaultMode}
           onClose={() => setShowAuthModal(false)}
           onSuccess={() => {
             showToast('Signed in successfully!', 'success', 'Welcome!');
@@ -2921,8 +2924,8 @@ function MyListingsView({ listings, onDelete }) {
 
 // ConversationModal removed
 
-function AuthModal({ defaultType = 'renter', onClose, onSuccess, authFunctions }) {
-  const [mode, setMode] = useState('signin'); // 'signin', 'signup', 'reset'
+function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, onSuccess, authFunctions }) {
+  const [mode, setMode] = useState(defaultMode); // 'signin', 'signup', 'reset'
   const [form, setForm] = useState({ 
     name: '', 
     email: '', 

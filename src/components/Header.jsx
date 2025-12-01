@@ -32,7 +32,7 @@ export default function Header({ currentUser, previewAsRenter, setPreviewAsRente
                   Sign in
                 </button>
                 <button 
-                  onClick={() => openAuthModal('landlord')} 
+                  onClick={() => openAuthModal('landlord', 'signup')} 
                   className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2"
                 >
                   <Home className="w-4 h-4" />
@@ -114,7 +114,7 @@ export default function Header({ currentUser, previewAsRenter, setPreviewAsRente
                   Sign in
                 </button>
                 <button 
-                  onClick={() => openAuthModal('landlord')} 
+                  onClick={() => openAuthModal('landlord', 'signup')} 
                   className="text-sm bg-gradient-to-r from-rose-500 to-pink-500 text-white px-4 py-2 rounded-xl font-semibold shadow-md"
                 >
                   List Room
