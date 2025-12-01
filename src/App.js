@@ -188,11 +188,25 @@ export default function RentalPlatform() {
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === 'accepted') {
         setShowInstallBanner(false);
+        showToast('Room24 installed! Check your home screen', 'success', '🎉 Installed!');
       }
       setDeferredPrompt(null);
     } else {
-      // iOS - show instructions
-      showToast('Tap the Share button, then "Add to Home Screen"', 'info', 'Install Room24');
+      // Check if already installed
+      const isInstalled = window.matchMedia('(display-mode: standalone)').matches 
+                       || window.navigator.standalone === true;
+      
+      if (isInstalled) {
+        showToast('Room24 is already installed on your device!', 'success', '✅ Already Installed');
+      } else {
+        // iOS or browser that doesn't support install prompt
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        if (isIOS) {
+          showToast('Tap the Share button (□↑) at the bottom, then "Add to Home Screen"', 'info', '📱 Install on iPhone');
+        } else {
+          showToast('Click the menu (⋮) then "Install app" or "Add to Home Screen"', 'info', '📱 Install Room24');
+        }
+      }
     }
   };
 
@@ -1010,7 +1024,10 @@ const filteredListings = listings
         />
       )}
 
-      <Footer onOpenPrivacy={() => setShowPrivacyPolicy(true)} />
+      <Footer 
+        onOpenPrivacy={() => setShowPrivacyPolicy(true)} 
+        onInstallApp={handleInstallClick}
+      />
     </div>
   );
 }

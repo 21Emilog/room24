@@ -1,8 +1,8 @@
 import React from 'react';
 import { FooterAd } from './AdBanner';
-import { Home, Mail, Phone, HelpCircle, Shield, FileText, Cookie } from 'lucide-react';
+import { Home, Mail, Phone, HelpCircle, Shield, FileText, Cookie, Download, Smartphone } from 'lucide-react';
 
-export default function Footer({ onOpenPrivacy }) {
+export default function Footer({ onOpenPrivacy, onInstallApp }) {
   return (
     <footer className="bg-gradient-to-b from-gray-900 to-gray-950 text-gray-300 pt-12 pb-8 mt-auto" role="contentinfo">
       <div className="max-w-7xl mx-auto px-4">
@@ -36,6 +36,17 @@ export default function Footer({ onOpenPrivacy }) {
           <div>
             <h4 className="text-white font-semibold mb-4 text-sm uppercase tracking-wider">Quick Links</h4>
             <ul className="space-y-3 text-sm">
+              <li>
+                <button 
+                  onClick={onInstallApp}
+                  className="text-gray-400 hover:text-teal-400 transition-colors flex items-center gap-2 group"
+                >
+                  <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Download className="w-4 h-4 text-white" />
+                  </div>
+                  <span className="font-medium">Download App</span>
+                </button>
+              </li>
               <li>
                 <a href="#browse" className="text-gray-400 hover:text-teal-400 transition-colors flex items-center gap-2">
                   Browse Rooms
