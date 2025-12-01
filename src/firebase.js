@@ -107,9 +107,11 @@ export async function signUpWithEmail(email, password, displayName) {
   
   const userCredential = await createUserWithEmailAndPassword(auth, email, password);
   
-  // Update display name
+  // Update display name in background (don't block signup)
   if (displayName) {
-    await updateProfile(userCredential.user, { displayName });
+    updateProfile(userCredential.user, { displayName })
+      .then(() => console.log('Display name updated'))
+      .catch(err => console.warn('Could not update display name:', err));
   }
   
   return userCredential.user;
