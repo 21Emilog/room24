@@ -2928,6 +2928,7 @@ function AuthModal({ defaultType = 'renter', onClose, onSuccess, authFunctions }
     email: '', 
     password: '',
     confirmPassword: '',
+    phone: '',
     type: defaultType 
   });
   const [errors, setErrors] = useState({});
@@ -3180,22 +3181,6 @@ function AuthModal({ defaultType = 'renter', onClose, onSuccess, authFunctions }
                     placeholder="••••••••"
                   />
                   {errors.confirmPassword && <p className="text-rose-500 text-xs mt-1.5 flex items-center gap-1"><span>⚠</span>{errors.confirmPassword}</p>}
-                </div>
-              )}
-
-              {/* Phone (signup only) */}
-              {mode === 'signup' && (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Phone <span className="text-gray-400 font-normal">(optional)</span>
-                  </label>
-                  <input 
-                    type="tel" 
-                    value={form.phone} 
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-gray-200 hover:border-gray-300 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500"
-                    placeholder="+27 12 345 6789"
-                  />
                 </div>
               )}
 
