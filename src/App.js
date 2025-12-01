@@ -72,9 +72,12 @@ export default function RentalPlatform() {
       };
       
       // Immediately update local state with the correct user type
-      // This ensures the user is a landlord even if Firestore save is slow/fails
       setUserProfile(profileData);
       setUserType(userTypeParam);
+      
+      // Store in localStorage as backup (Firestore is unreliable)
+      localStorage.setItem(`user-type-${firebaseUser.uid}`, userTypeParam);
+      localStorage.setItem(`user-profile-${firebaseUser.uid}`, JSON.stringify(profileData));
       
       // Save to Firestore in background (don't wait for it)
       saveUserProfile(firebaseUser.uid, profileData)
@@ -223,17 +226,39 @@ export default function RentalPlatform() {
     const unsubscribeAuth = subscribeToAuthState(async (firebaseUser) => {
       if (firebaseUser) {
         setCurrentUser(firebaseUser);
-        // Fetch extended profile from Firestore
-        try {
-          const profile = await getUserProfile(firebaseUser.uid);
-          if (profile) {
-            // Only update if we don't already have a profile set (avoid overwriting during signup)
-            setUserProfile(prev => prev || profile);
-            setUserType(prev => prev || profile.userType || 'renter');
+        
+        // Try to get profile from localStorage first (faster, works offline)
+        const localProfile = localStorage.getItem(`user-profile-${firebaseUser.uid}`);
+        const localUserType = localStorage.getItem(`user-type-${firebaseUser.uid}`);
+        const localOnboardingComplete = localStorage.getItem(`landlord-complete-${firebaseUser.uid}`);
+        
+        if (localProfile) {
+          try {
+            const parsed = JSON.parse(localProfile);
+            if (localOnboardingComplete) {
+              parsed.landlordComplete = true;
+            }
+            setUserProfile(prev => prev || parsed);
+            setUserType(prev => prev || localUserType || parsed.userType || 'renter');
+          } catch (e) {
+            console.warn('Could not parse local profile:', e);
           }
-        } catch (err) {
-          console.error('Error fetching user profile:', err);
         }
+        
+        // Also try Firestore (but don't block on it)
+        getUserProfile(firebaseUser.uid)
+          .then(profile => {
+            if (profile) {
+              // Merge with localStorage data
+              const merged = { ...profile };
+              if (localOnboardingComplete) {
+                merged.landlordComplete = true;
+              }
+              setUserProfile(prev => ({ ...prev, ...merged }));
+              setUserType(prev => prev || profile.userType || 'renter');
+            }
+          })
+          .catch(err => console.warn('Could not fetch Firestore profile:', err));
       } else {
         setCurrentUser(null);
         setUserProfile(null);
@@ -311,9 +336,13 @@ export default function RentalPlatform() {
         // Not a landlord - prompt to become one
         openAuthModal('landlord');
         setCurrentView('browse');
-      } else if (!userProfile?.landlordComplete) {
-        // Landlord but hasn't completed onboarding
-        setCurrentView('landlord-onboarding');
+      } else {
+        // Check if landlord completed onboarding (check localStorage as backup)
+        const localOnboardingComplete = localStorage.getItem(`landlord-complete-${currentUser.uid}`);
+        if (!userProfile?.landlordComplete && !localOnboardingComplete) {
+          // Landlord but hasn't completed onboarding
+          setCurrentView('landlord-onboarding');
+        }
       }
     }
   }, [currentView, currentUser, userType, userProfile, authLoading]);
@@ -628,6 +657,13 @@ const handleSignOut = async () => {
 const handleCompleteOnboarding = async (onboardData) => {
   // Update local state immediately
   setUserProfile(prev => ({ ...prev, landlordComplete: true, landlordInfo: onboardData }));
+  
+  // Store in localStorage as backup (Firestore is unreliable)
+  if (currentUser?.uid) {
+    localStorage.setItem(`landlord-complete-${currentUser.uid}`, 'true');
+    localStorage.setItem(`landlord-info-${currentUser.uid}`, JSON.stringify(onboardData));
+  }
+  
   setCurrentView('add');
   showToast('Profile complete! You can now create listings.', 'success');
   
