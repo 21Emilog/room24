@@ -626,19 +626,19 @@ const handleSignOut = async () => {
 };
 
 const handleCompleteOnboarding = async (onboardData) => {
-  try {
-    if (currentUser?.uid) {
-      await saveUserProfile(currentUser.uid, { 
-        landlordComplete: true, 
-        landlordInfo: onboardData 
-      });
-      setUserProfile(prev => ({ ...prev, landlordComplete: true, landlordInfo: onboardData }));
-    }
-    setCurrentView('browse');
-    showToast('Profile complete! You can now create listings.', 'success');
-  } catch (err) {
-    console.error('Onboarding save failed', err);
-    setCurrentView('browse');
+  // Update local state immediately
+  setUserProfile(prev => ({ ...prev, landlordComplete: true, landlordInfo: onboardData }));
+  setCurrentView('add');
+  showToast('Profile complete! You can now create listings.', 'success');
+  
+  // Save to Firestore in background (don't block UI)
+  if (currentUser?.uid) {
+    saveUserProfile(currentUser.uid, { 
+      landlordComplete: true, 
+      landlordInfo: onboardData 
+    })
+      .then(() => console.log('Onboarding saved to Firestore'))
+      .catch(err => console.warn('Could not save onboarding to Firestore:', err));
   }
 };
 
