@@ -456,12 +456,14 @@ export default function RentalPlatform() {
         openAuthModal('landlord');
         setCurrentView('browse');
       } else {
-        // Check if landlord completed onboarding (check localStorage as backup)
+        // Check if landlord completed onboarding (check localStorage FIRST as it's more reliable)
         const localOnboardingComplete = localStorage.getItem(`landlord-complete-${currentUser.uid}`);
-        if (!userProfile?.landlordComplete && !localOnboardingComplete) {
+        const isComplete = localOnboardingComplete === 'true' || userProfile?.landlordComplete === true;
+        if (!isComplete) {
           // Landlord but hasn't completed onboarding
           setCurrentView('landlord-onboarding');
         }
+        // If complete, stay on 'add' view - don't redirect
       }
     }
   }, [currentView, currentUser, userType, userProfile, authLoading]);
