@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { initFirebase, initAnalytics, requestFcmToken, listenForegroundMessages, trackEvent, subscribeToAuthState, getLinkedProviders, linkGoogleAccount } from './firebase';
 import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone } from 'lucide-react';
 import Header from './components/Header';
@@ -54,6 +54,7 @@ export default function RentalPlatform() {
   const [showAnalyticsConsent, setShowAnalyticsConsent] = useState(false);
   const [showNotificationsPanel, setShowNotificationsPanel] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const justCompletedOnboarding = useRef(false); // Flag to skip guard after onboarding
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
 
@@ -447,6 +448,12 @@ export default function RentalPlatform() {
   useEffect(() => {
     if (authLoading) return; // Wait for auth to load
     
+    // Skip guard if we just completed onboarding
+    if (justCompletedOnboarding.current) {
+      justCompletedOnboarding.current = false;
+      return;
+    }
+    
     if (currentView === 'add') {
       if (!currentUser) {
         openAuthModal('landlord');
@@ -685,6 +692,8 @@ const handleCompleteOnboarding = async (onboardData) => {
     });
   }
   
+  // Set flag to skip guard check on next render
+  justCompletedOnboarding.current = true;
   setCurrentView('add');
   showToast('Profile complete! You can now create listings.', 'success');
 };
