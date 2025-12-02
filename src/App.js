@@ -21,6 +21,14 @@ import {
   signOut as firebaseSignOut, 
   resetPassword 
 } from './firebase';
+import { 
+  fetchAllListings, 
+  createListing, 
+  deleteListing as supabaseDeleteListing,
+  getProfile as supabaseGetProfile,
+  saveProfile as supabaseSaveProfile,
+  subscribeToListings
+} from './supabase';
 
 export default function RentalPlatform() {
   const [currentView, setCurrentView] = useState('browse');
@@ -55,7 +63,7 @@ export default function RentalPlatform() {
     setShowAuthModal(true);
   };
 
-  // Auth functions to pass to AuthModal - Uses localStorage only (no Firestore)
+  // Auth functions to pass to AuthModal - Uses Supabase with localStorage fallback
   const authFunctions = {
     signUp: async (email, password, displayName, userTypeParam = 'renter') => {
       const firebaseUser = await signUpWithEmail(email, password, displayName);
@@ -71,7 +79,12 @@ export default function RentalPlatform() {
         landlordComplete: userTypeParam === 'renter',
       };
       
-      // Store ONLY in localStorage (skip Firestore completely)
+      // Save to Supabase (non-blocking)
+      supabaseSaveProfile(firebaseUser.uid, profileData).catch(err => {
+        console.warn('Supabase profile save failed (will retry on next login):', err);
+      });
+      
+      // Also store in localStorage as backup/cache
       localStorage.setItem(`user-type-${firebaseUser.uid}`, userTypeParam);
       localStorage.setItem(`user-profile-${firebaseUser.uid}`, JSON.stringify(profileData));
       if (userTypeParam === 'renter') {
@@ -87,7 +100,32 @@ export default function RentalPlatform() {
     signIn: async (email, password) => {
       const firebaseUser = await signInWithEmail(email, password);
       
-      // Load profile from localStorage
+      // Try to load profile from Supabase first
+      try {
+        const supabaseProfile = await supabaseGetProfile(firebaseUser.uid);
+        if (supabaseProfile) {
+          const profileData = {
+            email: supabaseProfile.email,
+            displayName: supabaseProfile.display_name,
+            userType: supabaseProfile.user_type,
+            phone: supabaseProfile.phone || '',
+            photoURL: supabaseProfile.photo_url || '',
+            landlordComplete: supabaseProfile.landlord_complete,
+            landlordInfo: supabaseProfile.landlord_info,
+            notificationPrefs: supabaseProfile.notification_prefs,
+          };
+          setUserProfile(profileData);
+          setUserType(supabaseProfile.user_type || 'renter');
+          // Update localStorage cache
+          localStorage.setItem(`user-profile-${firebaseUser.uid}`, JSON.stringify(profileData));
+          localStorage.setItem(`user-type-${firebaseUser.uid}`, supabaseProfile.user_type || 'renter');
+          return firebaseUser;
+        }
+      } catch (err) {
+        console.warn('Supabase profile fetch failed, falling back to localStorage:', err);
+      }
+      
+      // Fallback to localStorage
       const localProfile = localStorage.getItem(`user-profile-${firebaseUser.uid}`);
       const localUserType = localStorage.getItem(`user-type-${firebaseUser.uid}`);
       
@@ -105,6 +143,31 @@ export default function RentalPlatform() {
     },
     signInGoogle: async (userTypeParam = 'renter') => {
       const firebaseUser = await signInWithGoogle();
+      
+      // Check Supabase for existing profile first
+      try {
+        const supabaseProfile = await supabaseGetProfile(firebaseUser.uid);
+        if (supabaseProfile) {
+          const profileData = {
+            email: supabaseProfile.email,
+            displayName: supabaseProfile.display_name,
+            userType: supabaseProfile.user_type,
+            phone: supabaseProfile.phone || '',
+            photoURL: supabaseProfile.photo_url || '',
+            landlordComplete: supabaseProfile.landlord_complete,
+            landlordInfo: supabaseProfile.landlord_info,
+            notificationPrefs: supabaseProfile.notification_prefs,
+          };
+          setUserProfile(profileData);
+          setUserType(supabaseProfile.user_type || 'renter');
+          // Update localStorage cache
+          localStorage.setItem(`user-profile-${firebaseUser.uid}`, JSON.stringify(profileData));
+          localStorage.setItem(`user-type-${firebaseUser.uid}`, supabaseProfile.user_type || 'renter');
+          return firebaseUser;
+        }
+      } catch (err) {
+        console.warn('Supabase profile fetch failed:', err);
+      }
       
       // Check localStorage for existing profile
       const localProfile = localStorage.getItem(`user-profile-${firebaseUser.uid}`);
@@ -131,7 +194,12 @@ export default function RentalPlatform() {
           landlordComplete: userTypeParam === 'renter',
         };
         
-        // Store in localStorage only
+        // Save to Supabase (non-blocking)
+        supabaseSaveProfile(firebaseUser.uid, profileData).catch(err => {
+          console.warn('Supabase profile save failed:', err);
+        });
+        
+        // Store in localStorage as backup
         localStorage.setItem(`user-type-${firebaseUser.uid}`, userTypeParam);
         localStorage.setItem(`user-profile-${firebaseUser.uid}`, JSON.stringify(profileData));
         
@@ -229,16 +297,76 @@ export default function RentalPlatform() {
   
 
   useEffect(() => {
-    loadData();
     // Initialize Firebase (for Auth only)
     const app = initFirebase();
     
-    // Set up Firebase Auth listener - profile data comes from localStorage only
+    // Load listings from Supabase
+    const loadListings = async () => {
+      try {
+        const supabaseListings = await fetchAllListings();
+        if (supabaseListings.length > 0) {
+          setListings(supabaseListings);
+          // Cache in localStorage for offline access
+          localStorage.setItem('listings', JSON.stringify(supabaseListings));
+          console.log('Loaded', supabaseListings.length, 'listings from Supabase');
+        } else {
+          // Fall back to localStorage cache
+          const cached = localStorage.getItem('listings');
+          if (cached) {
+            setListings(JSON.parse(cached));
+            console.log('Using cached listings from localStorage');
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load from Supabase, using cache:', err);
+        const cached = localStorage.getItem('listings');
+        if (cached) {
+          setListings(JSON.parse(cached));
+        }
+      }
+    };
+    
+    loadListings();
+    
+    // Subscribe to real-time listing updates
+    const unsubscribeListings = subscribeToListings((updatedListings) => {
+      setListings(updatedListings);
+      localStorage.setItem('listings', JSON.stringify(updatedListings));
+    });
+    
+    // Set up Firebase Auth listener
     const unsubscribeAuth = subscribeToAuthState(async (firebaseUser) => {
       if (firebaseUser) {
         setCurrentUser(firebaseUser);
         
-        // Get profile from localStorage ONLY (no Firestore)
+        // Try to get profile from Supabase first
+        try {
+          const supabaseProfile = await supabaseGetProfile(firebaseUser.uid);
+          if (supabaseProfile) {
+            const profileData = {
+              email: supabaseProfile.email,
+              displayName: supabaseProfile.display_name,
+              userType: supabaseProfile.user_type,
+              phone: supabaseProfile.phone || '',
+              photoURL: supabaseProfile.photo_url || '',
+              landlordComplete: supabaseProfile.landlord_complete,
+              landlordInfo: supabaseProfile.landlord_info,
+              notificationPrefs: supabaseProfile.notification_prefs,
+              createdAt: supabaseProfile.created_at,
+            };
+            setUserProfile(profileData);
+            setUserType(supabaseProfile.user_type || 'renter');
+            // Update localStorage cache
+            localStorage.setItem(`user-profile-${firebaseUser.uid}`, JSON.stringify(profileData));
+            localStorage.setItem(`user-type-${firebaseUser.uid}`, supabaseProfile.user_type || 'renter');
+            setAuthLoading(false);
+            return;
+          }
+        } catch (err) {
+          console.warn('Supabase profile fetch failed, trying localStorage:', err);
+        }
+        
+        // Fallback to localStorage
         const localProfile = localStorage.getItem(`user-profile-${firebaseUser.uid}`);
         const localUserType = localStorage.getItem(`user-type-${firebaseUser.uid}`);
         const localOnboardingComplete = localStorage.getItem(`landlord-complete-${firebaseUser.uid}`);
@@ -253,12 +381,11 @@ export default function RentalPlatform() {
             setUserType(localUserType || parsed.userType || 'renter');
           } catch (e) {
             console.warn('Could not parse local profile:', e);
-            // Create default profile
             setUserProfile({ displayName: firebaseUser.displayName || '', email: firebaseUser.email });
             setUserType(localUserType || 'renter');
           }
         } else {
-          // No local profile - create minimal one from Firebase Auth data
+          // No profile anywhere - create minimal one
           const newProfile = {
             displayName: firebaseUser.displayName || '',
             email: firebaseUser.email || '',
@@ -268,7 +395,6 @@ export default function RentalPlatform() {
           };
           setUserProfile(newProfile);
           setUserType(localUserType || 'renter');
-          // Save it
           localStorage.setItem(`user-profile-${firebaseUser.uid}`, JSON.stringify(newProfile));
         }
       } else {
@@ -279,21 +405,9 @@ export default function RentalPlatform() {
       setAuthLoading(false);
     });
     
-    // Skip Firestore listings listener - use localStorage only
-    // Load listings from localStorage
-    const listingsResult = localStorage.getItem('listings');
-    if (listingsResult) {
-      try {
-        setListings(JSON.parse(listingsResult));
-      } catch (e) {
-        console.warn('Could not parse listings from localStorage');
-      }
-    }
-    
     // Check analytics consent and show modal if not set
     const analyticsConsent = localStorage.getItem('analytics-consent');
     if (!analyticsConsent && process.env.REACT_APP_ENABLE_ANALYTICS === 'true') {
-      // Delay modal slightly so UI loads first
       setTimeout(() => setShowAnalyticsConsent(true), 2000);
     } else if (analyticsConsent === 'yes') {
       initAnalytics(app);
@@ -312,23 +426,20 @@ export default function RentalPlatform() {
     })();
     
     listenForegroundMessages((payload) => {
-      // Display notification banner instead of toast
       const notification = payload?.notification || {};
       if (notification.title || notification.body) {
         setNotificationBanner({
           title: notification.title,
           body: notification.body
         });
-        // Auto-dismiss after 8 seconds
         setTimeout(() => setNotificationBanner(null), 8000);
       }
     });
     
-    // Cleanup: unsubscribe from auth listener on unmount
+    // Cleanup
     return () => {
-      if (unsubscribeAuth) {
-        unsubscribeAuth();
-      }
+      if (unsubscribeAuth) unsubscribeAuth();
+      if (unsubscribeListings) unsubscribeListings();
     };
   }, []);
 
@@ -354,91 +465,6 @@ export default function RentalPlatform() {
       }
     }
   }, [currentView, currentUser, userType, userProfile, authLoading]);
-
-  const loadData = async () => {
-    try {
-      // Load listings from localStorage only (no Firestore)
-      const listingsResult = localStorage.getItem('listings');
-      if (listingsResult) {
-        console.log('Loaded listings from localStorage');
-        setListings(JSON.parse(listingsResult));
-      }
-      
-      const userResult = localStorage.getItem('current-user');
-      const usersResult = localStorage.getItem('users');
-      if (userResult) {
-        const user = JSON.parse(userResult);
-        setCurrentUser(user);
-        setUserType(user.type);
-      }
-      if (usersResult) {
-        try {
-          const parsed = JSON.parse(usersResult);
-          setUsers(Array.isArray(parsed) ? parsed : []);
-        } catch (e) {
-          console.warn('Corrupt users array in storage, resetting');
-          setUsers([]);
-        }
-      }
-    } catch (error) {
-      console.log('No existing data found, starting fresh');
-      // Add sample listings for testing the map
-      const sampleListings = [
-        {
-          id: 'listing-1',
-          title: 'Cozy Room in Soweto',
-          price: 2500,
-          location: 'Soweto, Johannesburg',
-          description: 'Comfortable room with bathroom and kitchen access',
-          photos: [],
-          status: 'available',
-          availableDate: new Date().toISOString(),
-          amenities: ['WiFi', 'Kitchen'],
-          landlordId: 'landlord-1',
-          landlordName: 'John Smith',
-          landlordPhone: '+27 123 456 7890',
-          landlordEmail: 'john@example.com',
-          landlordPhoto: '',
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: 'listing-2',
-          title: 'Modern Apartment in Sandton',
-          price: 4500,
-          location: 'Sandton, Johannesburg',
-          description: 'Luxurious apartment with parking and security',
-          photos: [],
-          status: 'available',
-          availableDate: new Date().toISOString(),
-          amenities: ['WiFi', 'Parking', 'Air Conditioning'],
-          landlordId: 'landlord-2',
-          landlordName: 'Jane Doe',
-          landlordPhone: '+27 987 654 3210',
-          landlordEmail: 'jane@example.com',
-          landlordPhoto: '',
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: 'listing-3',
-          title: 'Studio in Midrand',
-          price: 3200,
-          location: 'Midrand, Johannesburg',
-          description: 'Spacious studio flat with laundry facilities',
-          photos: [],
-          status: 'available',
-          availableDate: new Date().toISOString(),
-          amenities: ['Laundry', 'WiFi'],
-          landlordId: 'landlord-3',
-          landlordName: 'Mike Johnson',
-          landlordPhone: '+27 555 555 5555',
-          landlordEmail: 'mike@example.com',
-          landlordPhoto: '',
-          createdAt: new Date().toISOString()
-        }
-      ];
-      setListings(sampleListings);
-    }
-  };
 
   // Helper: check for duplicate phone or email in registry (exclude an optional user id)
   const isDuplicateContact = (phone, email, ignoreId = null) => {
@@ -474,19 +500,6 @@ export default function RentalPlatform() {
     localStorage.setItem('analytics-consent', 'no');
     setShowAnalyticsConsent(false);
     showToast('Analytics disabled', 'info');
-  };
-
-  const saveListings = async (newListings) => {
-    try {
-      localStorage.setItem('listings', JSON.stringify(newListings));
-      setListings(newListings);
-      // Broadcast to runtime service worker for offline snapshot caching
-      if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-        try { navigator.serviceWorker.controller.postMessage({ type: 'SYNC_LISTINGS', payload: newListings }); } catch {}
-      }
-    } catch (error) {
-      console.error('Error saving listings:', error);
-    }
   };
 
   const saveSubscriptions = async (subscriptions) => {
@@ -655,25 +668,19 @@ const handleSignOut = async () => {
 
 const handleCompleteOnboarding = async (onboardData) => {
   // Update local state immediately
-  setUserProfile(prev => ({ ...prev, landlordComplete: true, landlordInfo: onboardData }));
+  const updatedProfile = { ...userProfile, landlordComplete: true, landlordInfo: onboardData };
+  setUserProfile(updatedProfile);
   
-  // Store in localStorage ONLY (no Firestore)
+  // Store in localStorage as cache
   if (currentUser?.uid) {
     localStorage.setItem(`landlord-complete-${currentUser.uid}`, 'true');
     localStorage.setItem(`landlord-info-${currentUser.uid}`, JSON.stringify(onboardData));
+    localStorage.setItem(`user-profile-${currentUser.uid}`, JSON.stringify(updatedProfile));
     
-    // Also update the full profile in localStorage
-    const existingProfile = localStorage.getItem(`user-profile-${currentUser.uid}`);
-    if (existingProfile) {
-      try {
-        const parsed = JSON.parse(existingProfile);
-        parsed.landlordComplete = true;
-        parsed.landlordInfo = onboardData;
-        localStorage.setItem(`user-profile-${currentUser.uid}`, JSON.stringify(parsed));
-      } catch (e) {
-        console.warn('Could not update profile in localStorage');
-      }
-    }
+    // Save to Supabase (non-blocking)
+    supabaseSaveProfile(currentUser.uid, updatedProfile).catch(err => {
+      console.warn('Supabase profile update failed:', err);
+    });
   }
   
   setCurrentView('add');
@@ -708,16 +715,34 @@ const handleAddListing = async (listingData) => {
     landlordPhoto: userProfile?.photoURL || currentUser?.photoURL || '',
   };
 
-  // Save to localStorage ONLY (no Firestore)
-  const newListing = { 
-    ...newListingData, 
-    id: `listing-${Date.now()}`, 
-    createdAt: new Date().toISOString() 
-  };
-  const updatedListings = [...listings, newListing];
-  setListings(updatedListings);
-  localStorage.setItem('listings', JSON.stringify(updatedListings));
-  showToast('Listing created successfully!', 'success', 'Success!');
+  try {
+    // Save to Supabase
+    const createdListing = await createListing(newListingData);
+    
+    // Update local state immediately
+    const updatedListings = [...listings, createdListing];
+    setListings(updatedListings);
+    
+    // Update localStorage cache
+    localStorage.setItem('listings', JSON.stringify(updatedListings));
+    
+    showToast('Listing created successfully!', 'success', 'Success!');
+    console.log('Listing saved to Supabase:', createdListing.id);
+  } catch (err) {
+    console.error('Failed to save to Supabase:', err);
+    
+    // Fallback: save to localStorage only
+    const localListing = { 
+      ...newListingData, 
+      id: `local-${Date.now()}`, 
+      createdAt: new Date().toISOString() 
+    };
+    const updatedListings = [...listings, localListing];
+    setListings(updatedListings);
+    localStorage.setItem('listings', JSON.stringify(updatedListings));
+    
+    showToast('Listing saved locally (will sync when online)', 'warning', 'Saved Locally');
+  }
   
   setCurrentView('browse');
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -968,11 +993,29 @@ const filteredListings = listings
           <MyListingsView 
             listings={listings.filter(l => l.landlordId === currentUser.uid || l.landlordId === currentUser.id)}
             onDelete={async (id) => {
-              // Delete from localStorage only
-              const updated = listings.filter(l => l.id !== id);
-              setListings(updated);
-              localStorage.setItem('listings', JSON.stringify(updated));
-              showToast('Listing deleted', 'success');
+              try {
+                // Delete from Supabase
+                await supabaseDeleteListing(id);
+                
+                // Update local state
+                const updated = listings.filter(l => l.id !== id);
+                setListings(updated);
+                localStorage.setItem('listings', JSON.stringify(updated));
+                
+                showToast('Listing deleted', 'success');
+              } catch (err) {
+                console.error('Failed to delete from Supabase:', err);
+                
+                // Still remove locally if it's a local-only listing
+                if (id.startsWith('local-')) {
+                  const updated = listings.filter(l => l.id !== id);
+                  setListings(updated);
+                  localStorage.setItem('listings', JSON.stringify(updated));
+                  showToast('Listing deleted', 'success');
+                } else {
+                  showToast('Failed to delete listing', 'error');
+                }
+              }
             }}
           />
         )}

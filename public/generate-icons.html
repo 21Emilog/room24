@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Room24 Icon Generator</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 40px; background: #f5f5f5; }
+    .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+    h1 { color: #14b8a6; margin-bottom: 10px; }
+    .icons { display: flex; gap: 30px; flex-wrap: wrap; margin: 30px 0; }
+    .icon-box { text-align: center; }
+    .icon-box canvas { border: 1px solid #ddd; border-radius: 12px; }
+    .icon-box p { margin: 10px 0 5px; font-weight: bold; }
+    button { background: linear-gradient(135deg, #14b8a6, #06b6d4); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: bold; margin: 5px; }
+    button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(20,184,166,0.4); }
+    .instructions { background: #f0fdfa; padding: 20px; border-radius: 12px; margin-top: 30px; border-left: 4px solid #14b8a6; }
+    .instructions h3 { margin-top: 0; color: #0d9488; }
+    .instructions ol { margin: 0; padding-left: 20px; }
+    .instructions li { margin: 8px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🏠 Room24 Icon Generator</h1>
+    <p>Click the buttons below to download your app icons.</p>
+    
+    <div class="icons">
+      <div class="icon-box">
+        <canvas id="canvas32" width="32" height="32"></canvas>
+        <p>Favicon (32x32)</p>
+        <button onclick="download('canvas32', 'favicon-32x32.png')">Download</button>
+      </div>
+      <div class="icon-box">
+        <canvas id="canvas192" width="192" height="192"></canvas>
+        <p>Logo 192x192</p>
+        <button onclick="download('canvas192', 'logo192.png')">Download</button>
+      </div>
+      <div class="icon-box">
+        <canvas id="canvas512" width="512" height="512"></canvas>
+        <p>Logo 512x512</p>
+        <button onclick="download('canvas512', 'logo512.png')">Download</button>
+      </div>
+    </div>
+    
+    <button onclick="downloadAll()" style="font-size: 16px; padding: 15px 40px;">⬇️ Download All Icons</button>
+    
+    <div class="instructions">
+      <h3>📋 After downloading:</h3>
+      <ol>
+        <li>Move <strong>logo192.png</strong> to <code>public/</code> folder</li>
+        <li>Move <strong>logo512.png</strong> to <code>public/</code> folder</li>
+        <li>For favicon.ico, use an online converter like <a href="https://favicon.io/favicon-converter/" target="_blank">favicon.io</a></li>
+        <li>Run <code>git add . && git commit -m "Update app icons" && git push</code></li>
+      </ol>
+    </div>
+  </div>
+
+  <script>
+    function drawIcon(canvas, size) {
+      const ctx = canvas.getContext('2d');
+      const r = size * 0.2; // corner radius ratio
+      
+      // Background gradient
+      const gradient = ctx.createLinearGradient(0, 0, size, size);
+      gradient.addColorStop(0, '#14b8a6');
+      gradient.addColorStop(1, '#06b6d4');
+      
+      // Rounded rectangle background
+      ctx.beginPath();
+      ctx.roundRect(0, 0, size, size, r);
+      ctx.fillStyle = gradient;
+      ctx.fill();
+      
+      // Home icon (white)
+      ctx.fillStyle = 'white';
+      ctx.beginPath();
+      
+      const s = size;
+      const cx = s / 2;
+      
+      // Roof
+      ctx.moveTo(cx, s * 0.15);
+      ctx.lineTo(s * 0.15, s * 0.42);
+      ctx.lineTo(s * 0.15, s * 0.75);
+      ctx.lineTo(s * 0.38, s * 0.75);
+      ctx.lineTo(s * 0.38, s * 0.52);
+      ctx.lineTo(s * 0.62, s * 0.52);
+      ctx.lineTo(s * 0.62, s * 0.75);
+      ctx.lineTo(s * 0.85, s * 0.75);
+      ctx.lineTo(s * 0.85, s * 0.42);
+      ctx.closePath();
+      ctx.fill();
+      
+      // "24" text (only for larger sizes)
+      if (size >= 192) {
+        ctx.fillStyle = '#f43f5e'; // Rose/pink color for visibility
+        ctx.font = `900 ${size * 0.18}px Arial Black, Arial, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('24', cx, s * 0.68);
+      }
+    }
+    
+    // Draw all icons
+    drawIcon(document.getElementById('canvas32'), 32);
+    drawIcon(document.getElementById('canvas192'), 192);
+    drawIcon(document.getElementById('canvas512'), 512);
+    
+    function download(canvasId, filename) {
+      const canvas = document.getElementById(canvasId);
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+    
+    function downloadAll() {
+      download('canvas32', 'favicon-32x32.png');
+      setTimeout(() => download('canvas192', 'logo192.png'), 100);
+      setTimeout(() => download('canvas512', 'logo512.png'), 200);
+    }
+  </script>
+</body>
+</html>
