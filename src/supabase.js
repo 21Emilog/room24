@@ -9,63 +9,27 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 // ===========================
 // PROFILE FUNCTIONS
 // ===========================
+// Note: Profiles are stored in localStorage only since Firebase UIDs don't match Supabase UUID format
+// The profiles table would need a firebase_uid TEXT column to work properly
 
 export async function getProfile(userId) {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .single();
-  
-  if (error && error.code !== 'PGRST116') {
-    console.error('Error fetching profile:', error);
-    return null;
-  }
-  return data;
+  // Return null - profiles are handled via localStorage in App.js
+  // This prevents UUID format errors with Firebase Auth UIDs
+  console.log('Profile fetch skipped - using localStorage for profiles');
+  return null;
 }
 
 export async function saveProfile(userId, profileData) {
-  const { data, error } = await supabase
-    .from('profiles')
-    .upsert({
-      id: userId,
-      email: profileData.email,
-      display_name: profileData.displayName,
-      user_type: profileData.userType,
-      phone: profileData.phone || '',
-      photo_url: profileData.photoURL || '',
-      landlord_complete: profileData.landlordComplete || false,
-      landlord_info: profileData.landlordInfo || null,
-      notification_prefs: profileData.notificationPrefs || { updates: true, marketing: false },
-    }, { onConflict: 'id' });
-  
-  if (error) {
-    console.error('Error saving profile:', error);
-    throw error;
-  }
-  return data;
+  // Skip Supabase profile save - handled via localStorage in App.js
+  // Firebase UIDs are not valid UUIDs for the Supabase profiles table
+  console.log('Profile save skipped - using localStorage for profiles');
+  return null;
 }
 
 export async function updateProfile(userId, updates) {
-  const dbUpdates = {};
-  if (updates.displayName !== undefined) dbUpdates.display_name = updates.displayName;
-  if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
-  if (updates.photoURL !== undefined) dbUpdates.photo_url = updates.photoURL;
-  if (updates.userType !== undefined) dbUpdates.user_type = updates.userType;
-  if (updates.landlordComplete !== undefined) dbUpdates.landlord_complete = updates.landlordComplete;
-  if (updates.landlordInfo !== undefined) dbUpdates.landlord_info = updates.landlordInfo;
-  if (updates.notificationPrefs !== undefined) dbUpdates.notification_prefs = updates.notificationPrefs;
-
-  const { data, error } = await supabase
-    .from('profiles')
-    .update(dbUpdates)
-    .eq('id', userId);
-  
-  if (error) {
-    console.error('Error updating profile:', error);
-    throw error;
-  }
-  return data;
+  // Skip Supabase profile update - handled via localStorage in App.js
+  console.log('Profile update skipped - using localStorage for profiles');
+  return null;
 }
 
 // ===========================
