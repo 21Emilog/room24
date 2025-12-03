@@ -43,8 +43,8 @@ export default function NotificationsPanel({ onClose, onSelectListing }) {
       <div className="bg-white rounded-none sm:rounded-2xl max-w-2xl w-full h-full sm:h-auto sm:max-h-[80vh] overflow-y-auto shadow-2xl fade-in">
         <div className="sticky top-0 bg-white/95 backdrop-blur-md border-b border-gray-100 p-4 flex justify-between items-center z-10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center">
-              <Bell className="w-5 h-5 text-teal-600" />
+            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+              <Bell className="w-5 h-5 text-[#E63946]" />
             </div>
             <div>
               <h2 className="text-lg font-bold text-gray-800">Notifications</h2>
@@ -68,7 +68,7 @@ export default function NotificationsPanel({ onClose, onSelectListing }) {
               onClick={() => setActiveTab('notifications')}
               className={`flex-1 py-3 text-sm font-semibold ${
                 activeTab === 'notifications'
-                  ? 'text-teal-600 border-b-2 border-teal-600'
+                  ? 'text-[#E63946] border-b-2 border-[#E63946]'
                   : 'text-gray-600 hover:text-gray-800'
               }`}
             >
@@ -78,7 +78,7 @@ export default function NotificationsPanel({ onClose, onSelectListing }) {
               onClick={() => setActiveTab('searches')}
               className={`flex-1 py-3 text-sm font-semibold ${
                 activeTab === 'searches'
-                  ? 'text-teal-600 border-b-2 border-teal-600'
+                  ? 'text-[#E63946] border-b-2 border-[#E63946]'
                   : 'text-gray-600 hover:text-gray-800'
               }`}
             >
@@ -110,7 +110,7 @@ export default function NotificationsPanel({ onClose, onSelectListing }) {
                       key={notif.id}
                       onClick={() => handleNotificationClick(notif)}
                       className={`border rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-md ${
-                        notif.read ? 'bg-white border-gray-100 hover:bg-gray-50' : 'bg-gradient-to-r from-teal-50 to-cyan-50 border-teal-200 hover:border-teal-300'
+                        notif.read ? 'bg-white border-gray-100 hover:bg-gray-50' : 'bg-gradient-to-r from-red-50 to-red-50 border-red-200 hover:border-red-300'
                       }`}
                     >
                       <div className="flex items-start gap-3">
@@ -136,7 +136,7 @@ export default function NotificationsPanel({ onClose, onSelectListing }) {
                           </p>
                         </div>
                         {!notif.read && (
-                          <div className="w-2.5 h-2.5 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full mt-1 animate-pulse" />
+                          <div className="w-2.5 h-2.5 bg-gradient-to-r from-red-500 to-red-500 rounded-full mt-1 animate-pulse" />
                         )}
                       </div>
                     </div>

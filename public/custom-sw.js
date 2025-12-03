@@ -1,10 +1,10 @@
 /* eslint-disable no-restricted-globals */
 /*
-  Lightweight custom service worker for Room24.
+  Lightweight custom service worker for RentMzansi.
   NOTE: Placed in public/ to avoid CRA Workbox injection requirement.
 */
 
-const VERSION = 'room24-v1';
+const VERSION = 'rentmzansi-v1';
 const CORE_ASSETS = [
   '/',
   '/index.html'

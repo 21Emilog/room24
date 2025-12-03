@@ -20,7 +20,7 @@ export default function AnalyticsConsentModal({ onAccept, onDecline }) {
         
         <div className="p-6">
           <p className="text-gray-600 mb-4">
-            Room24 would like to collect anonymous analytics to improve your experience:
+            RentMzansi would like to collect anonymous analytics to improve your experience:
           </p>
           
           <div className="space-y-3 mb-6">

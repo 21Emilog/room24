@@ -35,7 +35,7 @@ export default function ListingSkeletonCard() {
       
       {/* Price and button skeleton */}
       <div className="flex justify-between items-center">
-        <div className="relative h-6 bg-gradient-to-r from-teal-100 via-teal-50 to-teal-100 rounded-md w-24 overflow-hidden">
+        <div className="relative h-6 bg-gradient-to-r from-red-100 via-red-50 to-red-100 rounded-md w-24 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer" />
         </div>
         <div className="relative h-9 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 rounded-lg w-24 overflow-hidden">

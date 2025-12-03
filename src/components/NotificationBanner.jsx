@@ -31,7 +31,7 @@ export default function NotificationBanner({ title, body, onClose, type = 'info'
 
   const typeStyles = {
     info: 'bg-gradient-to-r from-blue-500 to-indigo-500',
-    success: 'bg-gradient-to-r from-emerald-500 to-teal-500',
+    success: 'bg-gradient-to-r from-emerald-500 to-red-500',
     warning: 'bg-gradient-to-r from-amber-500 to-orange-500',
     error: 'bg-gradient-to-r from-rose-500 to-red-500',
   };

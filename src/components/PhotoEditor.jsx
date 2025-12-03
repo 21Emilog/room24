@@ -96,7 +96,7 @@ export default function PhotoEditor({ photos, onPhotosChange, onClose, maxPhotos
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
       <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-100">
-        <div className="sticky top-0 bg-gradient-to-r from-teal-600 to-cyan-600 p-4 flex justify-between items-center z-10 rounded-t-2xl">
+        <div className="sticky top-0 bg-gradient-to-r from-[#E63946] to-[#c5303c] p-4 flex justify-between items-center z-10 rounded-t-2xl">
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <Camera className="w-5 h-5" />
             Manage Photos
@@ -115,7 +115,7 @@ export default function PhotoEditor({ photos, onPhotosChange, onClose, maxPhotos
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={photos.length >= maxPhotos}
-              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-xl hover:from-teal-600 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-teal-500/25 active:scale-95 font-medium"
+              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-500 to-[#E63946] text-white rounded-xl hover:from-[#E63946] hover:to-[#c5303c] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-red-500/25 active:scale-95 font-medium"
             >
               <Upload className="w-4 h-4" />
               Upload Photos
@@ -154,9 +154,9 @@ export default function PhotoEditor({ photos, onPhotosChange, onClose, maxPhotos
 
           {/* Photo Grid */}
           {photos.length === 0 ? (
-            <div className="text-center py-12 bg-gradient-to-br from-gray-50 to-teal-50 rounded-2xl border-2 border-dashed border-gray-200">
-              <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-teal-100 to-cyan-100 rounded-full flex items-center justify-center">
-                <Camera className="w-10 h-10 text-teal-500" />
+            <div className="text-center py-12 bg-gradient-to-br from-gray-50 to-red-50 rounded-2xl border-2 border-dashed border-gray-200">
+              <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-red-100 to-red-100 rounded-full flex items-center justify-center">
+                <Camera className="w-10 h-10 text-red-500" />
               </div>
               <p className="text-gray-600 font-medium mb-1">No photos yet</p>
               <p className="text-sm text-gray-400">Upload or take photos to showcase your property</p>
@@ -263,7 +263,7 @@ export default function PhotoEditor({ photos, onPhotosChange, onClose, maxPhotos
                   </button>
                   <button
                     onClick={applyCrop}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-500 to-red-500 hover:from-emerald-600 hover:to-[#E63946] text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all"
                   >
                     <Check className="w-4 h-4" />
                     Apply Crop

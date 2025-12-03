@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.room24.app',
-  appName: 'room24',
+  appId: 'com.rentmzansi.app',
+  appName: 'RentMzansi',
   webDir: 'build'
 };
 

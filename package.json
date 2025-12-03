@@ -1,5 +1,5 @@
 {
-  "name": "room-rental-platform",
+  "name": "rentmzansi",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
@@ -55,6 +55,7 @@
     ]
   },
   "devDependencies": {
+    "@types/node": "^24.10.1",
     "cross-env": "^10.1.0",
     "http-server": "^14.1.1"
   }

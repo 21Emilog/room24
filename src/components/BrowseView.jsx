@@ -355,11 +355,11 @@ export default function BrowseView({
           placeholder="Search location..."
           value={searchLocation}
           onChange={(e) => setSearchLocation(e.target.value)}
-          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-teal-600 focus:border-transparent"
+          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-[#E63946] focus:border-transparent"
           aria-label="Location search"
         />
         {locationLoading && (
-          <span className="text-xs text-teal-600 animate-pulse" aria-live="polite">Loading...</span>
+          <span className="text-xs text-[#E63946] animate-pulse" aria-live="polite">Loading...</span>
         )}
       </div>
       <div className="flex flex-col gap-3">
@@ -396,7 +396,7 @@ export default function BrowseView({
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="text-sm bg-white border border-gray-300 px-2 py-1 rounded focus:ring-2 focus:ring-teal-600"
+            className="text-sm bg-white border border-gray-300 px-2 py-1 rounded focus:ring-2 focus:ring-[#E63946]"
             aria-label="Sort order"
           >
             <option value="newest">Newest</option>
@@ -409,7 +409,7 @@ export default function BrowseView({
           <select
             value={paymentFilter}
             onChange={(e) => setPaymentFilter(e.target.value)}
-            className="text-sm bg-white border border-gray-300 px-2 py-1 rounded focus:ring-2 focus:ring-teal-600"
+            className="text-sm bg-white border border-gray-300 px-2 py-1 rounded focus:ring-2 focus:ring-[#E63946]"
             aria-label="Payment method"
           >
             <option value="">Any</option>
@@ -429,14 +429,14 @@ export default function BrowseView({
                     key={s.id}
                     type="button"
                     onClick={() => loadSearch(s)}
-                    className="px-2 py-1 rounded-md text-[11px] font-medium bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100"
+                    className="px-2 py-1 rounded-md text-[11px] font-medium bg-red-50 text-[#E63946] border border-red-200 hover:bg-red-100"
                   >{s.location || 'Any'} • {s.priceRange[0]}-{s.priceRange[1]}</button>
                 ))}
               </div>
               <button
                 type="button"
                 onClick={saveCurrentSearch}
-                className="mt-1 text-xs text-teal-700 hover:text-teal-800 font-medium underline"
+                className="mt-1 text-xs text-[#E63946] hover:text-[#c5303c] font-medium underline"
               >Save Current Search</button>
             </div>
         <div>
@@ -447,7 +447,7 @@ export default function BrowseView({
                 key={a}
                 type="button"
                 onClick={() => toggleAmenity(a)}
-                className={`px-2 py-1 rounded-md text-[11px] font-medium border transition ${selectedAmenities.includes(a) ? 'bg-teal-600 text-white border-teal-600 shadow-sm' : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'}`}
+                className={`px-2 py-1 rounded-md text-[11px] font-medium border transition ${selectedAmenities.includes(a) ? 'bg-[#E63946] text-white border-[#E63946] shadow-sm' : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'}`}
                 aria-pressed={selectedAmenities.includes(a)}
               >{a}</button>
             ))}
@@ -455,7 +455,7 @@ export default function BrowseView({
         </div>
         <button
           onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-          className="mt-2 text-xs text-teal-700 hover:text-teal-800 font-semibold px-2 py-1 rounded hover:bg-teal-50 transition"
+          className="mt-2 text-xs text-[#E63946] hover:text-[#c5303c] font-semibold px-2 py-1 rounded hover:bg-red-50 transition"
           aria-expanded={showAdvancedFilters}
         >{showAdvancedFilters ? 'Close Advanced' : 'More Filters'}</button>
         {showAdvancedFilters && (
@@ -472,7 +472,7 @@ export default function BrowseView({
         <div className="layout-desktop">
           <aside className="sidebar-nav" role="navigation" aria-label="Desktop navigation and filters">
             <div>
-              <h2 className="text-xl font-bold flex items-center gap-2 mb-4"><span className="bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">Room</span><span className="text-amber-500">24</span></h2>
+              <h2 className="text-xl font-bold flex items-center gap-2 mb-4"><span className="bg-gradient-to-r from-[#E63946] to-[#c5303c] bg-clip-text text-transparent">Rent</span><span className="text-[#1D3557]">Mzansi</span></h2>
               <div className="sidebar-section-title mb-2">Navigation</div>
               <div className="sidebar-menu">
                 {desktopNavItems.filter(i => i.show === undefined || i.show).map(item => {
@@ -533,7 +533,7 @@ export default function BrowseView({
                         <button
                           key={area}
                           onClick={() => setSearchLocation(area)}
-                          className="text-xs px-3 py-1.5 rounded-full bg-teal-50 text-teal-700 hover:bg-teal-100 border border-teal-200 transition-all"
+                          className="text-xs px-3 py-1.5 rounded-full bg-red-50 text-[#E63946] hover:bg-red-100 border border-red-200 transition-all"
                         >
                           {area}
                         </button>
@@ -546,7 +546,7 @@ export default function BrowseView({
                         setSelectedAmenities([]);
                         setPaymentFilter('');
                       }}
-                      className="text-sm text-teal-600 hover:text-teal-700 font-semibold"
+                      className="text-sm text-[#E63946] hover:text-[#c5303c] font-semibold"
                     >
                       Clear all filters
                     </button>
@@ -578,11 +578,11 @@ export default function BrowseView({
     <div className="bg-gradient-to-b from-slate-50 to-gray-100 min-h-screen pb-24" role="main" aria-labelledby="results-heading">
       {/* Welcome Hero Section */}
       {showWelcomeHero && !currentUser && listings.length > 0 && (
-        <div className="bg-gradient-to-br from-teal-600 via-teal-700 to-cyan-700 text-white relative overflow-hidden">
+        <div className="bg-gradient-to-br from-[#1D3557] via-[#1D3557] to-[#2d4a6f] text-white relative overflow-hidden">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRoLTJ2LTRoMnYtMmgtMnYtMmgydi0ySDI0djJoMnYyaC0ydjJoMnY0aC0ydjJoMTJ2LTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
           {/* Decorative circles */}
           <div className="absolute -top-20 -right-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
-          <div className="absolute -bottom-20 -left-20 w-48 h-48 bg-cyan-400/20 rounded-full blur-3xl" />
+          <div className="absolute -bottom-20 -left-20 w-48 h-48 bg-[#E63946]/20 rounded-full blur-3xl" />
           
           <div className="max-w-7xl mx-auto px-4 py-10 relative">
             <button 
@@ -599,9 +599,9 @@ export default function BrowseView({
               </div>
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold mb-4">
-              Find Your Perfect <span className="text-amber-300">Room</span>
+              Find Your Perfect <span className="text-[#E63946]">Room</span>
             </h1>
-            <p className="text-teal-100 text-lg mb-8 max-w-lg">
+            <p className="text-[#F1FAEE]/80 text-lg mb-8 max-w-lg">
               Discover affordable rooms across South Africa. Connect directly with verified landlords — no middleman fees.
             </p>
             <div className="flex flex-wrap gap-4 mb-6">
@@ -620,7 +620,7 @@ export default function BrowseView({
             </div>
             <button
               onClick={() => onRequireAuth && onRequireAuth('renter')}
-              className="inline-flex items-center gap-2 bg-white text-teal-700 font-bold px-6 py-3 rounded-xl hover:bg-teal-50 transition-all shadow-lg hover:shadow-xl active:scale-95"
+              className="inline-flex items-center gap-2 bg-[#E63946] text-white font-bold px-6 py-3 rounded-xl hover:bg-[#c5303c] transition-all shadow-lg hover:shadow-xl active:scale-95"
             >
               Get Started Free
               <ArrowRight className="w-5 h-5" />
@@ -634,7 +634,7 @@ export default function BrowseView({
           <div className="mb-4 space-y-4">
             {/* Search Input */}
             <div className="relative">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-md">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-gradient-to-br from-[#E63946] to-[#c5303c] rounded-xl flex items-center justify-center shadow-md">
                 <MapPin className="w-5 h-5 text-white" />
               </div>
               <input
@@ -643,12 +643,12 @@ export default function BrowseView({
                 value={searchLocation}
                 onChange={(e) => setSearchLocation(e.target.value)}
                 onBlur={() => { if (searchLocation) addRecentSearch(searchLocation); }}
-                className="w-full pl-16 pr-12 py-4 border-2 border-gray-200 rounded-2xl text-gray-800 text-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 shadow-sm transition-all duration-200 hover:border-teal-300 placeholder-gray-400"
+                className="w-full pl-16 pr-12 py-4 border-2 border-gray-200 rounded-2xl text-gray-800 text-lg focus:ring-2 focus:ring-[#E63946] focus:border-[#E63946] shadow-sm transition-all duration-200 hover:border-red-300 placeholder-gray-400"
                 aria-label="Location search"
               />
               {locationLoading && (
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 text-teal-600" aria-live="polite">
-                  <div className="w-5 h-5 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[#E63946]" aria-live="polite">
+                  <div className="w-5 h-5 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
                 </div>
               )}
               {!locationLoading && searchLocation && (
@@ -662,8 +662,8 @@ export default function BrowseView({
               )}
               {/* Location suggestions dropdown */}
               {locationSuggestions.length > 0 && (
-                <div className="absolute left-0 right-0 top-full mt-2 bg-white border-2 border-teal-200 rounded-2xl shadow-xl z-20 overflow-hidden animate-fadeIn">
-                  <div className="text-xs text-teal-700 px-4 py-2.5 bg-gradient-to-r from-teal-50 to-cyan-50 border-b border-teal-100 font-semibold flex items-center gap-2">
+                <div className="absolute left-0 right-0 top-full mt-2 bg-white border-2 border-red-200 rounded-2xl shadow-xl z-20 overflow-hidden animate-fadeIn">
+                  <div className="text-xs text-[#E63946] px-4 py-2.5 bg-gradient-to-r from-red-50 to-rose-50 border-b border-red-100 font-semibold flex items-center gap-2">
                     <MapPin className="w-3.5 h-3.5" /> Suggestions
                   </div>
                   {locationSuggestions.map((s, i) => (
@@ -671,10 +671,10 @@ export default function BrowseView({
                       key={s}
                       type="button"
                       onClick={() => { setSearchLocation(s); setLocationSuggestions([]); addRecentSearch(s); }}
-                      className={`w-full text-left px-4 py-3 text-sm hover:bg-teal-50 flex items-center gap-3 transition-colors ${i > 0 ? 'border-t border-gray-100' : ''}`}
+                      className={`w-full text-left px-4 py-3 text-sm hover:bg-red-50 flex items-center gap-3 transition-colors ${i > 0 ? 'border-t border-gray-100' : ''}`}
                     >
-                      <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center">
-                        <MapPin className="w-4 h-4 text-teal-600" />
+                      <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
+                        <MapPin className="w-4 h-4 text-[#E63946]" />
                       </div>
                       <span className="text-gray-800 font-medium">{s}</span>
                     </button>
@@ -705,7 +705,7 @@ export default function BrowseView({
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <button 
-                className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white px-6 py-3 rounded-xl transition-all duration-200 font-bold shadow-lg hover:shadow-xl text-sm flex items-center gap-2 active:scale-95" 
+                className="bg-gradient-to-r from-[#E63946] to-[#c5303c] hover:from-[#c5303c] hover:to-[#a52833] text-white px-6 py-3 rounded-xl transition-all duration-200 font-bold shadow-lg hover:shadow-xl text-sm flex items-center gap-2 active:scale-95" 
                 onClick={() => { if (searchLocation) addRecentSearch(searchLocation); }} 
                 aria-label="Search submit"
               >
@@ -724,7 +724,7 @@ export default function BrowseView({
                   }
                   subscribeToArea && subscribeToArea(currentUser.id, searchLocation.trim());
                 }}
-                className="bg-white border-2 border-teal-200 text-teal-700 px-4 py-2.5 rounded-xl hover:bg-teal-50 hover:border-teal-300 transition font-semibold text-sm flex items-center gap-2"
+                className="bg-white border-2 border-red-200 text-[#E63946] px-4 py-2.5 rounded-xl hover:bg-red-50 hover:border-red-300 transition font-semibold text-sm flex items-center gap-2"
               >
                 <Bell className="w-4 h-4" />
                 Subscribe
@@ -748,8 +748,8 @@ export default function BrowseView({
                   onClick={() => { setSearchLocation(area); addRecentSearch(area); }}
                   className={`text-sm px-4 py-2 rounded-xl font-medium transition-all duration-200 ${
                     searchLocation.toLowerCase() === area.toLowerCase()
-                      ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md scale-105'
-                      : 'bg-white text-gray-700 hover:bg-teal-50 hover:text-teal-700 border-2 border-gray-200 hover:border-teal-300 shadow-sm'
+                      ? 'bg-gradient-to-r from-[#E63946] to-[#c5303c] text-white shadow-md scale-105'
+                      : 'bg-white text-gray-700 hover:bg-red-50 hover:text-[#E63946] border-2 border-gray-200 hover:border-red-300 shadow-sm'
                   }`}
                 >
                   {area}
@@ -764,7 +764,7 @@ export default function BrowseView({
                 onClick={() => setPriceRange([0, 3000])}
                 className={`text-sm px-4 py-2 rounded-xl transition-all duration-200 flex items-center gap-1.5 font-medium ${
                   priceRange[1] === 3000 && priceRange[0] === 0
-                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md scale-105'
+                    ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md scale-105'
                     : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-2 border-emerald-200 hover:border-emerald-300'
                 }`}
               >
@@ -793,8 +793,8 @@ export default function BrowseView({
                 onClick={() => toggleAmenity('WiFi')}
                 className={`text-sm px-4 py-2 rounded-xl transition-all duration-200 flex items-center gap-1.5 font-medium ${
                   selectedAmenities.includes('WiFi')
-                    ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md scale-105'
-                    : 'bg-teal-50 text-teal-700 hover:bg-teal-100 border-2 border-teal-200 hover:border-teal-300'
+                    ? 'bg-gradient-to-r from-[#E63946] to-[#c5303c] text-white shadow-md scale-105'
+                    : 'bg-red-50 text-[#E63946] hover:bg-red-100 border-2 border-red-200 hover:border-red-300'
                 }`}
               >
                 📶 WiFi
@@ -818,7 +818,7 @@ export default function BrowseView({
                     key={s.id}
                     type="button"
                     onClick={() => loadSearch(s)}
-                    className="text-[11px] px-2 py-1 rounded bg-teal-50 text-teal-700 border border-teal-200"
+                    className="text-[11px] px-2 py-1 rounded bg-red-50 text-[#E63946] border border-red-200"
                   >{s.location || 'Any'} • {s.priceRange[0]}-{s.priceRange[1]}</button>
                 ))}
               </div>
@@ -855,7 +855,7 @@ export default function BrowseView({
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="text-sm px-3 py-2 rounded-lg bg-gray-200 border border-gray-300 text-gray-700 focus:ring-2 focus:ring-teal-600"
+                className="text-sm px-3 py-2 rounded-lg bg-gray-200 border border-gray-300 text-gray-700 focus:ring-2 focus:ring-[#E63946]"
                 aria-label="Sort order"
               >
                 <option value="newest">Newest</option>
@@ -868,7 +868,7 @@ export default function BrowseView({
               <select
                 value={paymentFilter}
                 onChange={(e) => setPaymentFilter(e.target.value)}
-                className="text-sm px-3 py-2 rounded-lg bg-gray-200 border border-gray-300 text-gray-700 focus:ring-2 focus:ring-teal-600"
+                className="text-sm px-3 py-2 rounded-lg bg-gray-200 border border-gray-300 text-gray-700 focus:ring-2 focus:ring-[#E63946]"
                 aria-label="Payment method filter"
               >
                 <option value="">Any</option>
@@ -879,7 +879,7 @@ export default function BrowseView({
             </div>
             <button
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-              className="text-sm text-teal-700 hover:text-teal-800 font-medium px-3 py-2 rounded-lg hover:bg-teal-50 transition"
+              className="text-sm text-[#E63946] hover:text-[#c5303c] font-medium px-3 py-2 rounded-lg hover:bg-red-50 transition"
               aria-expanded={showAdvancedFilters}
             >{showAdvancedFilters ? '✕ Filters' : '⚙️ Filters'}</button>
           </div>
@@ -895,7 +895,7 @@ export default function BrowseView({
                       onClick={() => setRoomType(roomType === type.toLowerCase() ? '' : type.toLowerCase())}
                       className={`px-3 py-1.5 rounded-md text-sm font-medium border transition ${ 
                         roomType === type.toLowerCase()
-                          ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
+                          ? 'bg-[#E63946] text-white border-[#E63946] shadow-sm'
                           : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                       }`}
                     >{type}</button>
@@ -918,7 +918,7 @@ export default function BrowseView({
                       onClick={() => setLeaseDuration(leaseDuration === opt.value ? '' : opt.value)}
                       className={`px-3 py-1.5 rounded-md text-sm font-medium border transition ${
                         leaseDuration === opt.value
-                          ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
+                          ? 'bg-[#E63946] text-white border-[#E63946] shadow-sm'
                           : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                       }`}
                     >{opt.label}</button>
@@ -933,7 +933,7 @@ export default function BrowseView({
                     type="checkbox"
                     checked={petFriendly}
                     onChange={(e) => setPetFriendly(e.target.checked)}
-                    className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                    className="w-4 h-4 text-[#E63946] border-gray-300 rounded focus:ring-[#E63946]"
                   />
                   <span className="text-sm font-medium text-gray-700">🐾 Pet Friendly</span>
                 </label>
@@ -953,7 +953,7 @@ export default function BrowseView({
                       onClick={() => setGenderPreference(genderPreference === opt.value ? '' : opt.value)}
                       className={`px-3 py-1.5 rounded-md text-sm font-medium border transition ${
                         genderPreference === opt.value
-                          ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
+                          ? 'bg-[#E63946] text-white border-[#E63946] shadow-sm'
                           : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                       }`}
                     >{opt.label}</button>
@@ -970,7 +970,7 @@ export default function BrowseView({
                       key={a}
                       type="button"
                       onClick={() => toggleAmenity(a)}
-                      className={`px-2 py-1 rounded-md text-[11px] font-medium border transition ${selectedAmenities.includes(a) ? 'bg-teal-600 text-white border-teal-600 shadow-sm' : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'}`}
+                      className={`px-2 py-1 rounded-md text-[11px] font-medium border transition ${selectedAmenities.includes(a) ? 'bg-[#E63946] text-white border-[#E63946] shadow-sm' : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'}`}
                       aria-pressed={selectedAmenities.includes(a)}
                     >{a}</button>
                   ))}
@@ -992,7 +992,7 @@ export default function BrowseView({
               'No rooms available'
             ) : (
               <span className="flex items-center gap-2">
-                <span className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-lg font-bold px-3 py-1 rounded-lg shadow-sm">{listings.length}</span>
+                <span className="bg-gradient-to-r from-[#E63946] to-[#c5303c] text-white text-lg font-bold px-3 py-1 rounded-lg shadow-sm">{listings.length}</span>
                 <span>Rooms Available</span>
               </span>
             )}
@@ -1026,7 +1026,7 @@ export default function BrowseView({
                     setGenderPreference('');
                     setPaymentFilter('');
                   }}
-                  className="inline-flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-medium px-6 py-2.5 rounded-lg transition shadow-sm"
+                  className="inline-flex items-center gap-2 bg-[#E63946] hover:bg-[#c5303c] text-white font-medium px-6 py-2.5 rounded-lg transition shadow-sm"
                 >
                   Clear All Filters
                 </button>
@@ -1088,7 +1088,7 @@ export default function BrowseView({
                   <div className="text-center mt-6 pt-6 border-t border-gray-100">
                     <button
                       onClick={() => onRequireAuth && onRequireAuth('renter')}
-                      className="inline-flex items-center gap-2 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all"
+                      className="inline-flex items-center gap-2 bg-gradient-to-r from-[#E63946] to-[#c5303c] hover:from-[#c5303c] hover:to-[#a52833] text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all"
                     >
                       Create Free Account
                       <ArrowRight className="w-4 h-4" />

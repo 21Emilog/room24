@@ -136,7 +136,7 @@ export default function VirtualTourViewer({ photos, initialIndex = 0, onClose })
               Virtual Tour
             </h3>
             <p className="text-sm text-gray-300 flex items-center gap-1">
-              <span className="w-2 h-2 bg-teal-400 rounded-full animate-pulse" />
+              <span className="w-2 h-2 bg-[#E63946] rounded-full animate-pulse" />
               {currentIndex + 1} of {photos.length} views
             </p>
           </div>
@@ -191,7 +191,7 @@ export default function VirtualTourViewer({ photos, initialIndex = 0, onClose })
                 onClick={() => setCurrentIndex(index)}
                 className={`flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden transition-all duration-200 ${
                   index === currentIndex
-                    ? 'ring-2 ring-teal-400 ring-offset-2 ring-offset-black scale-105 shadow-lg shadow-teal-500/30'
+                    ? 'ring-2 ring-[#E63946] ring-offset-2 ring-offset-black scale-105 shadow-lg shadow-red-500/30'
                     : 'opacity-60 hover:opacity-100 hover:scale-105 border border-white/20'
                 }`}
               >
@@ -213,7 +213,7 @@ export default function VirtualTourViewer({ photos, initialIndex = 0, onClose })
             >
               <ZoomOut className="w-5 h-5" />
             </button>
-            <div className="px-4 py-2 bg-gradient-to-r from-teal-500/30 to-cyan-500/30 backdrop-blur-sm rounded-xl text-white text-sm font-bold min-w-[85px] text-center border border-white/10">
+            <div className="px-4 py-2 bg-gradient-to-r from-red-500/30 to-red-500/30 backdrop-blur-sm rounded-xl text-white text-sm font-bold min-w-[85px] text-center border border-white/10">
               {Math.round(zoom * 100)}%
             </div>
             <button

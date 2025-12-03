@@ -72,8 +72,8 @@ export default function PrivacyPolicyModal({ onClose }) {
               We use the following third-party services that may collect your information:
             </p>
             <ul className="list-disc list-inside space-y-2 text-gray-600 ml-4">
-              <li><strong>Google AdSense:</strong> Displays advertisements on our platform. <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:underline">Google Privacy Policy</a></li>
-              <li><strong>OpenStreetMap/Mapbox:</strong> Provides map tiles and geocoding services. <a href="https://wiki.osmfoundation.org/wiki/Privacy_Policy" target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:underline">OSM Privacy Policy</a></li>
+              <li><strong>Google AdSense:</strong> Displays advertisements on our platform. <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-[#E63946] hover:underline">Google Privacy Policy</a></li>
+              <li><strong>OpenStreetMap/Mapbox:</strong> Provides map tiles and geocoding services. <a href="https://wiki.osmfoundation.org/wiki/Privacy_Policy" target="_blank" rel="noopener noreferrer" className="text-[#E63946] hover:underline">OSM Privacy Policy</a></li>
               <li><strong>WhatsApp:</strong> Enables direct communication via WhatsApp (when you click a WhatsApp link)</li>
             </ul>
           </section>
@@ -183,8 +183,8 @@ export default function PrivacyPolicyModal({ onClose }) {
               <p className="text-gray-600 mt-2">For complaints or concerns, you may also contact:</p>
               <p className="text-gray-600">
                 <strong>Information Regulator (South Africa)</strong><br />
-                Email: <a href="mailto:inforeg@justice.gov.za" className="text-teal-600 hover:underline">inforeg@justice.gov.za</a><br />
-                Website: <a href="https://www.justice.gov.za/inforeg/" target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:underline">www.justice.gov.za/inforeg</a>
+                Email: <a href="mailto:inforeg@justice.gov.za" className="text-[#E63946] hover:underline">inforeg@justice.gov.za</a><br />
+                Website: <a href="https://www.justice.gov.za/inforeg/" target="_blank" rel="noopener noreferrer" className="text-[#E63946] hover:underline">www.justice.gov.za/inforeg</a>
               </p>
             </div>
           </section>
@@ -192,7 +192,7 @@ export default function PrivacyPolicyModal({ onClose }) {
           <div className="border-t border-gray-200 pt-6 mt-8">
             <button
               onClick={onClose}
-              className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-semibold py-3.5 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
+              className="w-full bg-gradient-to-r from-red-500 to-[#c5303c] hover:from-[#E63946] hover:to-[#a52833] text-white font-semibold py-3.5 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
             >
               I Understand
             </button>

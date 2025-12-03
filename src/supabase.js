@@ -1,4 +1,4 @@
-// Supabase client for Room24
+// Supabase client for RentMzansi
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = 'https://xohczphzosfgdlgwrlrw.supabase.co';

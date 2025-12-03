@@ -45,8 +45,8 @@ const ModalLoader = ({ label }) => (
   <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/20 backdrop-blur-sm">
     <div className="bg-white border border-slate-100 rounded-2xl px-6 py-4 shadow-2xl flex flex-col items-center gap-3">
       <div className="relative">
-        <div className="w-10 h-10 rounded-full border-3 border-teal-100" />
-        <div className="absolute inset-0 w-10 h-10 rounded-full border-3 border-transparent border-t-teal-500 animate-spin" />
+        <div className="w-10 h-10 rounded-full border-3 border-red-100" />
+        <div className="absolute inset-0 w-10 h-10 rounded-full border-3 border-transparent border-t-red-500 animate-spin" />
       </div>
       <span className="text-sm font-semibold text-slate-600">{label}</span>
     </div>
@@ -845,7 +845,7 @@ const filteredListings = listings
     <div className="relative min-h-screen overflow-hidden app-container" style={{ backgroundColor: 'var(--c-bg)' }}>
       {/* Decorative background blobs - adds personality */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-50">
-        <div className="absolute -top-32 left-6 w-72 h-72 bg-teal-500/20 blur-[120px] rounded-full animate-pulse" />
+        <div className="absolute -top-32 left-6 w-72 h-72 bg-red-500/20 blur-[120px] rounded-full animate-pulse" />
         <div className="absolute top-20 right-0 w-96 h-96 bg-violet-500/15 blur-[140px] rounded-full animate-[pulse_6s_ease-in-out_infinite]" />
         <div className="absolute bottom-[-120px] left-1/2 -translate-x-1/2 w-[520px] h-[520px] bg-rose-500/10 blur-[200px] rounded-full" />
       </div>
@@ -918,7 +918,7 @@ const filteredListings = listings
             <button
               type="button"
               onClick={() => setShowPulsePanel(prev => !prev)}
-              className="w-full flex items-center justify-between rounded-2xl border border-white/60 bg-white/80 backdrop-blur-lg shadow-md px-4 py-3 text-left transition-all hover:border-teal-200"
+              className="w-full flex items-center justify-between rounded-2xl border border-white/60 bg-white/80 backdrop-blur-lg shadow-md px-4 py-3 text-left transition-all hover:border-red-200"
               aria-expanded={showPulsePanel ? 'true' : 'false'}
             >
               <div>
@@ -930,14 +930,14 @@ const filteredListings = listings
             {showPulsePanel && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 animate-fadeIn">
                 <div className="relative overflow-hidden rounded-2xl border border-white/70 bg-white/80 backdrop-blur-xl shadow-lg p-4 sm:p-5">
-                  <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 to-cyan-500/5" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-red-500/5" />
                   <div className="relative flex items-center justify-between">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-widest text-teal-600">Active rooms</p>
+                      <p className="text-xs font-semibold uppercase tracking-widest text-[#E63946]">Active rooms</p>
                       <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">{marketplaceStats.availableNow}</p>
                       <p className="text-xs text-slate-500">of {marketplaceStats.total} total</p>
                     </div>
-                    <div className="w-12 h-12 rounded-2xl bg-teal-500/15 flex items-center justify-center text-teal-600">
+                    <div className="w-12 h-12 rounded-2xl bg-red-500/15 flex items-center justify-center text-[#E63946]">
                       <Home className="w-5 h-5" />
                     </div>
                   </div>
@@ -1401,7 +1401,7 @@ function ProfileSetupView({ onSubmit, userType }) {
                 placeholder="Enter your full name"
                 aria-invalid={errors.name ? 'true' : 'false'}
                 aria-describedby={errors.name ? 'profile-name-error' : undefined}
-                className={`w-full px-4 py-3 border-2 ${errors.name ? 'border-red-400' : 'border-gray-200'} bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition placeholder-gray-400`}
+                className={`w-full px-4 py-3 border-2 ${errors.name ? 'border-red-400' : 'border-gray-200'} bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-[#E63946] focus:border-transparent transition placeholder-gray-400`}
               />
               {errors.name && touched.name && <p id="profile-name-error" className="mt-1 text-xs text-red-600">{errors.name}</p>}
             </div>
@@ -1419,7 +1419,7 @@ function ProfileSetupView({ onSubmit, userType }) {
                   placeholder="e.g., +27 12 345 6789"
                   aria-invalid={errors.phone ? 'true' : 'false'}
                   aria-describedby={errors.phone ? 'profile-phone-error' : undefined}
-                  className={`w-full pl-11 pr-4 py-3 border-2 ${errors.phone ? 'border-red-400' : 'border-gray-200'} bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition placeholder-gray-400`}
+                  className={`w-full pl-11 pr-4 py-3 border-2 ${errors.phone ? 'border-red-400' : 'border-gray-200'} bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-[#E63946] focus:border-transparent transition placeholder-gray-400`}
                 />
               </div>
               {errors.phone && touched.phone && <p id="profile-phone-error" className="mt-1 text-xs text-red-600">{errors.phone}</p>}
@@ -1438,7 +1438,7 @@ function ProfileSetupView({ onSubmit, userType }) {
                   placeholder="your.email@example.com"
                   aria-invalid={errors.email ? 'true' : 'false'}
                   aria-describedby={errors.email ? 'profile-email-error' : undefined}
-                  className={`w-full pl-11 pr-4 py-3 border-2 ${errors.email ? 'border-red-400' : 'border-gray-200'} bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition placeholder-gray-400`}
+                  className={`w-full pl-11 pr-4 py-3 border-2 ${errors.email ? 'border-red-400' : 'border-gray-200'} bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-[#E63946] focus:border-transparent transition placeholder-gray-400`}
                 />
               </div>
               {errors.email && touched.email && <p id="profile-email-error" className="mt-1 text-xs text-red-600">{errors.email}</p>}
@@ -1453,7 +1453,7 @@ function ProfileSetupView({ onSubmit, userType }) {
                   value={formData.whatsapp}
                   onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
                   placeholder="e.g., +27 71 234 5678"
-                  className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition placeholder-gray-400"
+                  className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-[#E63946] focus:border-transparent transition placeholder-gray-400"
                 />
               </div>
               <p className="text-xs text-gray-500 mt-1">Used to create a WhatsApp chat link on your listings.</p>
@@ -1462,7 +1462,7 @@ function ProfileSetupView({ onSubmit, userType }) {
             {/* Submit Button */}
             <button
               onClick={handleSubmit}
-              className="w-full bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-semibold py-3 rounded-xl transition mt-8 shadow-lg hover:shadow-xl"
+              className="w-full bg-gradient-to-r from-red-500 to-red-500 hover:from-[#E63946] hover:to-[#c5303c] text-white font-semibold py-3 rounded-xl transition mt-8 shadow-lg hover:shadow-xl"
             >
               Complete Setup
             </button>
@@ -1584,7 +1584,7 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
             <span className={`inline-flex items-center mt-2 px-4 py-1.5 rounded-full text-sm font-semibold border transition-all hover:scale-105 ${
               user.type === 'landlord' 
                 ? 'bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 border-amber-200'
-                : 'bg-gradient-to-r from-teal-50 to-cyan-50 text-teal-700 border-teal-100'
+                : 'bg-gradient-to-r from-red-50 to-red-50 text-[#c5303c] border-red-100'
             }`}>
               {user.type === 'landlord' ? (
                 <>
@@ -1636,10 +1636,10 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
 
           {/* Contact Info Cards */}
           <div className="space-y-3 mb-6">
-            <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-4 border border-gray-100 hover:border-teal-200 hover:shadow-md transition-all duration-300 group cursor-default">
+            <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-4 border border-gray-100 hover:border-red-200 hover:shadow-md transition-all duration-300 group cursor-default">
               <div className="flex items-center">
-                <div className="w-11 h-11 bg-gradient-to-br from-teal-100 to-cyan-100 rounded-xl flex items-center justify-center mr-4 shadow-sm group-hover:scale-110 transition-transform duration-300">
-                  <Phone className="w-5 h-5 text-teal-600" />
+                <div className="w-11 h-11 bg-gradient-to-br from-red-100 to-red-100 rounded-xl flex items-center justify-center mr-4 shadow-sm group-hover:scale-110 transition-transform duration-300">
+                  <Phone className="w-5 h-5 text-[#E63946]" />
                 </div>
                 <div className="flex-1">
                   <p className="text-xs font-medium text-gray-500 mb-0.5">Phone Number</p>
@@ -1648,7 +1648,7 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
                 {user.phone && (
                   <a 
                     href={`tel:${user.phone}`}
-                    className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
+                    className="p-2 text-[#E63946] hover:bg-red-50 rounded-lg transition-colors"
                     aria-label="Call this number"
                   >
                     <Phone className="w-4 h-4" />
@@ -1657,10 +1657,10 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-4 border border-gray-100 hover:border-cyan-200 hover:shadow-md transition-all duration-300 group cursor-default">
+            <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-4 border border-gray-100 hover:border-red-200 hover:shadow-md transition-all duration-300 group cursor-default">
               <div className="flex items-center">
-                <div className="w-11 h-11 bg-gradient-to-br from-cyan-100 to-blue-100 rounded-xl flex items-center justify-center mr-4 shadow-sm group-hover:scale-110 transition-transform duration-300">
-                  <Mail className="w-5 h-5 text-cyan-600" />
+                <div className="w-11 h-11 bg-gradient-to-br from-red-100 to-blue-100 rounded-xl flex items-center justify-center mr-4 shadow-sm group-hover:scale-110 transition-transform duration-300">
+                  <Mail className="w-5 h-5 text-[#c5303c]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-gray-500 mb-0.5">Email Address</p>
@@ -1668,7 +1668,7 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
                 </div>
                 <a 
                   href={`mailto:${user.email}`}
-                  className="p-2 text-cyan-600 hover:bg-cyan-50 rounded-lg transition-colors flex-shrink-0"
+                  className="p-2 text-[#c5303c] hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
                   aria-label="Send email"
                 >
                   <Mail className="w-4 h-4" />
@@ -1721,32 +1721,32 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
           </div>
 
           {/* Notification Preferences */}
-          <div className="bg-gradient-to-br from-teal-50 via-cyan-50 to-sky-50 rounded-xl p-5 border border-teal-100">
+          <div className="bg-gradient-to-br from-red-50 via-red-50 to-sky-50 rounded-xl p-5 border border-red-100">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-sm">
+              <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-500 rounded-xl flex items-center justify-center shadow-sm">
                 <Bell className="w-5 h-5 text-white" />
               </div>
               <h4 className="font-bold text-gray-800">Notification Preferences</h4>
             </div>
             <div className="space-y-3">
-              <label className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100 cursor-pointer hover:border-teal-200 transition-colors">
+              <label className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100 cursor-pointer hover:border-red-200 transition-colors">
                 <input
                   type="checkbox"
                   checked={localPrefs.updates}
                   onChange={() => togglePref('updates')}
-                  className="w-5 h-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                  className="w-5 h-5 rounded border-gray-300 text-[#E63946] focus:ring-red-500"
                 />
                 <div>
                   <p className="text-sm font-medium text-gray-800">Room Alerts</p>
                   <p className="text-xs text-gray-500">Get notified about new rooms in your saved areas</p>
                 </div>
               </label>
-              <label className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100 cursor-pointer hover:border-teal-200 transition-colors">
+              <label className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100 cursor-pointer hover:border-red-200 transition-colors">
                 <input
                   type="checkbox"
                   checked={localPrefs.marketing}
                   onChange={() => togglePref('marketing')}
-                  className="w-5 h-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                  className="w-5 h-5 rounded border-gray-300 text-[#E63946] focus:ring-red-500"
                 />
                 <div>
                   <p className="text-sm font-medium text-gray-800">Tips & Updates</p>
@@ -1943,7 +1943,7 @@ function LandlordOnboardingView({ onComplete, onCancel, currentUser }) {
                 <input 
                   value={form.businessName} 
                   onChange={(e) => setForm({ ...form, businessName: e.target.value })} 
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all" 
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all" 
                   placeholder="Your name or business name"
                 />
                 <p className="text-xs text-gray-500 mt-1.5">This name is shown to renters on your listings and messages.</p>
@@ -1955,7 +1955,7 @@ function LandlordOnboardingView({ onComplete, onCancel, currentUser }) {
                   value={form.bankDetails} 
                   onChange={(e) => setForm({ ...form, bankDetails: e.target.value })} 
                   placeholder="Bank account or preferred payment method" 
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all" 
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all" 
                 />
                 <p className="text-xs text-gray-500 mt-1.5">Private - only shown to confirmed renters.</p>
               </div>
@@ -1965,23 +1965,23 @@ function LandlordOnboardingView({ onComplete, onCancel, currentUser }) {
                 <input 
                   value={form.idNumber} 
                   onChange={(e) => setForm({ ...form, idNumber: e.target.value })} 
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all" 
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all" 
                   placeholder="For verification purposes"
                 />
                 <p className="text-xs text-gray-500 mt-1.5">Verified landlords get a trust badge on their listings.</p>
               </div>
 
-              <div className="bg-gradient-to-r from-teal-50 to-cyan-50 rounded-xl p-4 border border-teal-100">
+              <div className="bg-gradient-to-r from-red-50 to-red-50 rounded-xl p-4 border border-red-100">
                 <label className="flex items-start gap-3 cursor-pointer">
                   <input 
                     type="checkbox" 
                     checked={form.agree} 
                     onChange={(e) => setForm({ ...form, agree: e.target.checked })} 
-                    className="mt-1 w-5 h-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                    className="mt-1 w-5 h-5 rounded border-gray-300 text-[#E63946] focus:ring-red-500"
                   />
                   <span className="text-sm text-gray-700">
                     I confirm I am authorised to list these properties and agree to the{' '}
-                    <button type="button" onClick={(e) => e.preventDefault()} className="text-teal-600 hover:text-teal-700 font-medium underline">
+                    <button type="button" onClick={(e) => e.preventDefault()} className="text-[#E63946] hover:text-[#c5303c] font-medium underline">
                       terms of service
                     </button>.
                   </span>
@@ -1997,7 +1997,7 @@ function LandlordOnboardingView({ onComplete, onCancel, currentUser }) {
                 </button>
                 <button 
                   onClick={handleSubmit} 
-                  className="flex-1 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-semibold py-3.5 rounded-xl transition-all shadow-md hover:shadow-lg"
+                  className="flex-1 bg-gradient-to-r from-[#E63946] to-[#c5303c] hover:from-[#c5303c] hover:to-[#a52833] text-white font-semibold py-3.5 rounded-xl transition-all shadow-md hover:shadow-lg"
                 >
                   Complete & Start Listing
                 </button>
@@ -2858,8 +2858,8 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
 
           <div className="space-y-6">
             {currentUser?.type === 'landlord' && (
-              <div className="bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-200 text-teal-800 text-sm rounded-xl p-4 flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center flex-shrink-0">
+              <div className="bg-gradient-to-r from-red-50 to-red-50 border border-red-200 text-[#a52833] text-sm rounded-xl p-4 flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-red-500 to-[#c5303c] flex items-center justify-center flex-shrink-0">
                   <Sparkles className="w-4 h-4 text-white" />
                 </div>
                 <div className="space-y-2">
@@ -2869,7 +2869,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                   <button
                     type="button"
                     onClick={handleResetSavedTemplate}
-                    className="text-xs font-semibold text-teal-700 hover:text-teal-900 transition-colors flex items-center gap-1"
+                    className="text-xs font-semibold text-[#c5303c] hover:text-[#8a1f28] transition-colors flex items-center gap-1"
                   >
                     <RefreshCw className="w-3 h-3" /> Reset saved info
                   </button>
@@ -2879,7 +2879,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
             {/* Section: Basic Info */}
             <div className="border-b border-gray-100 pb-2 mb-4">
               <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-red-500 to-[#c5303c] flex items-center justify-center">
                   <Edit className="w-4 h-4 text-white" />
                 </div>
                 Basic Information
@@ -2907,10 +2907,10 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                   placeholder="e.g., Cozy backroom with private bathroom"
                   className={`w-full px-4 py-3.5 pr-10 border-2 ${
                     errors.title ? 'border-red-400 bg-red-50' : 
-                    formData.title && formData.title.trim().length >= 5 ? 'border-teal-400 bg-teal-50/30' : 
+                    formData.title && formData.title.trim().length >= 5 ? 'border-[#E63946] bg-red-50/30' : 
                     'border-gray-200 hover:border-gray-300'
                   } text-gray-800 rounded-xl focus:ring-2 ${
-                    errors.title ? 'focus:ring-red-400' : 'focus:ring-teal-400'
+                    errors.title ? 'focus:ring-red-400' : 'focus:ring-[#E63946]'
                   } focus:border-transparent transition-all placeholder-gray-400`}
                 />
                 {formData.title && formData.title.trim().length >= 5 && !errors.title && (
@@ -2929,7 +2929,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                 )}
               </label>
               <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-red-500 flex items-center justify-center">
                   <span className="text-white font-bold text-sm">R</span>
                 </div>
                 <input
@@ -2946,10 +2946,10 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                   max="50000"
                   className={`w-full pl-14 pr-4 py-3.5 border-2 ${
                     errors.price ? 'border-red-400 bg-red-50' : 
-                    formData.price && parseFloat(formData.price) >= 500 && parseFloat(formData.price) <= 50000 ? 'border-teal-400 bg-teal-50/30' : 
+                    formData.price && parseFloat(formData.price) >= 500 && parseFloat(formData.price) <= 50000 ? 'border-[#E63946] bg-red-50/30' : 
                     'border-gray-200 hover:border-gray-300'
                   } text-gray-800 rounded-xl focus:ring-2 ${
-                    errors.price ? 'focus:ring-red-400' : 'focus:ring-teal-400'
+                    errors.price ? 'focus:ring-red-400' : 'focus:ring-[#E63946]'
                   } focus:border-transparent transition-all placeholder-gray-400 text-lg font-semibold`}
                 />
                 {formData.price && parseFloat(formData.price) >= 500 && parseFloat(formData.price) <= 50000 && !errors.price && (
@@ -2965,7 +2965,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
             {/* Section: Location */}
             <div className="border-b border-gray-100 pb-2 mb-4 mt-8">
               <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-red-500 to-[#c5303c] flex items-center justify-center">
                   <MapPin className="w-4 h-4 text-white" />
                 </div>
                 Location Details
@@ -2984,7 +2984,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                 onFocus={() => setIsFullAddressEditing(true)}
                 onBlur={(e) => { setIsFullAddressEditing(false); handleFullAddressChange(e.target.value); }}
                 placeholder="Type the full street + suburb + city + postal code"
-                className={`w-full px-4 py-3.5 border-2 ${errors.location ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-gray-300'} bg-white text-gray-800 rounded-xl focus:ring-2 ${errors.location ? 'focus:ring-red-400' : 'focus:ring-teal-400'} focus:border-transparent transition placeholder-gray-400`}
+                className={`w-full px-4 py-3.5 border-2 ${errors.location ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-gray-300'} bg-white text-gray-800 rounded-xl focus:ring-2 ${errors.location ? 'focus:ring-red-400' : 'focus:ring-[#E63946]'} focus:border-transparent transition placeholder-gray-400`}
               />
               {errors.location && <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1" aria-live="assertive"><AlertCircle className="w-3 h-3" /> {errors.location}</p>}
               {!errors.location && (
@@ -2995,9 +2995,9 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
             </div>
 
             {/* Geocode Section - Manual confirmation only */}
-            <div className="bg-gradient-to-br from-teal-50 to-cyan-50 border-2 border-teal-200 rounded-xl p-6">
+            <div className="bg-gradient-to-br from-red-50 to-red-50 border-2 border-red-200 rounded-xl p-6">
               <div className="flex items-start gap-3 mb-4">
-                <MapPin className="w-6 h-6 text-teal-600 flex-shrink-0 mt-1" />
+                <MapPin className="w-6 h-6 text-[#E63946] flex-shrink-0 mt-1" />
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-800 mb-1">Confirm Your Address</h3>
                   <p className="text-sm text-gray-600">
@@ -3022,7 +3022,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                       {geocodingStatus.startsWith('✓') && <CheckCircle className="w-4 h-4" />}
                       {geocodingStatus}
                       {lastGeocodeSource === 'cached' && (
-                        <span className="ml-2 inline-block px-2 py-1 text-[10px] rounded bg-teal-100 text-teal-600 font-semibold">CACHED</span>
+                        <span className="ml-2 inline-block px-2 py-1 text-[10px] rounded bg-red-100 text-[#E63946] font-semibold">CACHED</span>
                       )}
                       {lastGeocodeSource === 'mapbox' && (
                         <span className="ml-2 inline-block px-2 py-1 text-[10px] rounded bg-blue-100 text-blue-600 font-semibold">MAPBOX</span>
@@ -3043,7 +3043,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                       <CheckCircle className="w-4 h-4" />
                       Coordinates saved: {formData.latitude.toFixed(4)}, {formData.longitude.toFixed(4)}
                       {lastGeocodeSource === 'cached' && (
-                        <span className="ml-2 inline-block px-2 py-1 text-[10px] rounded bg-teal-100 text-teal-600 font-semibold">CACHED</span>
+                        <span className="ml-2 inline-block px-2 py-1 text-[10px] rounded bg-red-100 text-[#E63946] font-semibold">CACHED</span>
                       )}
                       {lastGeocodeSource === 'maps.co' && (
                         <span className="ml-2 inline-block px-2 py-1 text-[10px] rounded bg-indigo-100 text-indigo-600 font-semibold">MAPS.CO</span>
@@ -3057,7 +3057,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                         href={googleMapsUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-teal-700 font-semibold hover:text-teal-900 underline"
+                        className="inline-flex items-center gap-2 text-[#c5303c] font-semibold hover:text-[#8a1f28] underline"
                       >
                         <MapPin className="w-3 h-3" /> Open in Google Maps
                       </a>
@@ -3075,7 +3075,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
             {/* Section: Room Details */}
             <div className="border-b border-gray-100 pb-2 mb-4 mt-8">
               <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-red-500 to-[#c5303c] flex items-center justify-center">
                   <Home className="w-4 h-4 text-white" />
                 </div>
                 Room Details
@@ -3115,7 +3115,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                   type="date"
                   value={formData.availableDate}
                   onChange={(e) => setFormData({ ...formData, availableDate: e.target.value })}
-                  className="w-full px-4 py-3.5 border-2 border-gray-200 hover:border-gray-300 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition"
+                  className="w-full px-4 py-3.5 border-2 border-gray-200 hover:border-gray-300 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-[#E63946] focus:border-transparent transition"
                 />
               </div>
             </div>
@@ -3131,7 +3131,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                     onClick={() => setFormData({ ...formData, paymentMethod: method })}
                     className={`py-3 px-3 rounded-xl font-medium transition-all text-xs md:text-sm text-center ${
                       formData.paymentMethod === method
-                        ? 'bg-gradient-to-r from-teal-500 to-cyan-600 text-white shadow-lg scale-[1.02]'
+                        ? 'bg-gradient-to-r from-red-500 to-[#c5303c] text-white shadow-lg scale-[1.02]'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-transparent'
                     }`}
                   >
@@ -3153,7 +3153,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                       onClick={() => setFormData({ ...formData, roomType: type.value })}
                       className={`py-3 px-3 rounded-xl font-medium transition-all text-sm flex items-center justify-center gap-2 ${
                         formData.roomType === type.value
-                          ? 'bg-gradient-to-r from-teal-500 to-cyan-600 text-white shadow-lg scale-[1.02]'
+                          ? 'bg-gradient-to-r from-red-500 to-[#c5303c] text-white shadow-lg scale-[1.02]'
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-transparent'
                       }`}
                     >
@@ -3169,7 +3169,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                 <select
                   value={formData.leaseDuration}
                   onChange={(e) => setFormData({ ...formData, leaseDuration: e.target.value })}
-                  className="w-full px-4 py-3.5 border-2 border-gray-200 hover:border-gray-300 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition cursor-pointer"
+                  className="w-full px-4 py-3.5 border-2 border-gray-200 hover:border-gray-300 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-[#E63946] focus:border-transparent transition cursor-pointer"
                 >
                   <option value="1-3">1-3 months (Short)</option>
                   <option value="4-6">4-6 months (Medium)</option>
@@ -3186,12 +3186,12 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                 onClick={() => setFormData({ ...formData, petFriendly: !formData.petFriendly })}
                 className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
                   formData.petFriendly
-                    ? 'border-teal-400 bg-teal-50 shadow-md scale-[1.02]'
+                    ? 'border-[#E63946] bg-red-50 shadow-md scale-[1.02]'
                     : 'border-gray-200 bg-white hover:border-gray-300'
                 }`}
               >
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl ${
-                  formData.petFriendly ? 'bg-teal-500 text-white' : 'bg-gray-100'
+                  formData.petFriendly ? 'bg-red-500 text-white' : 'bg-gray-100'
                 }`}>
                   🐾
                 </div>
@@ -3200,7 +3200,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                   <p className="text-xs text-gray-500">{formData.petFriendly ? 'Pets welcome!' : 'No pets allowed'}</p>
                 </div>
                 <div className={`ml-auto w-6 h-6 rounded-full flex items-center justify-center ${
-                  formData.petFriendly ? 'bg-teal-500 text-white' : 'bg-gray-200'
+                  formData.petFriendly ? 'bg-red-500 text-white' : 'bg-gray-200'
                 }`}>
                   {formData.petFriendly && <CheckCircle className="w-4 h-4" />}
                 </div>
@@ -3216,7 +3216,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                       onClick={() => setFormData({ ...formData, genderPreference: option.value })}
                       className={`py-2.5 px-3 rounded-xl font-medium transition-all text-xs flex flex-col items-center gap-1 ${
                         formData.genderPreference === option.value
-                          ? 'bg-gradient-to-r from-teal-500 to-cyan-600 text-white shadow-lg scale-[1.02]'
+                          ? 'bg-gradient-to-r from-red-500 to-[#c5303c] text-white shadow-lg scale-[1.02]'
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-transparent'
                       }`}
                     >
@@ -3259,7 +3259,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
             {/* Section: Contact */}
             <div className="border-b border-gray-100 pb-2 mb-4 mt-8">
               <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-red-500 to-[#c5303c] flex items-center justify-center">
                   <Phone className="w-4 h-4 text-white" />
                 </div>
                 Contact Details
@@ -3268,20 +3268,20 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
             </div>
 
             {/* Contact Details */}
-            <div className="bg-gradient-to-br from-teal-50 via-cyan-50 to-teal-50 border border-teal-200 rounded-2xl p-5">
+            <div className="bg-gradient-to-br from-red-50 via-red-50 to-red-50 border border-red-200 rounded-2xl p-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     📱 Phone Number
                   </label>
                   <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-teal-400" />
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#E63946]" />
                     <input
                       type="tel"
                       value={formData.contactPhone}
                       onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
                       placeholder="e.g., 071 234 5678"
-                      className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-200 hover:border-teal-300 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition placeholder-gray-400"
+                      className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-200 hover:border-red-300 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-[#E63946] focus:border-transparent transition placeholder-gray-400"
                     />
                   </div>
                   <p className="text-xs text-gray-500 mt-1.5">For direct calls from tenants</p>
@@ -3297,7 +3297,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                       value={formData.contactWhatsapp}
                       onChange={(e) => setFormData({ ...formData, contactWhatsapp: e.target.value })}
                       placeholder="e.g., 071 234 5678"
-                      className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-200 hover:border-teal-300 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition placeholder-gray-400"
+                      className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-200 hover:border-red-300 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-[#E63946] focus:border-transparent transition placeholder-gray-400"
                     />
                   </div>
                   <p className="text-xs text-gray-500 mt-1.5">Leave blank if same as phone</p>
@@ -3308,7 +3308,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
             {/* Section: Description & Media */}
             <div className="border-b border-gray-100 pb-2 mb-4 mt-8">
               <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-red-500 to-[#c5303c] flex items-center justify-center">
                   <Edit className="w-4 h-4 text-white" />
                 </div>
                 Description & Media
@@ -3343,9 +3343,9 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                 rows="5"
                 className={`w-full px-4 py-3.5 border-2 ${
                   errors.description ? 'border-red-400 bg-red-50' : 
-                  formData.description && formData.description.length >= 10 ? 'border-teal-400 bg-teal-50/30' :
+                  formData.description && formData.description.length >= 10 ? 'border-[#E63946] bg-red-50/30' :
                   'border-gray-200 hover:border-gray-300'
-                } bg-white text-gray-800 rounded-xl focus:ring-2 ${errors.description ? 'focus:ring-red-400' : 'focus:ring-teal-400'} focus:border-transparent transition placeholder-gray-400 resize-none`}
+                } bg-white text-gray-800 rounded-xl focus:ring-2 ${errors.description ? 'focus:ring-red-400' : 'focus:ring-[#E63946]'} focus:border-transparent transition placeholder-gray-400 resize-none`}
               />
               {errors.description && <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {errors.description}</p>}
               {!errors.description && <p className="text-gray-500 text-xs mt-1.5">💡 Include transport links, amenities, and house rules for better engagement</p>}
@@ -3363,8 +3363,8 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                     onClick={() => toggleAmenity(amenity)}
                     className={`px-3 py-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${
                       formData.amenities.includes(amenity)
-                        ? 'bg-gradient-to-r from-teal-500 to-cyan-600 text-white shadow-lg scale-[1.02]'
-                        : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:border-teal-300 hover:bg-teal-50'
+                        ? 'bg-gradient-to-r from-red-500 to-[#c5303c] text-white shadow-lg scale-[1.02]'
+                        : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:border-red-300 hover:bg-red-50'
                     }`}
                   >
                     {formData.amenities.includes(amenity) && <CheckCircle className="w-4 h-4" />}
@@ -3373,21 +3373,21 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                 ))}
               </div>
               {formData.amenities.length > 0 && (
-                <p className="text-xs text-teal-600 font-medium mt-2">{formData.amenities.length} amenities selected</p>
+                <p className="text-xs text-[#E63946] font-medium mt-2">{formData.amenities.length} amenities selected</p>
               )}
             </div>
 
             {/* Photos */}
             <div>
               <label className="block text-sm font-semibold text-gray-800 mb-2">
-                📸 Photos <span className="text-teal-600 font-bold">{formData.photos.length}/5</span>
+                📸 Photos <span className="text-[#E63946] font-bold">{formData.photos.length}/5</span>
               </label>
               <div 
-                className="relative border-2 border-dashed border-teal-300 bg-gradient-to-br from-teal-50 via-cyan-50 to-teal-50 rounded-2xl p-8 hover:border-teal-500 hover:shadow-lg transition-all duration-300 cursor-pointer group"
+                className="relative border-2 border-dashed border-red-300 bg-gradient-to-br from-red-50 via-red-50 to-red-50 rounded-2xl p-8 hover:border-red-500 hover:shadow-lg transition-all duration-300 cursor-pointer group"
                 onClick={() => setShowPhotoEditor(true)}
               >
                 <div className="text-center">
-                  <div className="w-20 h-20 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                  <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-[#c5303c] rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                     <span className="text-4xl">📸</span>
                   </div>
                   <p className="text-gray-800 font-bold text-lg mb-1">
@@ -3398,7 +3398,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                   </p>
                   {formData.photos.length === 0 && (
                     <div className="mt-4 bg-white rounded-xl px-4 py-2 inline-block">
-                      <p className="text-sm text-teal-600 font-semibold">
+                      <p className="text-sm text-[#E63946] font-semibold">
                         ✨ Listings with photos get 3x more views!
                       </p>
                     </div>
@@ -3410,14 +3410,14 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                   {formData.photos.map((photo, index) => (
                     <div key={index} className="relative group aspect-square">
                       {index === 0 && (
-                        <div className="absolute top-2 left-2 bg-gradient-to-r from-teal-500 to-cyan-600 text-white text-xs px-2 py-1 rounded-full font-semibold z-10 shadow">
+                        <div className="absolute top-2 left-2 bg-gradient-to-r from-red-500 to-[#c5303c] text-white text-xs px-2 py-1 rounded-full font-semibold z-10 shadow">
                           Cover
                         </div>
                       )}
                       <img 
                         src={photo} 
                         alt={`Preview ${index + 1}`} 
-                        className="w-full h-full object-cover rounded-xl border-2 border-teal-200 shadow-sm group-hover:shadow-md transition-shadow" 
+                        className="w-full h-full object-cover rounded-xl border-2 border-red-200 shadow-sm group-hover:shadow-md transition-shadow" 
                       />
                     </div>
                   ))}
@@ -3427,7 +3427,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                 <button
                   type="button"
                   onClick={() => setShowPhotoEditor(true)}
-                  className="mt-4 text-sm text-teal-600 hover:text-teal-700 font-semibold flex items-center gap-1"
+                  className="mt-4 text-sm text-[#E63946] hover:text-[#c5303c] font-semibold flex items-center gap-1"
                 >
                   <Edit className="w-4 h-4" /> Edit Photos
                 </button>
@@ -3453,7 +3453,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                 className={`w-full font-bold py-4 rounded-2xl transition-all relative text-lg ${
                   isSubmitting || Object.keys(errors).length > 0
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-teal-600 via-cyan-600 to-teal-700 hover:from-teal-700 hover:via-cyan-700 hover:to-teal-800 text-white shadow-xl hover:shadow-2xl hover:shadow-teal-500/30 active:scale-[0.98]'
+                    : 'bg-gradient-to-r from-[#E63946] via-[#c5303c] to-[#c5303c] hover:from-[#c5303c] hover:via-[#a52833] hover:to-[#a52833] text-white shadow-xl hover:shadow-2xl hover:shadow-red-500/30 active:scale-[0.98]'
                 }`}
               >
                 {isSubmitting ? (
@@ -3597,7 +3597,7 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
               type="text"
               value={formData.title}
               onChange={(e) => { setFormData({ ...formData, title: e.target.value }); setErrors({ ...errors, title: '' }); }}
-              className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500 ${
+              className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-red-100 focus:border-red-500 ${
                 errors.title ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-gray-300'
               }`}
               placeholder="e.g., Cozy Room in Sandton"
@@ -3612,7 +3612,7 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
               type="number"
               value={formData.price}
               onChange={(e) => { setFormData({ ...formData, price: e.target.value }); setErrors({ ...errors, price: '' }); }}
-              className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500 ${
+              className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-red-100 focus:border-red-500 ${
                 errors.price ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-gray-300'
               }`}
               placeholder="3500"
@@ -3627,7 +3627,7 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
               type="text"
               value={formData.location}
               onChange={(e) => { setFormData({ ...formData, location: e.target.value }); setErrors({ ...errors, location: '' }); }}
-              className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500 ${
+              className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-red-100 focus:border-red-500 ${
                 errors.location ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-gray-300'
               }`}
               placeholder="e.g., Sandton, Johannesburg"
@@ -3642,7 +3642,7 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
               type="text"
               value={formData.streetAddress}
               onChange={(e) => setFormData({ ...formData, streetAddress: e.target.value })}
-              className="w-full px-4 py-3 border-2 border-gray-200 hover:border-gray-300 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500"
+              className="w-full px-4 py-3 border-2 border-gray-200 hover:border-gray-300 rounded-xl transition-all focus:ring-2 focus:ring-red-100 focus:border-red-500"
               placeholder="e.g., 123 Main Street"
             />
           </div>
@@ -3654,7 +3654,7 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
               value={formData.description}
               onChange={(e) => { setFormData({ ...formData, description: e.target.value }); setErrors({ ...errors, description: '' }); }}
               rows={4}
-              className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500 resize-none ${
+              className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-red-100 focus:border-red-500 resize-none ${
                 errors.description ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-gray-300'
               }`}
               placeholder="Describe your room, amenities, rules, and what makes it special..."
@@ -3669,7 +3669,7 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
               type="date"
               value={formData.availableDate}
               onChange={(e) => setFormData({ ...formData, availableDate: e.target.value })}
-              className="w-full px-4 py-3 border-2 border-gray-200 hover:border-gray-300 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500"
+              className="w-full px-4 py-3 border-2 border-gray-200 hover:border-gray-300 rounded-xl transition-all focus:ring-2 focus:ring-red-100 focus:border-red-500"
             />
           </div>
 
@@ -3714,7 +3714,7 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
                   onClick={() => toggleAmenity(amenity.id)}
                   className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                     formData.amenities.includes(amenity.id)
-                      ? 'bg-teal-50 text-teal-700 border-2 border-teal-500'
+                      ? 'bg-red-50 text-[#c5303c] border-2 border-red-500'
                       : 'bg-gray-50 text-gray-600 border-2 border-transparent hover:bg-gray-100'
                   }`}
                 >
@@ -3726,7 +3726,7 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
           </div>
 
           {/* Contact Details */}
-          <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-xl p-4">
+          <div className="bg-gradient-to-r from-blue-50 to-red-50 border border-blue-200 rounded-xl p-4">
             <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
               📞 Contact Details
               <span className="text-xs font-normal text-gray-500">(How tenants can reach you)</span>
@@ -3743,7 +3743,7 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
                     value={formData.contactPhone}
                     onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
                     placeholder="e.g., 071 234 5678"
-                    className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition placeholder-gray-400"
+                    className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-[#E63946] focus:border-transparent transition placeholder-gray-400"
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">For direct phone calls from interested tenants</p>
@@ -3759,7 +3759,7 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
                     value={formData.contactWhatsapp}
                     onChange={(e) => setFormData({ ...formData, contactWhatsapp: e.target.value })}
                     placeholder="e.g., 071 234 5678"
-                    className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition placeholder-gray-400"
+                    className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-[#E63946] focus:border-transparent transition placeholder-gray-400"
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">Leave blank if same as phone number</p>
@@ -3794,7 +3794,7 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
 
             {formData.photos.length < 5 && (
               <label className="block cursor-pointer">
-                <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-teal-400 hover:bg-teal-50/50 transition-all">
+                <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-[#E63946] hover:bg-red-50/50 transition-all">
                   <div className="text-3xl mb-2">📸</div>
                   <p className="text-gray-600 text-sm font-medium">Click to add photos</p>
                   <p className="text-gray-400 text-xs mt-1">Up to 5 photos</p>
@@ -3813,7 +3813,7 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
               <button
                 type="button"
                 onClick={() => setShowPhotoEditor(true)}
-                className="mt-3 text-sm text-teal-600 hover:text-teal-700 font-medium"
+                className="mt-3 text-sm text-[#E63946] hover:text-[#c5303c] font-medium"
               >
                 ✏️ Edit Photos
               </button>
@@ -3844,8 +3844,8 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
               disabled={isSubmitting}
               className={`flex-1 py-3 px-4 rounded-xl font-semibold text-white transition-all relative ${
                 isSubmitting
-                  ? 'bg-teal-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 shadow-lg hover:shadow-xl'
+                  ? 'bg-[#E63946] cursor-not-allowed'
+                  : 'bg-gradient-to-r from-red-500 to-red-500 hover:from-[#E63946] hover:to-[#c5303c] shadow-lg hover:shadow-xl'
               }`}
             >
               {isSubmitting ? (
@@ -3870,9 +3870,9 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
 
 function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-cyan-50 to-teal-50 pb-24">
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-red-50 to-red-50 pb-24">
       {/* Header */}
-      <div className="bg-gradient-to-r from-teal-600 via-cyan-600 to-teal-700 text-white">
+      <div className="bg-gradient-to-r from-[#E63946] via-[#c5303c] to-[#c5303c] text-white">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-4">
@@ -3891,7 +3891,7 @@ function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus }
             {listings.length > 0 && (
               <button
                 onClick={() => (onCreate ? onCreate() : (window.location.hash = '#add'))}
-                className="inline-flex items-center gap-2 bg-white text-teal-700 hover:bg-teal-50 font-bold px-5 py-3 rounded-xl transition-all shadow-lg hover:shadow-xl active:scale-95"
+                className="inline-flex items-center gap-2 bg-white text-[#c5303c] hover:bg-red-50 font-bold px-5 py-3 rounded-xl transition-all shadow-lg hover:shadow-xl active:scale-95"
               >
                 <PlusCircle className="w-5 h-5" />
                 Add New Room
@@ -3906,7 +3906,7 @@ function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus }
         {listings.length > 0 && (
           <div className="grid grid-cols-3 gap-3 mb-6">
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-              <p className="text-2xl font-bold text-teal-600">{listings.filter(l => l.status === 'available').length}</p>
+              <p className="text-2xl font-bold text-[#E63946]">{listings.filter(l => l.status === 'available').length}</p>
               <p className="text-xs text-gray-500">Available</p>
             </div>
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
@@ -3922,9 +3922,9 @@ function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus }
 
         {/* Landlord tip banner */}
         {listings.length > 0 && (
-          <div className="mb-6 bg-white border border-teal-200 rounded-2xl p-4 shadow-sm">
+          <div className="mb-6 bg-white border border-red-200 rounded-2xl p-4 shadow-sm">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-xl flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-[#c5303c] rounded-xl flex items-center justify-center flex-shrink-0">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -3939,8 +3939,8 @@ function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus }
 
         {listings.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-12 text-center">
-            <div className="w-24 h-24 bg-gradient-to-br from-teal-100 to-cyan-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Home className="w-12 h-12 text-teal-400" />
+            <div className="w-24 h-24 bg-gradient-to-br from-red-100 to-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Home className="w-12 h-12 text-[#E63946]" />
             </div>
             <h3 className="text-2xl font-bold text-gray-800 mb-2">No Rooms Yet</h3>
             <p className="text-gray-500 mb-6 max-w-md mx-auto">
@@ -3948,7 +3948,7 @@ function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus }
             </p>
             <button
               onClick={() => (onCreate ? onCreate() : (window.location.hash = '#add'))}
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-teal-600 via-cyan-600 to-teal-700 hover:from-teal-700 hover:via-cyan-700 hover:to-teal-800 text-white font-bold px-8 py-4 rounded-xl transition-all shadow-lg hover:shadow-xl active:scale-95"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-[#E63946] via-[#c5303c] to-[#c5303c] hover:from-[#c5303c] hover:via-[#a52833] hover:to-[#a52833] text-white font-bold px-8 py-4 rounded-xl transition-all shadow-lg hover:shadow-xl active:scale-95"
             >
               <PlusCircle className="w-5 h-5" />
               Post Your First Room
@@ -3958,7 +3958,7 @@ function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus }
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {listings.map(listing => (
               <div key={listing.id} className={`bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-lg transition-all duration-300 group ${
-                listing.status === 'rented' ? 'border-gray-200' : 'border-gray-100 hover:border-teal-200'
+                listing.status === 'rented' ? 'border-gray-200' : 'border-gray-100 hover:border-red-200'
               }`}>
                 {listing.photos && listing.photos.length > 0 ? (
                   <div className="relative overflow-hidden">
@@ -3985,8 +3985,8 @@ function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus }
                     </button>
                   </div>
                 ) : (
-                  <div className="relative h-48 bg-gradient-to-br from-teal-100 to-cyan-100 flex items-center justify-center">
-                    <Home className="w-16 h-16 text-teal-300" />
+                  <div className="relative h-48 bg-gradient-to-br from-red-100 to-red-100 flex items-center justify-center">
+                    <Home className="w-16 h-16 text-red-300" />
                     <button
                       onClick={() => onToggleStatus?.(listing.id)}
                       className={`absolute top-3 left-3 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer hover:scale-105 shadow-lg ${
@@ -4002,15 +4002,15 @@ function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus }
                 )}
                 <div className="p-5">
                   <h3 className="font-bold text-lg text-gray-800 mb-1 line-clamp-1 uppercase tracking-wide">{listing.title}</h3>
-                  <div className="text-teal-600 font-bold text-xl mb-2">R{listing.price?.toLocaleString()}<span className="text-sm font-normal text-gray-500">/month</span></div>
+                  <div className="text-[#E63946] font-bold text-xl mb-2">R{listing.price?.toLocaleString()}<span className="text-sm font-normal text-gray-500">/month</span></div>
                   <div className="flex items-center text-sm mb-4">
-                    <MapPin className="w-4 h-4 mr-1.5 text-teal-500" />
-                    <span className="line-clamp-1 uppercase tracking-wide font-semibold text-teal-700">{listing.location}</span>
+                    <MapPin className="w-4 h-4 mr-1.5 text-red-500" />
+                    <span className="line-clamp-1 uppercase tracking-wide font-semibold text-[#c5303c]">{listing.location}</span>
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => onEdit?.(listing)}
-                      className="flex-1 flex items-center justify-center gap-1.5 bg-teal-50 hover:bg-teal-100 text-teal-700 font-semibold py-2.5 rounded-xl transition-colors text-sm"
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-red-50 hover:bg-red-100 text-[#c5303c] font-semibold py-2.5 rounded-xl transition-colors text-sm"
                     >
                       <Edit className="w-4 h-4" />
                       Edit
@@ -4195,11 +4195,11 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
         <div className="flex items-start justify-between mb-6">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg">
                 <Home className="w-5 h-5 text-white" />
               </div>
               <span className="text-xl font-extrabold">
-                <span className="bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">Room</span>
+                <span className="bg-gradient-to-r from-[#E63946] to-[#c5303c] bg-clip-text text-transparent">Room</span>
                 <span className="text-rose-500">24</span>
               </span>
             </div>
@@ -4276,7 +4276,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
                 type="email" 
                 value={form.email} 
                 onChange={(e) => { setForm({ ...form, email: e.target.value }); setErrors({ ...errors, email: '' }); setAuthError(''); }}
-                className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500 ${
+                className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-red-100 focus:border-red-500 ${
                   errors.email ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-gray-300'
                 }`}
                 placeholder="john@example.com"
@@ -4296,7 +4296,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
                     type="text" 
                     value={form.name} 
                     onChange={(e) => { setForm({ ...form, name: e.target.value }); setErrors({ ...errors, name: '' }); }}
-                    className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500 ${
+                    className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-red-100 focus:border-red-500 ${
                       errors.name ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-gray-300'
                     }`}
                     placeholder="John Doe"
@@ -4312,7 +4312,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
                   type="email" 
                   value={form.email} 
                   onChange={(e) => { setForm({ ...form, email: e.target.value }); setErrors({ ...errors, email: '' }); setAuthError(''); }}
-                  className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500 ${
+                  className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-red-100 focus:border-red-500 ${
                     errors.email ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-gray-300'
                   }`}
                   placeholder="john@example.com"
@@ -4327,7 +4327,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
                   type="password" 
                   value={form.password} 
                   onChange={(e) => { setForm({ ...form, password: e.target.value }); setErrors({ ...errors, password: '' }); setAuthError(''); }}
-                  className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500 ${
+                  className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-red-100 focus:border-red-500 ${
                     errors.password ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-gray-300'
                   }`}
                   placeholder="••••••••"
@@ -4343,7 +4343,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
                     type="password" 
                     value={form.confirmPassword} 
                     onChange={(e) => { setForm({ ...form, confirmPassword: e.target.value }); setErrors({ ...errors, confirmPassword: '' }); }}
-                    className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500 ${
+                    className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-red-100 focus:border-red-500 ${
                       errors.confirmPassword ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-gray-300'
                     }`}
                     placeholder="••••••••"
@@ -4362,11 +4362,11 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
                       onClick={() => setForm({ ...form, type: 'renter' })}
                       className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${
                         form.type === 'renter' 
-                          ? 'border-teal-500 bg-gradient-to-br from-teal-50 to-cyan-50 text-teal-700 shadow-md' 
+                          ? 'border-red-500 bg-gradient-to-br from-red-50 to-red-50 text-[#c5303c] shadow-md' 
                           : 'border-gray-200 hover:border-gray-300 text-gray-600 hover:bg-gray-50'
                       }`}
                     >
-                      <Search className={`w-5 h-5 ${form.type === 'renter' ? 'text-teal-500' : ''}`} />
+                      <Search className={`w-5 h-5 ${form.type === 'renter' ? 'text-red-500' : ''}`} />
                       <span className="text-xs font-semibold">Looking for a room</span>
                     </button>
                     <button
@@ -4390,7 +4390,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
                 <button
                   type="button"
                   onClick={() => { setMode('reset'); setAuthError(''); setResetSent(false); }}
-                  className="text-sm text-teal-600 hover:text-teal-700 font-medium"
+                  className="text-sm text-[#E63946] hover:text-[#c5303c] font-medium"
                 >
                   Forgot your password?
                 </button>
@@ -4423,8 +4423,8 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
             disabled={isSubmitting}
             className={`w-full font-bold py-3 rounded-xl transition-all relative ${
               isSubmitting 
-                ? 'bg-teal-400 cursor-not-allowed' 
-                : 'bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-lg hover:shadow-xl hover:shadow-teal-500/25'
+                ? 'bg-[#E63946] cursor-not-allowed' 
+                : 'bg-gradient-to-r from-red-500 to-red-500 hover:from-[#E63946] hover:to-[#c5303c] text-white shadow-lg hover:shadow-xl hover:shadow-red-500/25'
             }`}
           >
             {isSubmitting ? (
@@ -4450,7 +4450,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
                 Don't have an account?{' '}
                 <button 
                   onClick={() => { setMode('signup'); setAuthError(''); }} 
-                  className="text-teal-600 hover:text-teal-700 font-semibold"
+                  className="text-[#E63946] hover:text-[#c5303c] font-semibold"
                 >
                   Sign up
                 </button>
@@ -4461,7 +4461,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
                 Already have an account?{' '}
                 <button 
                   onClick={() => { setMode('signin'); setAuthError(''); }} 
-                  className="text-teal-600 hover:text-teal-700 font-semibold"
+                  className="text-[#E63946] hover:text-[#c5303c] font-semibold"
                 >
                   Sign in
                 </button>
@@ -4470,7 +4470,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
             {mode === 'reset' && (
               <button 
                 onClick={() => { setMode('signin'); setAuthError(''); setResetSent(false); }} 
-                className="text-teal-600 hover:text-teal-700 font-semibold"
+                className="text-[#E63946] hover:text-[#c5303c] font-semibold"
               >
                 ← Back to sign in
               </button>
@@ -4480,7 +4480,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
 
         {/* Footer */}
         <p className="text-xs text-gray-400 text-center mt-6">
-          By continuing, you agree to our <button className="text-teal-600 hover:underline">Terms of Service</button> and <button className="text-teal-600 hover:underline">Privacy Policy</button>
+          By continuing, you agree to our <button className="text-[#E63946] hover:underline">Terms of Service</button> and <button className="text-[#E63946] hover:underline">Privacy Policy</button>
         </p>
       </div>
     </div>
@@ -4490,19 +4490,19 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
 function BottomNav({ currentView, setCurrentView, currentUser, userType }) {
   const isLandlord = userType === 'landlord';
   const navItems = [
-    { id: 'browse', label: 'Explore', icon: Search, activeColor: 'teal' },
-    { id: 'add', label: 'List', icon: PlusCircle, requiresAuth: true, activeColor: 'rose', highlight: true },
-    { id: 'my-listings', label: 'My Rooms', icon: Home, requiresAuth: true, activeColor: 'teal', show: isLandlord },
-    { id: 'favorites', label: 'Saved', icon: Heart, activeColor: 'rose' },
-    { id: 'profile', label: 'Profile', icon: User, activeColor: 'violet' }
+    { id: 'browse', label: 'Explore', icon: Search, activeColor: 'red' },
+    { id: 'add', label: 'List', icon: PlusCircle, requiresAuth: true, activeColor: 'red', highlight: true },
+    { id: 'my-listings', label: 'My Rooms', icon: Home, requiresAuth: true, activeColor: 'navy', show: isLandlord },
+    { id: 'favorites', label: 'Saved', icon: Heart, activeColor: 'red' },
+    { id: 'profile', label: 'Profile', icon: User, activeColor: 'navy' }
   ];
 
   const visibleItems = navItems.filter(item => item && (item.show === undefined || item.show));
 
   const colorClasses = {
-    teal: 'text-teal-600 bg-gradient-to-t from-teal-100 to-teal-50',
-    rose: 'text-rose-600 bg-gradient-to-t from-rose-100 to-rose-50',
-    violet: 'text-violet-600 bg-gradient-to-t from-violet-100 to-violet-50'
+    red: 'text-[#E63946] bg-gradient-to-t from-red-100 to-red-50',
+    navy: 'text-[#1D3557] bg-gradient-to-t from-blue-100 to-blue-50',
+    rose: 'text-rose-600 bg-gradient-to-t from-rose-100 to-rose-50'
   };
 
   return (
@@ -4525,8 +4525,8 @@ function BottomNav({ currentView, setCurrentView, currentUser, userType }) {
                 onClick={() => setCurrentView(item.id)}
                 className={`flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-xl transition-all duration-200 active:scale-95 ${
                   isActive
-                    ? 'text-white bg-gradient-to-br from-rose-500 to-pink-500 shadow-lg shadow-rose-500/30'
-                    : 'text-rose-500 hover:bg-rose-50'
+                    ? 'text-white bg-gradient-to-br from-[#E63946] to-[#c5303c] shadow-lg shadow-red-500/30'
+                    : 'text-[#E63946] hover:bg-red-50'
                 }`}
                 aria-current={isActive ? 'page' : undefined}
               >

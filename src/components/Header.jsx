@@ -1,5 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Home, Menu, X, Bell, User, LogOut, Search, PlusCircle, Heart, Settings, ChevronDown, Eye, EyeOff } from 'lucide-react';
+import { Menu, X, Bell, User, LogOut, Search, PlusCircle, Heart, Settings, ChevronDown, Eye, EyeOff, MapPin } from 'lucide-react';
+
+// RentMzansi Logo Component
+const Logo = ({ className = "w-10 h-10" }) => (
+  <svg viewBox="0 0 100 120" className={className}>
+    <path d="M50,5 Q70,5 80,20 Q90,35 80,50 L50,90 L20,50 Q10,35 20,20 Q30,5 50,5 Z" fill="#E63946"/>
+    <polygon points="50,30 40,40 40,55 60,55 60,40" fill="#F1FAEE"/>
+    <rect x="45" y="45" width="10" height="10" fill="#F1FAEE"/>
+    <circle cx="50" cy="50" r="3" fill="#1D3557"/>
+  </svg>
+);
 
 export default function Header({
   currentUser,
@@ -47,7 +57,7 @@ export default function Header({
   const navLinks = [
     { id: 'browse', label: 'Browse', icon: Search, show: true },
     { id: 'add', label: 'List Room', icon: PlusCircle, show: currentUser && isLandlord && !previewAsRenter },
-    { id: 'my-listings', label: 'My Rooms', icon: Home, show: currentUser && isLandlord && !previewAsRenter },
+    { id: 'my-listings', label: 'My Rooms', icon: MapPin, show: currentUser && isLandlord && !previewAsRenter },
     { id: 'favorites', label: 'Saved', icon: Heart, show: true },
   ].filter(link => link.show);
 
@@ -58,15 +68,13 @@ export default function Header({
           {/* Logo */}
           <button 
             onClick={() => setCurrentView('browse')}
-            className="flex items-center gap-2 hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 rounded-lg"
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#E63946] focus:ring-offset-2 rounded-lg"
             aria-label="Go to home page"
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/25">
-              <Home className="w-5 h-5 text-white" />
-            </div>
+            <Logo className="w-10 h-10" />
             <span className="text-xl font-extrabold hidden sm:block">
-              <span className="bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">Room</span>
-              <span className="text-rose-500">24</span>
+              <span className="text-[#1D3557]">Rent</span>
+              <span className="text-[#E63946]">Mzansi</span>
             </span>
           </button>
 
@@ -78,7 +86,7 @@ export default function Header({
                 <button
                   key={link.id}
                   onClick={() => setCurrentView(link.id)}
-                  className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-teal-600 hover:bg-teal-50 rounded-xl font-medium text-sm transition-all duration-200"
+                  className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-[#E63946] hover:bg-red-50 rounded-xl font-medium text-sm transition-all duration-200"
                 >
                   <Icon className="w-4 h-4" />
                   {link.label}
@@ -110,12 +118,12 @@ export default function Header({
             {currentUser && (
               <button
                 onClick={onOpenNotifications}
-                className="relative p-2.5 text-gray-600 hover:text-teal-600 hover:bg-teal-50 rounded-xl transition-all duration-200"
+                className="relative p-2.5 text-gray-600 hover:text-[#E63946] hover:bg-red-50 rounded-xl transition-all duration-200"
                 aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
               >
                 <Bell className="w-5 h-5" />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
+                  <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-[#E63946] text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
@@ -134,7 +142,7 @@ export default function Header({
                   {currentUser.photo ? (
                     <img src={currentUser.photo} alt="" className="w-8 h-8 rounded-lg object-cover ring-2 ring-white" />
                   ) : (
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#E63946] to-[#c5303c] flex items-center justify-center">
                       <span className="text-white text-sm font-bold">
                         {currentUser.name?.charAt(0)?.toUpperCase() || 'U'}
                       </span>
@@ -166,7 +174,7 @@ export default function Header({
                           onClick={() => { setCurrentView('my-listings'); setShowUserMenu(false); }}
                           className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                         >
-                          <Home className="w-4 h-4 text-gray-400" />
+                          <MapPin className="w-4 h-4 text-gray-400" />
                           My Listings
                         </button>
                       )}
@@ -181,7 +189,7 @@ export default function Header({
                     <div className="border-t border-gray-100 pt-1">
                       <button
                         onClick={() => { handleSignOut(); setShowUserMenu(false); }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50 transition-colors"
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[#E63946] hover:bg-red-50 transition-colors"
                       >
                         <LogOut className="w-4 h-4" />
                         Sign Out
@@ -194,13 +202,13 @@ export default function Header({
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => openAuthModal('renter', 'signin')}
-                  className="hidden sm:block px-4 py-2 text-gray-600 hover:text-teal-600 font-medium text-sm transition-colors"
+                  className="hidden sm:block px-4 py-2 text-gray-600 hover:text-[#E63946] font-medium text-sm transition-colors"
                 >
                   Sign In
                 </button>
                 <button
                   onClick={() => openAuthModal('landlord', 'signup')}
-                  className="px-4 py-2 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-semibold text-sm rounded-xl shadow-md hover:shadow-lg transition-all duration-200"
+                  className="px-4 py-2 bg-[#E63946] hover:bg-[#c5303c] text-white font-semibold text-sm rounded-xl shadow-md hover:shadow-lg transition-all duration-200"
                 >
                   List Room
                 </button>
@@ -210,7 +218,7 @@ export default function Header({
             {/* Mobile Menu Button */}
             <button
               onClick={() => setShowMobileMenu(!showMobileMenu)}
-              className="md:hidden p-2.5 text-gray-600 hover:text-teal-600 hover:bg-teal-50 rounded-xl transition-colors"
+              className="md:hidden p-2.5 text-gray-600 hover:text-[#E63946] hover:bg-red-50 rounded-xl transition-colors"
               aria-label="Toggle menu"
               aria-expanded={showMobileMenu}
             >
@@ -234,7 +242,7 @@ export default function Header({
                 <button
                   key={link.id}
                   onClick={() => { setCurrentView(link.id); setShowMobileMenu(false); }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-xl font-medium transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-red-50 hover:text-[#E63946] rounded-xl font-medium transition-colors"
                   role="menuitem"
                 >
                   <Icon className="w-5 h-5" />
@@ -271,7 +279,7 @@ export default function Header({
                 </button>
                 <button
                   onClick={() => { handleSignOut(); setShowMobileMenu(false); }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-rose-600 hover:bg-rose-50 rounded-xl font-medium transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-3 text-[#E63946] hover:bg-red-50 rounded-xl font-medium transition-colors"
                   role="menuitem"
                 >
                   <LogOut className="w-5 h-5" />
@@ -290,7 +298,7 @@ export default function Header({
                 </button>
                 <button
                   onClick={() => { openAuthModal('landlord', 'signup'); setShowMobileMenu(false); }}
-                  className="w-full px-4 py-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-xl font-semibold transition-all shadow-md"
+                  className="w-full px-4 py-3 bg-[#E63946] hover:bg-[#c5303c] text-white rounded-xl font-semibold transition-all shadow-md"
                   role="menuitem"
                 >
                   Get Started

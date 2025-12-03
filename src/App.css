@@ -1,9 +1,10 @@
 /* ===== Base Styles & CSS Variables ===== */
 :root {
   --c-bg: #f8fafc;
-  --c-primary: #0d9488;
-  --c-primary-light: #5eead4;
-  --c-accent: #f43f5e;
+  --c-primary: #E63946;
+  --c-primary-light: #ff6b6b;
+  --c-secondary: #1D3557;
+  --c-accent: #F1FAEE;
   --c-text: #1e293b;
   --c-text-muted: #64748b;
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);

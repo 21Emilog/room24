@@ -1,12 +1,12 @@
 /* eslint-disable no-restricted-globals */
 /*
-  Room24 service worker leveraging CRA Workbox injection point.
+  RentMzansi service worker leveraging CRA Workbox injection point.
   Workbox will replace self.__WB_MANIFEST with a list of build assets.
 */
 
 const PRECACHE_MANIFEST = self.__WB_MANIFEST || [];
-const SHELL_CACHE = 'room24-shell-v1';
-const RUNTIME_IMG_CACHE = 'room24-img-runtime-v1';
+const SHELL_CACHE = 'rentmzansi-shell-v1';
+const RUNTIME_IMG_CACHE = 'rentmzansi-img-runtime-v1';
 const MAP_TILE_HOST_PATTERNS = [
   'tile.openstreetmap.org',
   'tiles.stadiamaps.com'
