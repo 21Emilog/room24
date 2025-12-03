@@ -2815,7 +2815,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
           <div className="mb-8">
             <div className="flex justify-between items-center mb-3">
               <span className="text-sm font-semibold text-gray-700">Form Progress</span>
-              <span className="text-sm font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
+              <span className="text-sm font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
                 {(() => {
                   let completed = 0;
                   const total = 5;
@@ -2830,7 +2830,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
             </div>
             <div className="h-3 bg-gray-100 rounded-full overflow-hidden shadow-inner">
               <div 
-                className="h-full bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 rounded-full transition-all duration-500 relative overflow-hidden"
+                className="h-full bg-gradient-to-r from-teal-500 via-cyan-500 to-teal-600 rounded-full transition-all duration-500 relative overflow-hidden"
                 style={{
                   boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.3)',
                   width: `${(() => {
@@ -2849,8 +2849,8 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
 
           <div className="space-y-6">
             {currentUser?.type === 'landlord' && (
-              <div className="bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-200 text-violet-800 text-sm rounded-xl p-4 flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+              <div className="bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-200 text-teal-800 text-sm rounded-xl p-4 flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center flex-shrink-0">
                   <Sparkles className="w-4 h-4 text-white" />
                 </div>
                 <div className="space-y-2">
@@ -2860,7 +2860,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                   <button
                     type="button"
                     onClick={handleResetSavedTemplate}
-                    className="text-xs font-semibold text-violet-700 hover:text-violet-900 transition-colors flex items-center gap-1"
+                    className="text-xs font-semibold text-teal-700 hover:text-teal-900 transition-colors flex items-center gap-1"
                   >
                     <RefreshCw className="w-3 h-3" /> Reset saved info
                   </button>
@@ -2870,7 +2870,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
             {/* Section: Basic Info */}
             <div className="border-b border-gray-100 pb-2 mb-4">
               <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center">
                   <Edit className="w-4 h-4 text-white" />
                 </div>
                 Basic Information
@@ -2898,10 +2898,10 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                   placeholder="e.g., Cozy backroom with private bathroom"
                   className={`w-full px-4 py-3.5 pr-10 border-2 ${
                     errors.title ? 'border-red-400 bg-red-50' : 
-                    formData.title && formData.title.trim().length >= 5 ? 'border-violet-400 bg-violet-50/30' : 
+                    formData.title && formData.title.trim().length >= 5 ? 'border-teal-400 bg-teal-50/30' : 
                     'border-gray-200 hover:border-gray-300'
                   } text-gray-800 rounded-xl focus:ring-2 ${
-                    errors.title ? 'focus:ring-red-400' : 'focus:ring-violet-400'
+                    errors.title ? 'focus:ring-red-400' : 'focus:ring-teal-400'
                   } focus:border-transparent transition-all placeholder-gray-400`}
                 />
                 {formData.title && formData.title.trim().length >= 5 && !errors.title && (
@@ -2937,10 +2937,10 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                   max="50000"
                   className={`w-full pl-14 pr-4 py-3.5 border-2 ${
                     errors.price ? 'border-red-400 bg-red-50' : 
-                    formData.price && parseFloat(formData.price) >= 500 && parseFloat(formData.price) <= 50000 ? 'border-violet-400 bg-violet-50/30' : 
+                    formData.price && parseFloat(formData.price) >= 500 && parseFloat(formData.price) <= 50000 ? 'border-teal-400 bg-teal-50/30' : 
                     'border-gray-200 hover:border-gray-300'
                   } text-gray-800 rounded-xl focus:ring-2 ${
-                    errors.price ? 'focus:ring-red-400' : 'focus:ring-violet-400'
+                    errors.price ? 'focus:ring-red-400' : 'focus:ring-teal-400'
                   } focus:border-transparent transition-all placeholder-gray-400 text-lg font-semibold`}
                 />
                 {formData.price && parseFloat(formData.price) >= 500 && parseFloat(formData.price) <= 50000 && !errors.price && (
@@ -2956,7 +2956,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
             {/* Section: Location */}
             <div className="border-b border-gray-100 pb-2 mb-4 mt-8">
               <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center">
                   <MapPin className="w-4 h-4 text-white" />
                 </div>
                 Location Details
@@ -2975,7 +2975,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                 onFocus={() => setIsFullAddressEditing(true)}
                 onBlur={(e) => { setIsFullAddressEditing(false); handleFullAddressChange(e.target.value); }}
                 placeholder="Type the full street + suburb + city + postal code"
-                className={`w-full px-4 py-3.5 border-2 ${errors.location ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-gray-300'} bg-white text-gray-800 rounded-xl focus:ring-2 ${errors.location ? 'focus:ring-red-400' : 'focus:ring-violet-400'} focus:border-transparent transition placeholder-gray-400`}
+                className={`w-full px-4 py-3.5 border-2 ${errors.location ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-gray-300'} bg-white text-gray-800 rounded-xl focus:ring-2 ${errors.location ? 'focus:ring-red-400' : 'focus:ring-teal-400'} focus:border-transparent transition placeholder-gray-400`}
               />
               {errors.location && <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1" aria-live="assertive"><AlertCircle className="w-3 h-3" /> {errors.location}</p>}
               {!errors.location && (
@@ -3013,7 +3013,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                       {geocodingStatus.startsWith('✓') && <CheckCircle className="w-4 h-4" />}
                       {geocodingStatus}
                       {lastGeocodeSource === 'cached' && (
-                        <span className="ml-2 inline-block px-2 py-1 text-[10px] rounded bg-purple-100 text-purple-600 font-semibold">CACHED</span>
+                        <span className="ml-2 inline-block px-2 py-1 text-[10px] rounded bg-teal-100 text-teal-600 font-semibold">CACHED</span>
                       )}
                       {lastGeocodeSource === 'mapbox' && (
                         <span className="ml-2 inline-block px-2 py-1 text-[10px] rounded bg-blue-100 text-blue-600 font-semibold">MAPBOX</span>
@@ -3034,7 +3034,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                       <CheckCircle className="w-4 h-4" />
                       Coordinates saved: {formData.latitude.toFixed(4)}, {formData.longitude.toFixed(4)}
                       {lastGeocodeSource === 'cached' && (
-                        <span className="ml-2 inline-block px-2 py-1 text-[10px] rounded bg-purple-100 text-purple-600 font-semibold">CACHED</span>
+                        <span className="ml-2 inline-block px-2 py-1 text-[10px] rounded bg-teal-100 text-teal-600 font-semibold">CACHED</span>
                       )}
                       {lastGeocodeSource === 'maps.co' && (
                         <span className="ml-2 inline-block px-2 py-1 text-[10px] rounded bg-indigo-100 text-indigo-600 font-semibold">MAPS.CO</span>
@@ -3066,7 +3066,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
             {/* Section: Room Details */}
             <div className="border-b border-gray-100 pb-2 mb-4 mt-8">
               <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center">
                   <Home className="w-4 h-4 text-white" />
                 </div>
                 Room Details
@@ -3106,7 +3106,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                   type="date"
                   value={formData.availableDate}
                   onChange={(e) => setFormData({ ...formData, availableDate: e.target.value })}
-                  className="w-full px-4 py-3.5 border-2 border-gray-200 hover:border-gray-300 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-violet-400 focus:border-transparent transition"
+                  className="w-full px-4 py-3.5 border-2 border-gray-200 hover:border-gray-300 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition"
                 />
               </div>
             </div>
@@ -3122,7 +3122,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                     onClick={() => setFormData({ ...formData, paymentMethod: method })}
                     className={`py-3 px-3 rounded-xl font-medium transition-all text-xs md:text-sm text-center ${
                       formData.paymentMethod === method
-                        ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg scale-[1.02]'
+                        ? 'bg-gradient-to-r from-teal-500 to-cyan-600 text-white shadow-lg scale-[1.02]'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-transparent'
                     }`}
                   >
@@ -3144,7 +3144,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                       onClick={() => setFormData({ ...formData, roomType: type.value })}
                       className={`py-3 px-3 rounded-xl font-medium transition-all text-sm flex items-center justify-center gap-2 ${
                         formData.roomType === type.value
-                          ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg scale-[1.02]'
+                          ? 'bg-gradient-to-r from-teal-500 to-cyan-600 text-white shadow-lg scale-[1.02]'
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-transparent'
                       }`}
                     >
@@ -3160,7 +3160,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                 <select
                   value={formData.leaseDuration}
                   onChange={(e) => setFormData({ ...formData, leaseDuration: e.target.value })}
-                  className="w-full px-4 py-3.5 border-2 border-gray-200 hover:border-gray-300 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-violet-400 focus:border-transparent transition cursor-pointer"
+                  className="w-full px-4 py-3.5 border-2 border-gray-200 hover:border-gray-300 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition cursor-pointer"
                 >
                   <option value="1-3">1-3 months (Short)</option>
                   <option value="4-6">4-6 months (Medium)</option>
@@ -3177,12 +3177,12 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                 onClick={() => setFormData({ ...formData, petFriendly: !formData.petFriendly })}
                 className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
                   formData.petFriendly
-                    ? 'border-violet-400 bg-violet-50 shadow-md scale-[1.02]'
+                    ? 'border-teal-400 bg-teal-50 shadow-md scale-[1.02]'
                     : 'border-gray-200 bg-white hover:border-gray-300'
                 }`}
               >
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl ${
-                  formData.petFriendly ? 'bg-violet-500 text-white' : 'bg-gray-100'
+                  formData.petFriendly ? 'bg-teal-500 text-white' : 'bg-gray-100'
                 }`}>
                   🐾
                 </div>
@@ -3191,7 +3191,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                   <p className="text-xs text-gray-500">{formData.petFriendly ? 'Pets welcome!' : 'No pets allowed'}</p>
                 </div>
                 <div className={`ml-auto w-6 h-6 rounded-full flex items-center justify-center ${
-                  formData.petFriendly ? 'bg-violet-500 text-white' : 'bg-gray-200'
+                  formData.petFriendly ? 'bg-teal-500 text-white' : 'bg-gray-200'
                 }`}>
                   {formData.petFriendly && <CheckCircle className="w-4 h-4" />}
                 </div>
@@ -3207,7 +3207,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                       onClick={() => setFormData({ ...formData, genderPreference: option.value })}
                       className={`py-2.5 px-3 rounded-xl font-medium transition-all text-xs flex flex-col items-center gap-1 ${
                         formData.genderPreference === option.value
-                          ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg scale-[1.02]'
+                          ? 'bg-gradient-to-r from-teal-500 to-cyan-600 text-white shadow-lg scale-[1.02]'
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-transparent'
                       }`}
                     >
@@ -3250,7 +3250,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
             {/* Section: Contact */}
             <div className="border-b border-gray-100 pb-2 mb-4 mt-8">
               <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center">
                   <Phone className="w-4 h-4 text-white" />
                 </div>
                 Contact Details
@@ -3259,20 +3259,20 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
             </div>
 
             {/* Contact Details */}
-            <div className="bg-gradient-to-br from-violet-50 via-purple-50 to-fuchsia-50 border border-violet-200 rounded-2xl p-5">
+            <div className="bg-gradient-to-br from-teal-50 via-cyan-50 to-teal-50 border border-teal-200 rounded-2xl p-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     📱 Phone Number
                   </label>
                   <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-violet-400" />
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-teal-400" />
                     <input
                       type="tel"
                       value={formData.contactPhone}
                       onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
                       placeholder="e.g., 071 234 5678"
-                      className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-200 hover:border-violet-300 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-violet-400 focus:border-transparent transition placeholder-gray-400"
+                      className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-200 hover:border-teal-300 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition placeholder-gray-400"
                     />
                   </div>
                   <p className="text-xs text-gray-500 mt-1.5">For direct calls from tenants</p>
@@ -3288,7 +3288,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                       value={formData.contactWhatsapp}
                       onChange={(e) => setFormData({ ...formData, contactWhatsapp: e.target.value })}
                       placeholder="e.g., 071 234 5678"
-                      className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-200 hover:border-violet-300 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-violet-400 focus:border-transparent transition placeholder-gray-400"
+                      className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-200 hover:border-teal-300 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition placeholder-gray-400"
                     />
                   </div>
                   <p className="text-xs text-gray-500 mt-1.5">Leave blank if same as phone</p>
@@ -3299,7 +3299,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
             {/* Section: Description & Media */}
             <div className="border-b border-gray-100 pb-2 mb-4 mt-8">
               <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center">
                   <Edit className="w-4 h-4 text-white" />
                 </div>
                 Description & Media
@@ -3334,9 +3334,9 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                 rows="5"
                 className={`w-full px-4 py-3.5 border-2 ${
                   errors.description ? 'border-red-400 bg-red-50' : 
-                  formData.description && formData.description.length >= 10 ? 'border-violet-400 bg-violet-50/30' :
+                  formData.description && formData.description.length >= 10 ? 'border-teal-400 bg-teal-50/30' :
                   'border-gray-200 hover:border-gray-300'
-                } bg-white text-gray-800 rounded-xl focus:ring-2 ${errors.description ? 'focus:ring-red-400' : 'focus:ring-violet-400'} focus:border-transparent transition placeholder-gray-400 resize-none`}
+                } bg-white text-gray-800 rounded-xl focus:ring-2 ${errors.description ? 'focus:ring-red-400' : 'focus:ring-teal-400'} focus:border-transparent transition placeholder-gray-400 resize-none`}
               />
               {errors.description && <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {errors.description}</p>}
               {!errors.description && <p className="text-gray-500 text-xs mt-1.5">💡 Include transport links, amenities, and house rules for better engagement</p>}
@@ -3354,8 +3354,8 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                     onClick={() => toggleAmenity(amenity)}
                     className={`px-3 py-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${
                       formData.amenities.includes(amenity)
-                        ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg scale-[1.02]'
-                        : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:border-violet-300 hover:bg-violet-50'
+                        ? 'bg-gradient-to-r from-teal-500 to-cyan-600 text-white shadow-lg scale-[1.02]'
+                        : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:border-teal-300 hover:bg-teal-50'
                     }`}
                   >
                     {formData.amenities.includes(amenity) && <CheckCircle className="w-4 h-4" />}
@@ -3364,21 +3364,21 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                 ))}
               </div>
               {formData.amenities.length > 0 && (
-                <p className="text-xs text-violet-600 font-medium mt-2">{formData.amenities.length} amenities selected</p>
+                <p className="text-xs text-teal-600 font-medium mt-2">{formData.amenities.length} amenities selected</p>
               )}
             </div>
 
             {/* Photos */}
             <div>
               <label className="block text-sm font-semibold text-gray-800 mb-2">
-                📸 Photos <span className="text-violet-600 font-bold">{formData.photos.length}/5</span>
+                📸 Photos <span className="text-teal-600 font-bold">{formData.photos.length}/5</span>
               </label>
               <div 
-                className="relative border-2 border-dashed border-violet-300 bg-gradient-to-br from-violet-50 via-purple-50 to-fuchsia-50 rounded-2xl p-8 hover:border-violet-500 hover:shadow-lg transition-all duration-300 cursor-pointer group"
+                className="relative border-2 border-dashed border-teal-300 bg-gradient-to-br from-teal-50 via-cyan-50 to-teal-50 rounded-2xl p-8 hover:border-teal-500 hover:shadow-lg transition-all duration-300 cursor-pointer group"
                 onClick={() => setShowPhotoEditor(true)}
               >
                 <div className="text-center">
-                  <div className="w-20 h-20 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                  <div className="w-20 h-20 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                     <span className="text-4xl">📸</span>
                   </div>
                   <p className="text-gray-800 font-bold text-lg mb-1">
@@ -3389,7 +3389,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                   </p>
                   {formData.photos.length === 0 && (
                     <div className="mt-4 bg-white rounded-xl px-4 py-2 inline-block">
-                      <p className="text-sm text-violet-600 font-semibold">
+                      <p className="text-sm text-teal-600 font-semibold">
                         ✨ Listings with photos get 3x more views!
                       </p>
                     </div>
@@ -3401,14 +3401,14 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                   {formData.photos.map((photo, index) => (
                     <div key={index} className="relative group aspect-square">
                       {index === 0 && (
-                        <div className="absolute top-2 left-2 bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs px-2 py-1 rounded-full font-semibold z-10 shadow">
+                        <div className="absolute top-2 left-2 bg-gradient-to-r from-teal-500 to-cyan-600 text-white text-xs px-2 py-1 rounded-full font-semibold z-10 shadow">
                           Cover
                         </div>
                       )}
                       <img 
                         src={photo} 
                         alt={`Preview ${index + 1}`} 
-                        className="w-full h-full object-cover rounded-xl border-2 border-violet-200 shadow-sm group-hover:shadow-md transition-shadow" 
+                        className="w-full h-full object-cover rounded-xl border-2 border-teal-200 shadow-sm group-hover:shadow-md transition-shadow" 
                       />
                     </div>
                   ))}
@@ -3418,7 +3418,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                 <button
                   type="button"
                   onClick={() => setShowPhotoEditor(true)}
-                  className="mt-4 text-sm text-violet-600 hover:text-violet-700 font-semibold flex items-center gap-1"
+                  className="mt-4 text-sm text-teal-600 hover:text-teal-700 font-semibold flex items-center gap-1"
                 >
                   <Edit className="w-4 h-4" /> Edit Photos
                 </button>
@@ -3444,7 +3444,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                 className={`w-full font-bold py-4 rounded-2xl transition-all relative text-lg ${
                   isSubmitting || Object.keys(errors).length > 0
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 hover:from-violet-700 hover:via-purple-700 hover:to-fuchsia-700 text-white shadow-xl hover:shadow-2xl hover:shadow-violet-500/30 active:scale-[0.98]'
+                    : 'bg-gradient-to-r from-teal-600 via-cyan-600 to-teal-700 hover:from-teal-700 hover:via-cyan-700 hover:to-teal-800 text-white shadow-xl hover:shadow-2xl hover:shadow-teal-500/30 active:scale-[0.98]'
                 }`}
               >
                 {isSubmitting ? (
