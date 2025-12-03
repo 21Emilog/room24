@@ -24,6 +24,11 @@
     "tailwindcss": "^3.3.6",
     "web-vitals": "^2.1.4"
   },
+  "overrides": {
+    "nth-check": "^2.1.1",
+    "postcss": "^8.4.31",
+    "svgo": "^3.0.0"
+  },
   "scripts": {
     "start": "react-scripts start",
     "start:lan": "cross-env HOST=0.0.0.0 PORT=3000 react-scripts start",
