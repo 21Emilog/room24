@@ -1,6 +1,6 @@
 import React from 'react';
 import { FooterAd } from './AdBanner';
-import { Home, Mail, Phone, HelpCircle, Shield, FileText, Cookie, Download, Smartphone } from 'lucide-react';
+import { Home, Mail, Phone, HelpCircle, Shield, FileText, Cookie, Download } from 'lucide-react';
 
 export default function Footer({ onOpenPrivacy, onInstallApp }) {
   return (

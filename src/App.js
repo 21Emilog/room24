@@ -1,34 +1,59 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { initFirebase, initAnalytics, requestFcmToken, listenForegroundMessages, trackEvent, subscribeToAuthState, getLinkedProviders, linkGoogleAccount } from './firebase';
-import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useCallback, useRef, Suspense } from 'react';
+import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone, Sparkles, TrendingUp, ShieldCheck, ChevronDown } from 'lucide-react';
 import Header from './components/Header';
-import ListingDetailModal from './components/ListingDetailModal';
 import Footer from './components/Footer';
 import BrowseView from './components/BrowseView';
-import PrivacyPolicyModal from './components/PrivacyPolicyModal';
 import NotificationBanner from './components/NotificationBanner';
-import AnalyticsConsentModal from './components/AnalyticsConsentModal';
-import NotificationsPanel from './components/NotificationsPanel';
-import PhotoEditor from './components/PhotoEditor';
 import OfflineIndicator from './components/OfflineIndicator';
 import BackToTop from './components/BackToTop';
+import TurnstileWidget from './components/TurnstileWidget';
 import { getNotifications } from './utils/notificationEngine';
 import { loadListingTemplate, saveListingTemplate, clearListingTemplate } from './utils/listingTemplateStorage';
-import { 
-  signUpWithEmail, 
-  signInWithEmail, 
-  signInWithGoogle, 
-  signOut as firebaseSignOut, 
-  resetPassword 
-} from './firebase';
 import { 
   fetchAllListings, 
   createListing, 
   deleteListing as supabaseDeleteListing,
-  getProfile as supabaseGetProfile,
-  saveProfile as supabaseSaveProfile,
-  subscribeToListings
+  updateListing as supabaseUpdateListing,
+  subscribeToListings,
+  // Auth functions from Supabase
+  signUpWithEmail,
+  signInWithEmail,
+  signInWithGoogle,
+  signOut,
+  resetPassword,
+  onAuthStateChange,
+  getSession,
+  // Profile functions
+  getProfile,
+  saveProfile,
+  getUserType,
+  isLandlordComplete,
+  syncProfileToSupabase
 } from './supabase';
+
+const ListingDetailModal = React.lazy(() => import('./components/ListingDetailModal'));
+const PrivacyPolicyModal = React.lazy(() => import('./components/PrivacyPolicyModal'));
+const AnalyticsConsentModal = React.lazy(() => import('./components/AnalyticsConsentModal'));
+const NotificationsPanel = React.lazy(() => import('./components/NotificationsPanel'));
+const PhotoEditor = React.lazy(() => import('./components/PhotoEditor'));
+
+// Cloudflare Turnstile site key - set in Vercel env vars
+const TURNSTILE_SITE_KEY = process.env.REACT_APP_TURNSTILE_SITE_KEY || '';
+
+const ModalLoader = ({ label }) => (
+  <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/15 backdrop-blur-[2px]">
+    <div className="bg-white border border-slate-100 rounded-2xl px-5 py-3 shadow-xl flex items-center gap-3 text-sm font-semibold text-slate-600">
+      <div className="w-5 h-5 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" aria-label="Loading" />
+      <span>{label}</span>
+    </div>
+  </div>
+);
+
+const LazyModalBoundary = ({ children, label }) => (
+  <Suspense fallback={<ModalLoader label={label || 'Loading...'} />}>
+    {children}
+  </Suspense>
+);
 
 export default function RentalPlatform() {
   const [currentView, setCurrentView] = useState('browse');
@@ -57,6 +82,23 @@ export default function RentalPlatform() {
   const justCompletedOnboarding = useRef(false); // Flag to skip guard after onboarding
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showPulsePanel, setShowPulsePanel] = useState(false);
+  const [editingListing, setEditingListing] = useState(null); // Listing being edited
+
+  const composedProfile = useMemo(() => {
+    if (!currentUser) return null;
+    return {
+      id: currentUser.id,
+      name: userProfile?.displayName || currentUser?.user_metadata?.full_name || currentUser?.email?.split('@')[0] || '',
+      email: userProfile?.email || currentUser?.email || '',
+      phone: userProfile?.phone || '',
+      whatsapp: userProfile?.whatsapp || '',
+      photo: userProfile?.photoURL || currentUser?.user_metadata?.avatar_url || '',
+      type: userProfile?.userType || userType || 'renter',
+      notificationPrefs: userProfile?.notificationPrefs || { updates: true, marketing: false },
+      createdAt: userProfile?.createdAt || currentUser?.created_at || new Date().toISOString(),
+    };
+  }, [currentUser, userProfile, userType]);
 
   const openAuthModal = (type = 'renter', mode = 'signin') => {
     setAuthDefaultType(type);
@@ -64,151 +106,58 @@ export default function RentalPlatform() {
     setShowAuthModal(true);
   };
 
-  // Auth functions to pass to AuthModal - Uses Supabase with localStorage fallback
+  // Auth functions to pass to AuthModal - Uses Supabase
   const authFunctions = {
-    signUp: async (email, password, displayName, userTypeParam = 'renter') => {
-      const firebaseUser = await signUpWithEmail(email, password, displayName);
+    signUp: async (email, password, displayName, userTypeParam = 'renter', captchaToken = '') => {
+      const user = await signUpWithEmail(email, password, captchaToken);
       
       // Create user profile data
       const profileData = {
-        email: firebaseUser.email,
-        displayName: displayName || firebaseUser.displayName || '',
+        email: user.email,
+        displayName: displayName || '',
         userType: userTypeParam,
         phone: '',
-        photoURL: firebaseUser.photoURL || '',
+        photoURL: '',
         createdAt: new Date().toISOString(),
         landlordComplete: userTypeParam === 'renter',
       };
       
-      // Save to Supabase (non-blocking)
-      supabaseSaveProfile(firebaseUser.uid, profileData).catch(err => {
-        console.warn('Supabase profile save failed (will retry on next login):', err);
-      });
-      
-      // Also store in localStorage as backup/cache
-      localStorage.setItem(`user-type-${firebaseUser.uid}`, userTypeParam);
-      localStorage.setItem(`user-profile-${firebaseUser.uid}`, JSON.stringify(profileData));
-      if (userTypeParam === 'renter') {
-        localStorage.setItem(`landlord-complete-${firebaseUser.uid}`, 'true');
-      }
+      // Store in localStorage
+      saveProfile(user.id, profileData);
       
       // Update local state
       setUserProfile(profileData);
       setUserType(userTypeParam);
       
-      return firebaseUser;
+      return user;
     },
-    signIn: async (email, password) => {
-      const firebaseUser = await signInWithEmail(email, password);
+    signIn: async (email, password, captchaToken = '') => {
+      const user = await signInWithEmail(email, password, captchaToken);
       
-      // Try to load profile from Supabase first
-      try {
-        const supabaseProfile = await supabaseGetProfile(firebaseUser.uid);
-        if (supabaseProfile) {
-          const profileData = {
-            email: supabaseProfile.email,
-            displayName: supabaseProfile.display_name,
-            userType: supabaseProfile.user_type,
-            phone: supabaseProfile.phone || '',
-            photoURL: supabaseProfile.photo_url || '',
-            landlordComplete: supabaseProfile.landlord_complete,
-            landlordInfo: supabaseProfile.landlord_info,
-            notificationPrefs: supabaseProfile.notification_prefs,
-          };
-          setUserProfile(profileData);
-          setUserType(supabaseProfile.user_type || 'renter');
-          // Update localStorage cache
-          localStorage.setItem(`user-profile-${firebaseUser.uid}`, JSON.stringify(profileData));
-          localStorage.setItem(`user-type-${firebaseUser.uid}`, supabaseProfile.user_type || 'renter');
-          return firebaseUser;
-        }
-      } catch (err) {
-        console.warn('Supabase profile fetch failed, falling back to localStorage:', err);
-      }
-      
-      // Fallback to localStorage
-      const localProfile = localStorage.getItem(`user-profile-${firebaseUser.uid}`);
-      const localUserType = localStorage.getItem(`user-type-${firebaseUser.uid}`);
+      // Load profile from localStorage
+      const localProfile = getProfile(user.id);
+      const localUserType = getUserType(user.id);
       
       if (localProfile) {
-        try {
-          const parsed = JSON.parse(localProfile);
-          setUserProfile(parsed);
-          setUserType(parsed.userType || localUserType || 'renter');
-        } catch (e) {
-          console.warn('Could not parse local profile');
-        }
+        setUserProfile(localProfile);
+        setUserType(localProfile.userType || localUserType || 'renter');
+      } else {
+        // Create minimal profile
+        const profileData = {
+          email: user.email,
+          displayName: user.user_metadata?.full_name || '',
+          userType: 'renter',
+          createdAt: new Date().toISOString(),
+        };
+        saveProfile(user.id, profileData);
+        setUserProfile(profileData);
+        setUserType('renter');
       }
       
-      return firebaseUser;
+      return user;
     },
     signInGoogle: async (userTypeParam = 'renter') => {
-      const firebaseUser = await signInWithGoogle();
-      
-      // Check Supabase for existing profile first
-      try {
-        const supabaseProfile = await supabaseGetProfile(firebaseUser.uid);
-        if (supabaseProfile) {
-          const profileData = {
-            email: supabaseProfile.email,
-            displayName: supabaseProfile.display_name,
-            userType: supabaseProfile.user_type,
-            phone: supabaseProfile.phone || '',
-            photoURL: supabaseProfile.photo_url || '',
-            landlordComplete: supabaseProfile.landlord_complete,
-            landlordInfo: supabaseProfile.landlord_info,
-            notificationPrefs: supabaseProfile.notification_prefs,
-          };
-          setUserProfile(profileData);
-          setUserType(supabaseProfile.user_type || 'renter');
-          // Update localStorage cache
-          localStorage.setItem(`user-profile-${firebaseUser.uid}`, JSON.stringify(profileData));
-          localStorage.setItem(`user-type-${firebaseUser.uid}`, supabaseProfile.user_type || 'renter');
-          return firebaseUser;
-        }
-      } catch (err) {
-        console.warn('Supabase profile fetch failed:', err);
-      }
-      
-      // Check localStorage for existing profile
-      const localProfile = localStorage.getItem(`user-profile-${firebaseUser.uid}`);
-      const localUserType = localStorage.getItem(`user-type-${firebaseUser.uid}`);
-      
-      if (localProfile) {
-        // Existing user - use saved profile
-        try {
-          const parsed = JSON.parse(localProfile);
-          setUserProfile(parsed);
-          setUserType(parsed.userType || localUserType || 'renter');
-        } catch (e) {
-          console.warn('Could not parse local profile');
-        }
-      } else {
-        // New Google user - create profile
-        const profileData = {
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName || '',
-          userType: userTypeParam,
-          phone: '',
-          photoURL: firebaseUser.photoURL || '',
-          createdAt: new Date().toISOString(),
-          landlordComplete: userTypeParam === 'renter',
-        };
-        
-        // Save to Supabase (non-blocking)
-        supabaseSaveProfile(firebaseUser.uid, profileData).catch(err => {
-          console.warn('Supabase profile save failed:', err);
-        });
-        
-        // Store in localStorage as backup
-        localStorage.setItem(`user-type-${firebaseUser.uid}`, userTypeParam);
-        localStorage.setItem(`user-profile-${firebaseUser.uid}`, JSON.stringify(profileData));
-        
-        setUserProfile(profileData);
-        setUserType(userTypeParam);
-      }
-      
-      return firebaseUser;
+      await signInWithGoogle(userTypeParam);
     },
     sendPasswordReset: async (email) => {
       await resetPassword(email);
@@ -298,9 +247,6 @@ export default function RentalPlatform() {
   
 
   useEffect(() => {
-    // Initialize Firebase (for Auth only)
-    const app = initFirebase();
-    
     // Load listings from Supabase
     const loadListings = async () => {
       try {
@@ -335,68 +281,36 @@ export default function RentalPlatform() {
       localStorage.setItem('listings', JSON.stringify(updatedListings));
     });
     
-    // Set up Firebase Auth listener
-    const unsubscribeAuth = subscribeToAuthState(async (firebaseUser) => {
-      if (firebaseUser) {
-        setCurrentUser(firebaseUser);
+    // Set up Supabase Auth listener
+    const { data: { subscription: authSubscription } } = onAuthStateChange((user, event) => {
+      console.log('Auth state changed:', event, user?.id);
+      
+      if (user) {
+        setCurrentUser(user);
         
-        // Try to get profile from Supabase first
-        try {
-          const supabaseProfile = await supabaseGetProfile(firebaseUser.uid);
-          if (supabaseProfile) {
-            const profileData = {
-              email: supabaseProfile.email,
-              displayName: supabaseProfile.display_name,
-              userType: supabaseProfile.user_type,
-              phone: supabaseProfile.phone || '',
-              photoURL: supabaseProfile.photo_url || '',
-              landlordComplete: supabaseProfile.landlord_complete,
-              landlordInfo: supabaseProfile.landlord_info,
-              notificationPrefs: supabaseProfile.notification_prefs,
-              createdAt: supabaseProfile.created_at,
-            };
-            setUserProfile(profileData);
-            setUserType(supabaseProfile.user_type || 'renter');
-            // Update localStorage cache
-            localStorage.setItem(`user-profile-${firebaseUser.uid}`, JSON.stringify(profileData));
-            localStorage.setItem(`user-type-${firebaseUser.uid}`, supabaseProfile.user_type || 'renter');
-            setAuthLoading(false);
-            return;
-          }
-        } catch (err) {
-          console.warn('Supabase profile fetch failed, trying localStorage:', err);
-        }
-        
-        // Fallback to localStorage
-        const localProfile = localStorage.getItem(`user-profile-${firebaseUser.uid}`);
-        const localUserType = localStorage.getItem(`user-type-${firebaseUser.uid}`);
-        const localOnboardingComplete = localStorage.getItem(`landlord-complete-${firebaseUser.uid}`);
+        // Load profile from localStorage
+        const localProfile = getProfile(user.id);
+        const localUserType = getUserType(user.id);
+        const localOnboardingComplete = isLandlordComplete(user.id);
         
         if (localProfile) {
-          try {
-            const parsed = JSON.parse(localProfile);
-            if (localOnboardingComplete) {
-              parsed.landlordComplete = true;
-            }
-            setUserProfile(parsed);
-            setUserType(localUserType || parsed.userType || 'renter');
-          } catch (e) {
-            console.warn('Could not parse local profile:', e);
-            setUserProfile({ displayName: firebaseUser.displayName || '', email: firebaseUser.email });
-            setUserType(localUserType || 'renter');
+          if (localOnboardingComplete) {
+            localProfile.landlordComplete = true;
           }
+          setUserProfile(localProfile);
+          setUserType(localProfile.userType || localUserType || 'renter');
         } else {
-          // No profile anywhere - create minimal one
+          // No profile - create minimal one
           const newProfile = {
-            displayName: firebaseUser.displayName || '',
-            email: firebaseUser.email || '',
+            displayName: user.user_metadata?.full_name || user.email?.split('@')[0] || '',
+            email: user.email || '',
             userType: localUserType || 'renter',
             createdAt: new Date().toISOString(),
-            landlordComplete: localOnboardingComplete === 'true',
+            landlordComplete: localOnboardingComplete,
           };
+          saveProfile(user.id, newProfile);
           setUserProfile(newProfile);
           setUserType(localUserType || 'renter');
-          localStorage.setItem(`user-profile-${firebaseUser.uid}`, JSON.stringify(newProfile));
         }
       } else {
         setCurrentUser(null);
@@ -406,74 +320,55 @@ export default function RentalPlatform() {
       setAuthLoading(false);
     });
     
-    // Check analytics consent and show modal if not set
-    const analyticsConsent = localStorage.getItem('analytics-consent');
-    if (!analyticsConsent && process.env.REACT_APP_ENABLE_ANALYTICS === 'true') {
-      setTimeout(() => setShowAnalyticsConsent(true), 2000);
-    } else if (analyticsConsent === 'yes') {
-      initAnalytics(app);
-    }
-
-    (async () => {
-      try {
-        const token = await requestFcmToken();
-        if (token) {
-          console.log('Obtained FCM token:', token);
-          trackEvent('fcm_token_obtained');
+    // Check for existing session on load
+    getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        // Trigger the auth state handler
+        const user = session.user;
+        setCurrentUser(user);
+        
+        const localProfile = getProfile(user.id);
+        const localUserType = getUserType(user.id);
+        const localOnboardingComplete = isLandlordComplete(user.id);
+        
+        if (localProfile) {
+          if (localOnboardingComplete) {
+            localProfile.landlordComplete = true;
+          }
+          setUserProfile(localProfile);
+          setUserType(localProfile.userType || localUserType || 'renter');
+        } else {
+          const newProfile = {
+            displayName: user.user_metadata?.full_name || user.email?.split('@')[0] || '',
+            email: user.email || '',
+            userType: localUserType || 'renter',
+            createdAt: new Date().toISOString(),
+            landlordComplete: localOnboardingComplete,
+          };
+          saveProfile(user.id, newProfile);
+          setUserProfile(newProfile);
+          setUserType(localUserType || 'renter');
         }
-      } catch (e) {
-        console.warn('FCM token request failed', e);
       }
-    })();
-    
-    listenForegroundMessages((payload) => {
-      const notification = payload?.notification || {};
-      if (notification.title || notification.body) {
-        setNotificationBanner({
-          title: notification.title,
-          body: notification.body
-        });
-        setTimeout(() => setNotificationBanner(null), 8000);
-      }
+      setAuthLoading(false);
     });
     
     // Cleanup
     return () => {
-      if (unsubscribeAuth) unsubscribeAuth();
+      if (authSubscription) authSubscription.unsubscribe();
       if (unsubscribeListings) unsubscribeListings();
     };
   }, []);
 
-  // Guard: if someone navigates to 'add' without landlord auth, prompt to sign in
+  // Guard: require authentication before entering the Add Listing view
   useEffect(() => {
-    if (authLoading) return; // Wait for auth to load
-    
-    // Skip guard if we just completed onboarding
-    if (justCompletedOnboarding.current) {
-      justCompletedOnboarding.current = false;
-      return;
+    if (authLoading) return;
+
+    if (currentView === 'add' && !currentUser) {
+      openAuthModal('landlord');
+      setCurrentView('browse');
     }
-    
-    if (currentView === 'add') {
-      if (!currentUser) {
-        openAuthModal('landlord');
-        setCurrentView('browse');
-      } else if (userType !== 'landlord') {
-        // Not a landlord - prompt to become one
-        openAuthModal('landlord');
-        setCurrentView('browse');
-      } else {
-        // Check if landlord completed onboarding (check localStorage FIRST as it's more reliable)
-        const localOnboardingComplete = localStorage.getItem(`landlord-complete-${currentUser.uid}`);
-        const isComplete = localOnboardingComplete === 'true' || userProfile?.landlordComplete === true;
-        if (!isComplete) {
-          // Landlord but hasn't completed onboarding
-          setCurrentView('landlord-onboarding');
-        }
-        // If complete, stay on 'add' view - don't redirect
-      }
-    }
-  }, [currentView, currentUser, userType, userProfile, authLoading]);
+  }, [currentView, currentUser, authLoading]);
 
   // Helper: check for duplicate phone or email in registry (exclude an optional user id)
   const isDuplicateContact = (phone, email, ignoreId = null) => {
@@ -499,9 +394,6 @@ export default function RentalPlatform() {
   const handleAnalyticsConsentAccept = () => {
     localStorage.setItem('analytics-consent', 'yes');
     setShowAnalyticsConsent(false);
-    const app = initFirebase();
-    initAnalytics(app);
-    trackEvent('analytics_consent_granted');
     showToast('Analytics enabled', 'success', 'Thank you!');
   };
 
@@ -612,58 +504,97 @@ const handleProfileSetup = async (profileData) => {
 };
 
 const handleUpdateProfile = async (profileData) => {
+  if (!currentUser?.id) {
+    showToast('Please sign in again to update your profile.', 'error');
+    return;
+  }
+
+  const trimmedPhone = profileData.phone?.trim() || '';
+  const trimmedEmail = profileData.email?.trim() || currentUser.email || '';
+
   try {
-    // Duplicate guard (exclude current user id)
-    if (isDuplicateContact(profileData.phone, profileData.email, currentUser?.id)) {
+    if (isDuplicateContact(trimmedPhone, trimmedEmail, currentUser.id)) {
       showToast('Phone or email already used by another account', 'error', 'Duplicate');
       return;
     }
-    const updatedUser = { ...currentUser, ...profileData };
-    
-    localStorage.setItem('current-user', JSON.stringify(updatedUser));
-    setCurrentUser(updatedUser);
-    // Update registry entry
+
+    const updatedProfile = {
+      ...(userProfile || {}),
+      displayName: profileData.name?.trim() || '',
+      phone: trimmedPhone,
+      email: trimmedEmail,
+      whatsapp: profileData.whatsapp?.trim() || '',
+      photoURL: profileData.photo || '',
+      userType: profileData.userType || userProfile?.userType || userType || 'renter',
+      notificationPrefs: userProfile?.notificationPrefs || { updates: true, marketing: false },
+      createdAt: userProfile?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    saveProfile(currentUser.id, updatedProfile);
+    try {
+      await syncProfileToSupabase(currentUser.id, updatedProfile);
+    } catch (syncErr) {
+      console.warn('Supabase profile sync failed, will retry later:', syncErr);
+      showToast('Profile saved offline. We will sync once you are back online.', 'warning', 'Cloud sync delayed');
+    }
+    setUserProfile(updatedProfile);
+    setUserType(updatedProfile.userType);
+
+    const registryEntry = {
+      id: currentUser.id,
+      type: updatedProfile.userType,
+      name: updatedProfile.displayName,
+      phone: updatedProfile.phone,
+      email: updatedProfile.email,
+      whatsapp: updatedProfile.whatsapp,
+      photo: updatedProfile.photoURL,
+      createdAt: updatedProfile.createdAt,
+    };
+
+    try {
+      localStorage.setItem('current-user', JSON.stringify(registryEntry));
+    } catch (storageErr) {
+      console.warn('Failed to cache current user profile', storageErr);
+    }
+
     const existingUsersRaw = localStorage.getItem('users');
     let existingUsers = [];
     if (existingUsersRaw) {
       try { existingUsers = JSON.parse(existingUsersRaw); } catch { existingUsers = []; }
     }
-    const idx = existingUsers.findIndex(u => u.id === updatedUser.id);
+    const idx = existingUsers.findIndex(u => u.id === registryEntry.id);
     if (idx !== -1) {
-      existingUsers[idx] = updatedUser;
+      existingUsers[idx] = registryEntry;
     } else {
-      existingUsers.push(updatedUser); // ensure presence
+      existingUsers.push(registryEntry);
     }
     localStorage.setItem('users', JSON.stringify(existingUsers));
     setUsers(existingUsers);
+
     showToast('Profile updated successfully!', 'success');
-    setCurrentView('browse');
+    setCurrentView('profile');
   } catch (error) {
     console.error('Error updating profile:', error);
-    const updatedUser = { ...currentUser, ...profileData };
-    setCurrentUser(updatedUser);
-    const existingUsersRaw = localStorage.getItem('users');
-    let existingUsers = [];
-    if (existingUsersRaw) {
-      try { existingUsers = JSON.parse(existingUsersRaw); } catch { existingUsers = []; }
-    }
-    const idx = existingUsers.findIndex(u => u.id === updatedUser.id);
-    if (idx !== -1) {
-      existingUsers[idx] = updatedUser;
-    } else {
-      existingUsers.push(updatedUser);
-    }
-    try { localStorage.setItem('users', JSON.stringify(existingUsers)); } catch {}
-    setUsers(existingUsers);
+    const fallbackProfile = {
+      displayName: profileData.name?.trim() || userProfile?.displayName || '',
+      phone: trimmedPhone,
+      email: trimmedEmail,
+      whatsapp: profileData.whatsapp?.trim() || userProfile?.whatsapp || '',
+      photoURL: profileData.photo || userProfile?.photoURL || '',
+      userType: profileData.userType || userProfile?.userType || userType || 'renter',
+    };
+    setUserProfile(prev => ({ ...(prev || {}), ...fallbackProfile }));
+    setUserType(fallbackProfile.userType);
     showToast('Profile updated (data may not be persisted)', 'error');
-    setCurrentView('browse');
+    setCurrentView('profile');
   }
 };
 
-// Sign out using Firebase
+// Sign out using Supabase
 const handleSignOut = async () => {
   try {
-    await firebaseSignOut();
+    await signOut();
     setCurrentUser(null);
     setUserProfile(null);
     setUserType(null);
@@ -676,26 +607,43 @@ const handleSignOut = async () => {
 };
 
 const handleCompleteOnboarding = async (onboardData) => {
-  // Update local state immediately
+  const userId = currentUser?.id;
+  console.log('Completing onboarding for user:', userId);
+  
+  if (!userId) {
+    console.error('No user ID found!');
+    return;
+  }
+  
+  // SET LANDLORD COMPLETE FIRST - this is what the guard checks
+  localStorage.setItem(`landlord-complete-${userId}`, 'true');
+  console.log('Saved landlord-complete:', localStorage.getItem(`landlord-complete-${userId}`));
+  
+  // Update local state
   const updatedProfile = { ...userProfile, landlordComplete: true, landlordInfo: onboardData };
   setUserProfile(updatedProfile);
   
-  // Store in localStorage as cache
-  if (currentUser?.uid) {
-    localStorage.setItem(`landlord-complete-${currentUser.uid}`, 'true');
-    localStorage.setItem(`landlord-info-${currentUser.uid}`, JSON.stringify(onboardData));
-    localStorage.setItem(`user-profile-${currentUser.uid}`, JSON.stringify(updatedProfile));
-    
-    // Save to Supabase (non-blocking)
-    supabaseSaveProfile(currentUser.uid, updatedProfile).catch(err => {
-      console.warn('Supabase profile update failed:', err);
-    });
+  // Save full profile
+  localStorage.setItem(`landlord-info-${userId}`, JSON.stringify(onboardData));
+  saveProfile(userId, updatedProfile);
+  try {
+    await syncProfileToSupabase(userId, { ...updatedProfile, landlordComplete: true, landlordInfo: onboardData });
+  } catch (err) {
+    console.warn('Failed to sync onboarding profile to Supabase', err);
+    showToast('Onboarding saved locally. We will sync to the cloud soon.', 'warning', 'Cloud sync delayed');
   }
   
-  // Set flag to skip guard check on next render
+  // Set flag to skip guard
   justCompletedOnboarding.current = true;
+  
+  // Navigate to add view
   setCurrentView('add');
   showToast('Profile complete! You can now create listings.', 'success');
+  
+  // Reset flag after a delay
+  setTimeout(() => {
+    justCompletedOnboarding.current = false;
+  }, 500);
 };
 
 const handleAddListing = async (listingData) => {
@@ -759,10 +707,79 @@ const handleAddListing = async (listingData) => {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
+// Handle updating an existing listing
+const handleUpdateListing = async (listingId, listingData) => {
+  const fullAddress = [listingData.streetAddress, listingData.location]
+    .filter(Boolean)
+    .join(', ');
+  
+  const updates = {
+    title: listingData.title,
+    price: listingData.price,
+    location: listingData.location,
+    streetAddress: listingData.streetAddress || '',
+    fullAddress: fullAddress || listingData.location || '',
+    description: listingData.description,
+    photos: listingData.photos || [],
+    status: listingData.status || 'available',
+    availableDate: listingData.availableDate,
+    amenities: listingData.amenities || [],
+  };
+
+  try {
+    await supabaseUpdateListing(listingId, updates);
+    
+    // Update local state
+    const updatedListings = listings.map(l => 
+      l.id === listingId ? { ...l, ...updates } : l
+    );
+    setListings(updatedListings);
+    localStorage.setItem('listings', JSON.stringify(updatedListings));
+    
+    showToast('Listing updated successfully!', 'success');
+    setEditingListing(null);
+    setCurrentView('my-listings');
+  } catch (err) {
+    console.error('Failed to update listing:', err);
+    showToast('Failed to update listing. Please try again.', 'error');
+  }
+};
+
+// Handle toggling listing status (available/rented)
+const handleToggleListingStatus = async (listingId) => {
+  const listing = listings.find(l => l.id === listingId);
+  if (!listing) return;
+  
+  const newStatus = listing.status === 'available' ? 'rented' : 'available';
+  
+  try {
+    await supabaseUpdateListing(listingId, { status: newStatus });
+    
+    const updatedListings = listings.map(l => 
+      l.id === listingId ? { ...l, status: newStatus } : l
+    );
+    setListings(updatedListings);
+    localStorage.setItem('listings', JSON.stringify(updatedListings));
+    
+    showToast(
+      newStatus === 'rented' 
+        ? 'Listing marked as rented!' 
+        : 'Listing marked as available!', 
+      'success'
+    );
+  } catch (err) {
+    console.error('Failed to toggle status:', err);
+    showToast('Failed to update status. Please try again.', 'error');
+  }
+};
+
   // Messaging removed
 
 const filteredListings = listings
   .filter(listing => {
+    // Hide rented listings from browse view
+    if (listing.status === 'rented') return false;
+    
     const matchesLocation = !searchLocation || 
       (listing.location || '').toLowerCase().includes(searchLocation.toLowerCase());
     const price = parseFloat(listing.price);
@@ -789,8 +806,45 @@ const filteredListings = listings
   // show a gentle callout in the header (below) so users can pick a role
   // when they want to post or set up their profile.
 
+  const marketplaceStats = useMemo(() => {
+    const now = Date.now();
+    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+    let availableNow = 0;
+    let newThisWeek = 0;
+    const premiumLandlords = new Set();
+
+    listings.forEach(listing => {
+      if (listing.status === 'available') {
+        availableNow += 1;
+      }
+      if (listing.premium && listing.landlordId) {
+        premiumLandlords.add(listing.landlordId);
+      }
+      if (listing.createdAt) {
+        const created = new Date(listing.createdAt).getTime();
+        if (!Number.isNaN(created) && (now - created) <= sevenDaysMs) {
+          newThisWeek += 1;
+        }
+      }
+    });
+
+    return {
+      total: listings.length,
+      availableNow,
+      newThisWeek,
+      premiumHosts: premiumLandlords.size,
+    };
+  }, [listings]);
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-gray-100">
+    <div className="relative min-h-screen overflow-hidden app-container" style={{ backgroundColor: 'var(--c-bg)' }}>
+      {/* Decorative background blobs - adds personality */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-50">
+        <div className="absolute -top-32 left-6 w-72 h-72 bg-teal-500/20 blur-[120px] rounded-full animate-pulse" />
+        <div className="absolute top-20 right-0 w-96 h-96 bg-violet-500/15 blur-[140px] rounded-full animate-[pulse_6s_ease-in-out_infinite]" />
+        <div className="absolute bottom-[-120px] left-1/2 -translate-x-1/2 w-[520px] h-[520px] bg-rose-500/10 blur-[200px] rounded-full" />
+      </div>
+      <div className="relative min-h-screen" style={{ backgroundColor: 'transparent' }}>
       {/* Offline Indicator */}
       <OfflineIndicator />
       
@@ -848,6 +902,83 @@ const filteredListings = listings
         unreadCount={unreadCount}
         onOpenNotifications={() => setShowNotificationsPanel(true)}
       />
+
+      {currentView === 'browse' && (
+        <div className="px-4 sm:px-6 lg:px-8 mt-4">
+          <div className="max-w-7xl mx-auto space-y-3">
+            <button
+              type="button"
+              onClick={() => setShowPulsePanel(prev => !prev)}
+              className="w-full flex items-center justify-between rounded-2xl border border-white/60 bg-white/80 backdrop-blur-lg shadow-md px-4 py-3 text-left transition-all hover:border-teal-200"
+              aria-expanded={showPulsePanel ? 'true' : 'false'}
+            >
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Marketplace pulse</p>
+                <p className="text-base font-bold text-slate-900">See how Room24 is performing</p>
+              </div>
+              <ChevronDown className={`w-5 h-5 text-slate-500 transition-transform ${showPulsePanel ? 'rotate-180' : ''}`} />
+            </button>
+            {showPulsePanel && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 animate-fadeIn">
+                <div className="relative overflow-hidden rounded-2xl border border-white/70 bg-white/80 backdrop-blur-xl shadow-lg p-4 sm:p-5">
+                  <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 to-cyan-500/5" />
+                  <div className="relative flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-widest text-teal-600">Active rooms</p>
+                      <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">{marketplaceStats.availableNow}</p>
+                      <p className="text-xs text-slate-500">of {marketplaceStats.total} total</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-2xl bg-teal-500/15 flex items-center justify-center text-teal-600">
+                      <Home className="w-5 h-5" />
+                    </div>
+                  </div>
+                </div>
+                <div className="relative overflow-hidden rounded-2xl border border-white/70 bg-white/80 backdrop-blur-xl shadow-lg p-4 sm:p-5">
+                  <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-orange-500/5" />
+                  <div className="relative flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-widest text-amber-600">New this week</p>
+                      <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">{marketplaceStats.newThisWeek}</p>
+                      <p className="text-xs text-slate-500">freshly listed rooms</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-2xl bg-amber-500/15 flex items-center justify-center text-amber-600">
+                      <Sparkles className="w-5 h-5" />
+                    </div>
+                  </div>
+                </div>
+                <div className="relative overflow-hidden rounded-2xl border border-white/70 bg-white/80 backdrop-blur-xl shadow-lg p-4 sm:p-5">
+                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-blue-500/5" />
+                  <div className="relative flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-widest text-indigo-600">Premium hosts</p>
+                      <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">{marketplaceStats.premiumHosts}</p>
+                      <p className="text-xs text-slate-500">standout landlords</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-500/15 flex items-center justify-center text-indigo-600">
+                      <ShieldCheck className="w-5 h-5" />
+                    </div>
+                  </div>
+                </div>
+                <div className="relative overflow-hidden rounded-2xl border border-white/70 bg-white/80 backdrop-blur-xl shadow-lg p-4 sm:p-5">
+                  <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-pink-500/5" />
+                  <div className="relative flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-widest text-rose-600">Momentum</p>
+                      <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+                        {marketplaceStats.total > 0 ? `${Math.max(1, Math.round((marketplaceStats.newThisWeek / Math.max(1, marketplaceStats.total)) * 100))}%` : '—'}
+                      </p>
+                      <p className="text-xs text-slate-500">new inventory share</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-2xl bg-rose-500/15 flex items-center justify-center text-rose-600">
+                      <TrendingUp className="w-5 h-5" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Notification Banner (Push Notifications) */}
       {notificationBanner && (
@@ -913,41 +1044,31 @@ const filteredListings = listings
           <ProfileSetupView onSubmit={handleProfileSetup} userType={userType} />
         )}
 
-        {currentView === 'profile' && currentUser && (
+        {currentView === 'profile' && composedProfile && (
           <ProfileView 
-            user={{
-              name: userProfile?.displayName || currentUser?.displayName || '',
-              email: currentUser?.email || '',
-              phone: userProfile?.phone || '',
-              photo: userProfile?.photoURL || currentUser?.photoURL || '',
-              type: userProfile?.userType || userType || 'renter',
-              notificationPrefs: userProfile?.notificationPrefs || { updates: true, marketing: false },
-              createdAt: userProfile?.createdAt || currentUser?.metadata?.creationTime || new Date().toISOString(),
-            }}
+            user={composedProfile}
             onEdit={() => setCurrentView('edit-profile')} 
             onSignOut={handleSignOut}
-            linkedProviders={getLinkedProviders()}
-            onLinkGoogle={async () => {
-              await linkGoogleAccount();
-              // Refresh to show updated providers
-              window.location.reload();
+            linkedProviders={[currentUser?.app_metadata?.provider || 'email']}
+            onLinkGoogle={() => {
+              showToast('Account linking coming soon!', 'info');
             }}
             onLinkPhone={() => {
-              // Open auth modal for phone linking
               showToast('Phone linking coming soon!', 'info');
             }}
+            onBecomeLandlord={userType !== 'landlord' ? () => {
+              setUserType('landlord');
+              setCurrentView('landlord-onboarding');
+            } : null}
             onUpdatePrefs={async (prefs) => {
-              if (currentUser?.uid) {
+              const userId = currentUser?.id;
+              if (userId) {
                 try {
-                  // Save to localStorage only
                   setUserProfile(prev => ({ ...prev, notificationPrefs: prefs }));
-                  if (currentUser?.uid) {
-                    const existingProfile = localStorage.getItem(`user-profile-${currentUser.uid}`);
-                    if (existingProfile) {
-                      const parsed = JSON.parse(existingProfile);
-                      parsed.notificationPrefs = prefs;
-                      localStorage.setItem(`user-profile-${currentUser.uid}`, JSON.stringify(parsed));
-                    }
+                  const existingProfile = getProfile(userId);
+                  if (existingProfile) {
+                    existingProfile.notificationPrefs = prefs;
+                    saveProfile(userId, existingProfile);
                   }
                   showToast('Preferences updated', 'success');
                 } catch (err) {
@@ -959,8 +1080,8 @@ const filteredListings = listings
           />
         )}
 
-        {currentView === 'edit-profile' && currentUser && (
-          <EditProfileView user={currentUser} onSubmit={handleUpdateProfile} onCancel={() => setCurrentView('profile')} />
+        {currentView === 'edit-profile' && composedProfile && (
+          <EditProfileView user={composedProfile} onSubmit={handleUpdateProfile} onCancel={() => setCurrentView('profile')} />
         )}
 
         {currentView === 'landlord-onboarding' && currentUser && userType === 'landlord' && (
@@ -994,15 +1115,28 @@ const filteredListings = listings
             onSubmit={handleAddListing}
             onCancel={() => setCurrentView('browse')}
             currentUser={currentUser}
-            userType={userType}
             onRequireAuth={openAuthModal}
-            onRequireOnboarding={() => setCurrentView('landlord-onboarding')}
+          />
+        )}
+
+        {currentView === 'edit-listing' && editingListing && currentUser && (
+          <EditListingView
+            listing={editingListing}
+            onSubmit={(data) => handleUpdateListing(editingListing.id, data)}
+            onCancel={() => { setEditingListing(null); setCurrentView('my-listings'); }}
+            currentUser={currentUser}
           />
         )}
 
         {currentView === 'my-listings' && currentUser && userType === 'landlord' && (
           <MyListingsView 
             listings={listings.filter(l => l.landlordId === currentUser.uid || l.landlordId === currentUser.id)}
+            onCreate={() => setCurrentView('add')}
+            onEdit={(listing) => {
+              setEditingListing(listing);
+              setCurrentView('edit-listing');
+            }}
+            onToggleStatus={handleToggleListingStatus}
             onDelete={async (id) => {
               try {
                 // Delete from Supabase
@@ -1035,26 +1169,29 @@ const filteredListings = listings
           <FavoritesView
             listings={listings}
             onSelectListing={setSelectedListing}
+            onBrowse={() => setCurrentView('browse')}
           />
         )}
       </div>
 
       {selectedListing && (
-        <ListingDetailModal 
-          listing={selectedListing}
-          landlord={{
-            name: selectedListing.landlordName,
-            phone: selectedListing.landlordPhone,
-            email: selectedListing.landlordEmail,
-            photo: selectedListing.landlordPhoto
-          }}
-          onClose={() => setSelectedListing(null)}
-          userType={userType}
-          currentUser={currentUser}
-          onRequireAuth={openAuthModal}
-          previewMode={previewAsRenter}
-          showToast={showToast}
-        />
+        <LazyModalBoundary label="Loading listing...">
+          <ListingDetailModal 
+            listing={selectedListing}
+            landlord={{
+              name: selectedListing.landlordName,
+              phone: selectedListing.landlordPhone,
+              email: selectedListing.landlordEmail,
+              photo: selectedListing.landlordPhoto
+            }}
+            onClose={() => setSelectedListing(null)}
+            userType={userType}
+            currentUser={currentUser}
+            onRequireAuth={openAuthModal}
+            previewMode={previewAsRenter}
+            showToast={showToast}
+          />
+        </LazyModalBoundary>
       )}
 
       {/* Conversation modal removed */}
@@ -1068,46 +1205,55 @@ const filteredListings = listings
             showToast('Signed in successfully!', 'success', 'Welcome!');
           }}
           authFunctions={authFunctions}
+          turnstileSiteKey={TURNSTILE_SITE_KEY}
         />
       )}
 
       <BottomNav 
         currentView={currentView}
         setCurrentView={setCurrentView}
+        currentUser={currentUser}
         userType={userType}
       />
 
       {showPrivacyPolicy && (
-        <PrivacyPolicyModal onClose={() => setShowPrivacyPolicy(false)} />
+        <LazyModalBoundary label="Opening policy...">
+          <PrivacyPolicyModal onClose={() => setShowPrivacyPolicy(false)} />
+        </LazyModalBoundary>
       )}
 
       {showAnalyticsConsent && (
-        <AnalyticsConsentModal
-          onAccept={handleAnalyticsConsentAccept}
-          onDecline={handleAnalyticsConsentDecline}
-        />
+        <LazyModalBoundary label="Loading preferences...">
+          <AnalyticsConsentModal
+            onAccept={handleAnalyticsConsentAccept}
+            onDecline={handleAnalyticsConsentDecline}
+          />
+        </LazyModalBoundary>
       )}
 
       {showNotificationsPanel && (
-        <NotificationsPanel
-          onClose={() => {
-            setShowNotificationsPanel(false);
-            setUnreadCount(getNotifications().filter(n => !n.read).length);
-          }}
-          onSelectListing={(listingId) => {
-            const listing = listings.find(l => (l.id || `${l.title}-${l.createdAt}`) === listingId);
-            if (listing) {
-              setSelectedListing(listing);
-            }
-            setShowNotificationsPanel(false);
-          }}
-        />
+        <LazyModalBoundary label="Loading inbox...">
+          <NotificationsPanel
+            onClose={() => {
+              setShowNotificationsPanel(false);
+              setUnreadCount(getNotifications().filter(n => !n.read).length);
+            }}
+            onSelectListing={(listingId) => {
+              const listing = listings.find(l => (l.id || `${l.title}-${l.createdAt}`) === listingId);
+              if (listing) {
+                setSelectedListing(listing);
+              }
+              setShowNotificationsPanel(false);
+            }}
+          />
+        </LazyModalBoundary>
       )}
 
       <Footer 
         onOpenPrivacy={() => setShowPrivacyPolicy(true)} 
         onInstallApp={handleInstallClick}
       />
+    </div>
     </div>
   );
 }
@@ -1311,7 +1457,7 @@ function ProfileSetupView({ onSubmit, userType }) {
   );
 }
 
-function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, onLinkGoogle, onLinkPhone }) {
+function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, onLinkGoogle, onLinkPhone, onBecomeLandlord }) {
   const prefs = user.notificationPrefs || { updates: true, marketing: false };
   const [localPrefs, setLocalPrefs] = React.useState(prefs);
   const [linkingInProgress, setLinkingInProgress] = React.useState(null);
@@ -1397,6 +1543,23 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
               )}
             </span>
           </div>
+
+          {user.type !== 'landlord' && onBecomeLandlord && (
+            <div className="mb-6 w-full">
+              <div className="bg-gradient-to-r from-amber-100 via-orange-50 to-rose-50 border border-amber-200 rounded-2xl p-4 flex flex-col md:flex-row md:items-center gap-4">
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-amber-800">List your first room</p>
+                  <p className="text-xs text-amber-700">Switch to a landlord profile to unlock My Rooms, premium sorting, and priority support.</p>
+                </div>
+                <button
+                  onClick={onBecomeLandlord}
+                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold shadow-lg transition"
+                >
+                  Become a Landlord
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Contact Info Cards */}
           <div className="space-y-3 mb-6">
@@ -1713,7 +1876,8 @@ function EditProfileView({ user, onSubmit, onCancel }) {
     phone: user.phone || '',
     email: user.email || '',
     whatsapp: user.whatsapp || '',
-    photo: user.photo || ''
+    photo: user.photo || '',
+    userType: user.type || 'renter'
   });
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
@@ -1870,6 +2034,33 @@ function EditProfileView({ user, onSubmit, onCancel }) {
               <p className="text-xs text-gray-500 mt-1">Used to create a WhatsApp chat link on your listings.</p>
             </div>
 
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">Account Role</label>
+              <div className="grid grid-cols-2 gap-3">
+                {['renter', 'landlord'].map(role => (
+                  <button
+                    key={role}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, userType: role })}
+                    className={`flex flex-col items-start px-4 py-3 rounded-xl border-2 transition font-semibold text-sm ${
+                      formData.userType === role
+                        ? 'border-teal-500 bg-teal-50 text-teal-700 shadow-sm'
+                        : 'border-gray-200 bg-white text-gray-600 hover:border-teal-200'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      {role === 'landlord' ? <Home className="w-4 h-4" /> : <User className="w-4 h-4" />}
+                      {role === 'landlord' ? 'Landlord' : 'Renter'}
+                    </span>
+                    <span className="text-xs font-normal text-gray-500 mt-1">
+                      {role === 'landlord' ? 'Post and manage rooms' : 'Search for rooms'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 mt-2">Switch to landlord to unlock the My Rooms dashboard. Onboarding steps may still be required before posting.</p>
+            </div>
+
             {/* Action Buttons */}
             <div className="flex gap-3 pt-6 border-t border-gray-200">
               <button
@@ -1894,7 +2085,7 @@ function EditProfileView({ user, onSubmit, onCancel }) {
 
 /* BrowseView extracted to components/BrowseView.jsx */
 
-function FavoritesView({ listings, onSelectListing }) {
+function FavoritesView({ listings, onSelectListing, onBrowse }) {
   const [favorites, setFavorites] = useState([]);
 
   useEffect(() => {
@@ -1947,6 +2138,14 @@ function FavoritesView({ listings, onSelectListing }) {
             <p className="text-gray-500 text-sm mb-6 max-w-md mx-auto">
               Browse rooms and tap the heart icon to save your favorites. They'll appear here for easy access.
             </p>
+            <button
+              type="button"
+              onClick={() => onBrowse?.()}
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 text-white font-semibold shadow-md hover:shadow-lg hover:from-rose-600 hover:to-pink-600 transition focus:outline-none focus:ring-2 focus:ring-rose-300"
+            >
+              <Search className="w-4 h-4" />
+              Discover rooms
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -1986,10 +2185,12 @@ const createDefaultListingForm = () => ({
   leaseDuration: '7-12',
   petFriendly: false,
   genderPreference: 'any',
-  premium: false
+  premium: false,
+  contactPhone: '',
+  contactWhatsapp: ''
 });
 
-function AddListingView({ onSubmit, onCancel, currentUser, userType, onRequireAuth, onRequireOnboarding }) {
+function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
   const GEOCODER_KEY = process.env.REACT_APP_GEOCODER_API_KEY;
   const GEOCODER_PROVIDER = (process.env.REACT_APP_GEOCODER_PROVIDER || '').toLowerCase();
 
@@ -2037,9 +2238,9 @@ function AddListingView({ onSubmit, onCancel, currentUser, userType, onRequireAu
   }, [landlordId]);
 
   useEffect(() => {
-    if (!landlordId || userType !== 'landlord') return;
+    if (!landlordId) return;
     saveListingTemplate(landlordId, formData);
-  }, [formData, landlordId, userType]);
+  }, [formData, landlordId]);
 
   // Warn user before leaving if form has unsaved data
   useEffect(() => {
@@ -2317,17 +2518,6 @@ function AddListingView({ onSubmit, onCancel, currentUser, userType, onRequireAu
       onRequireAuth && onRequireAuth('landlord');
       return;
     }
-    if (userType !== 'landlord') {
-      // prompt to become landlord
-      onRequireAuth && onRequireAuth('landlord');
-      return;
-    }
-    if (!currentUser.landlordComplete) {
-      // send to onboarding
-      onRequireOnboarding && onRequireOnboarding();
-      return;
-    }
-
     // Validate all fields
     validateField('title', formData.title);
     validateField('price', formData.price);
@@ -2779,6 +2969,48 @@ function AddListingView({ onSubmit, onCancel, currentUser, userType, onRequireAu
               </label>
             </div>
 
+            {/* Contact Details */}
+            <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-xl p-4">
+              <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                📞 Contact Details
+                <span className="text-xs font-normal text-gray-500">(How tenants can reach you)</span>
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone Number (for calls)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">📱</span>
+                    <input
+                      type="tel"
+                      value={formData.contactPhone}
+                      onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
+                      placeholder="e.g., 071 234 5678"
+                      className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition placeholder-gray-400"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">For direct phone calls from interested tenants</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    WhatsApp Number
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-green-500">💬</span>
+                    <input
+                      type="tel"
+                      value={formData.contactWhatsapp}
+                      onChange={(e) => setFormData({ ...formData, contactWhatsapp: e.target.value })}
+                      placeholder="e.g., 071 234 5678"
+                      className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition placeholder-gray-400"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Leave blank if same as phone number</p>
+                </div>
+              </div>
+            </div>
+
             {/* Description */}
             <div>
               <label className="block text-sm font-semibold text-gray-800 mb-2">
@@ -2876,12 +3108,14 @@ function AddListingView({ onSubmit, onCancel, currentUser, userType, onRequireAu
             </div>
 
             {showPhotoEditor && (
-              <PhotoEditor
-                photos={formData.photos}
-                onPhotosChange={(newPhotos) => setFormData({ ...formData, photos: newPhotos })}
-                onClose={() => setShowPhotoEditor(false)}
-                maxPhotos={5}
-              />
+              <LazyModalBoundary label="Loading editor...">
+                <PhotoEditor
+                  photos={formData.photos}
+                  onPhotosChange={(newPhotos) => setFormData({ ...formData, photos: newPhotos })}
+                  onClose={() => setShowPhotoEditor(false)}
+                  maxPhotos={5}
+                />
+              </LazyModalBoundary>
             )}
 
             {/* Submit Button */}
@@ -2917,32 +3151,397 @@ function AddListingView({ onSubmit, onCancel, currentUser, userType, onRequireAu
   );
 }
 
-// MessagesView removed - using direct contact instead
+// Edit Listing View - allows landlords to modify their existing listings
+function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
+  const [formData, setFormData] = useState({
+    title: listing?.title || '',
+    price: listing?.price || '',
+    location: listing?.location || '',
+    streetAddress: listing?.streetAddress || '',
+    description: listing?.description || '',
+    photos: listing?.photos || [],
+    status: listing?.status || 'available',
+    availableDate: listing?.availableDate ? listing.availableDate.split('T')[0] : new Date().toISOString().split('T')[0],
+    amenities: listing?.amenities || [],
+    contactPhone: listing?.contactPhone || '',
+    contactWhatsapp: listing?.contactWhatsapp || '',
+  });
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPhotoEditor, setShowPhotoEditor] = useState(false);
 
-function MyListingsView({ listings, onDelete }) {
+  const amenityOptions = [
+    { id: 'wifi', label: 'WiFi', icon: '📶' },
+    { id: 'parking', label: 'Parking', icon: '🚗' },
+    { id: 'kitchen', label: 'Kitchen', icon: '🍳' },
+    { id: 'laundry', label: 'Laundry', icon: '🧺' },
+    { id: 'aircon', label: 'Air Conditioning', icon: '❄️' },
+    { id: 'furnished', label: 'Furnished', icon: '🛋️' },
+    { id: 'security', label: 'Security', icon: '🔒' },
+    { id: 'garden', label: 'Garden', icon: '🌳' },
+    { id: 'pool', label: 'Pool', icon: '🏊' },
+    { id: 'gym', label: 'Gym', icon: '💪' },
+  ];
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.title?.trim()) newErrors.title = 'Title is required';
+    if (!formData.price || parseFloat(formData.price) <= 0) newErrors.price = 'Valid price is required';
+    if (!formData.location?.trim()) newErrors.location = 'Location is required';
+    if (!formData.description?.trim()) newErrors.description = 'Description is required';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
+    setIsSubmitting(true);
+    try {
+      await onSubmit(formData);
+    } catch (err) {
+      console.error('Update error:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const toggleAmenity = (amenityId) => {
+    setFormData(prev => ({
+      ...prev,
+      amenities: prev.amenities.includes(amenityId)
+        ? prev.amenities.filter(a => a !== amenityId)
+        : [...prev.amenities, amenityId]
+    }));
+  };
+
+  const handlePhotoUpload = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    files.forEach(file => {
+      if (formData.photos.length >= 5) return;
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setFormData(prev => ({
+          ...prev,
+          photos: [...prev.photos, event.target.result].slice(0, 5)
+        }));
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removePhoto = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      photos: prev.photos.filter((_, i) => i !== index)
+    }));
+  };
+
   return (
     <div className="p-4 min-h-screen bg-gradient-to-b from-slate-50 to-gray-100 pb-24">
-      <div className="max-w-7xl mx-auto mt-8">
-        {/* Landlord reminder banner */}
-        {listings.length > 0 && (
-          <div className="mb-6 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 shadow-sm">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                <AlertTriangle className="w-5 h-5 text-amber-600" />
+      <div className="max-w-2xl mx-auto mt-8">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-8">
+          <button
+            onClick={onCancel}
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
+          >
+            <X className="w-5 h-5 text-gray-600" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Edit Listing</h1>
+            <p className="text-gray-500 text-sm">Update your room details</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-6">
+          {/* Title */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-800 mb-2">Listing Title *</label>
+            <input
+              type="text"
+              value={formData.title}
+              onChange={(e) => { setFormData({ ...formData, title: e.target.value }); setErrors({ ...errors, title: '' }); }}
+              className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500 ${
+                errors.title ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-gray-300'
+              }`}
+              placeholder="e.g., Cozy Room in Sandton"
+            />
+            {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
+          </div>
+
+          {/* Price */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-800 mb-2">Monthly Rent (R) *</label>
+            <input
+              type="number"
+              value={formData.price}
+              onChange={(e) => { setFormData({ ...formData, price: e.target.value }); setErrors({ ...errors, price: '' }); }}
+              className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500 ${
+                errors.price ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-gray-300'
+              }`}
+              placeholder="3500"
+            />
+            {errors.price && <p className="text-red-500 text-xs mt-1">{errors.price}</p>}
+          </div>
+
+          {/* Location */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-800 mb-2">Location / Suburb *</label>
+            <input
+              type="text"
+              value={formData.location}
+              onChange={(e) => { setFormData({ ...formData, location: e.target.value }); setErrors({ ...errors, location: '' }); }}
+              className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500 ${
+                errors.location ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-gray-300'
+              }`}
+              placeholder="e.g., Sandton, Johannesburg"
+            />
+            {errors.location && <p className="text-red-500 text-xs mt-1">{errors.location}</p>}
+          </div>
+
+          {/* Street Address */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-800 mb-2">Street Address (Optional)</label>
+            <input
+              type="text"
+              value={formData.streetAddress}
+              onChange={(e) => setFormData({ ...formData, streetAddress: e.target.value })}
+              className="w-full px-4 py-3 border-2 border-gray-200 hover:border-gray-300 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500"
+              placeholder="e.g., 123 Main Street"
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-800 mb-2">Description *</label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => { setFormData({ ...formData, description: e.target.value }); setErrors({ ...errors, description: '' }); }}
+              rows={4}
+              className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500 resize-none ${
+                errors.description ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-gray-300'
+              }`}
+              placeholder="Describe your room, amenities, rules, and what makes it special..."
+            />
+            {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
+          </div>
+
+          {/* Available Date */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-800 mb-2">Available From</label>
+            <input
+              type="date"
+              value={formData.availableDate}
+              onChange={(e) => setFormData({ ...formData, availableDate: e.target.value })}
+              className="w-full px-4 py-3 border-2 border-gray-200 hover:border-gray-300 rounded-xl transition-all focus:ring-2 focus:ring-teal-100 focus:border-teal-500"
+            />
+          </div>
+
+          {/* Status */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-800 mb-2">Listing Status</label>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, status: 'available' })}
+                className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
+                  formData.status === 'available'
+                    ? 'bg-emerald-500 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                ● Available
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, status: 'rented' })}
+                className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
+                  formData.status === 'rented'
+                    ? 'bg-gray-500 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                ○ Rented
+              </button>
+            </div>
+            <p className="text-gray-500 text-xs mt-2">Rented listings won't appear in search results</p>
+          </div>
+
+          {/* Amenities */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-800 mb-3">Amenities</label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {amenityOptions.map(amenity => (
+                <button
+                  key={amenity.id}
+                  type="button"
+                  onClick={() => toggleAmenity(amenity.id)}
+                  className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                    formData.amenities.includes(amenity.id)
+                      ? 'bg-teal-50 text-teal-700 border-2 border-teal-500'
+                      : 'bg-gray-50 text-gray-600 border-2 border-transparent hover:bg-gray-100'
+                  }`}
+                >
+                  <span>{amenity.icon}</span>
+                  <span>{amenity.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Contact Details */}
+          <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-xl p-4">
+            <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+              📞 Contact Details
+              <span className="text-xs font-normal text-gray-500">(How tenants can reach you)</span>
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Phone Number (for calls)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">📱</span>
+                  <input
+                    type="tel"
+                    value={formData.contactPhone}
+                    onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
+                    placeholder="e.g., 071 234 5678"
+                    className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition placeholder-gray-400"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">For direct phone calls from interested tenants</p>
               </div>
               <div>
-                <h3 className="font-semibold text-amber-800 mb-1">Found a tenant?</h3>
-                <p className="text-amber-700 text-sm leading-relaxed">
-                  Remember to <span className="font-medium">delete your listing</span> once you've found a tenant. 
-                  This will stop new calls and messages from other renters looking at your ad.
-                </p>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  WhatsApp Number
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-green-500">💬</span>
+                  <input
+                    type="tel"
+                    value={formData.contactWhatsapp}
+                    onChange={(e) => setFormData({ ...formData, contactWhatsapp: e.target.value })}
+                    placeholder="e.g., 071 234 5678"
+                    className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition placeholder-gray-400"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Leave blank if same as phone number</p>
               </div>
             </div>
           </div>
-        )}
 
-        <div className="mb-8">
-          <div className="flex items-center gap-4 mb-3">
+          {/* Photos */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-800 mb-3">Photos ({formData.photos.length}/5)</label>
+            
+            {formData.photos.length > 0 && (
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                {formData.photos.map((photo, index) => (
+                  <div key={index} className="relative aspect-square rounded-xl overflow-hidden group">
+                    <img src={photo} alt={`Room ${index + 1}`} className="w-full h-full object-cover" />
+                    <button
+                      onClick={() => removePhoto(index)}
+                      className="absolute top-2 right-2 w-7 h-7 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                    {index === 0 && (
+                      <div className="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
+                        Cover
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {formData.photos.length < 5 && (
+              <label className="block cursor-pointer">
+                <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-teal-400 hover:bg-teal-50/50 transition-all">
+                  <div className="text-3xl mb-2">📸</div>
+                  <p className="text-gray-600 text-sm font-medium">Click to add photos</p>
+                  <p className="text-gray-400 text-xs mt-1">Up to 5 photos</p>
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handlePhotoUpload}
+                  className="hidden"
+                />
+              </label>
+            )}
+
+            {formData.photos.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowPhotoEditor(true)}
+                className="mt-3 text-sm text-teal-600 hover:text-teal-700 font-medium"
+              >
+                ✏️ Edit Photos
+              </button>
+            )}
+          </div>
+
+          {showPhotoEditor && (
+            <LazyModalBoundary label="Loading editor...">
+              <PhotoEditor
+                photos={formData.photos}
+                onPhotosChange={(newPhotos) => setFormData({ ...formData, photos: newPhotos })}
+                onClose={() => setShowPhotoEditor(false)}
+                maxPhotos={5}
+              />
+            </LazyModalBoundary>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-4 border-t border-gray-200">
+            <button
+              onClick={onCancel}
+              className="flex-1 py-3 px-4 rounded-xl font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className={`flex-1 py-3 px-4 rounded-xl font-semibold text-white transition-all relative ${
+                isSubmitting
+                  ? 'bg-teal-400 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 shadow-lg hover:shadow-xl'
+              }`}
+            >
+              {isSubmitting ? (
+                <>
+                  <span className="opacity-0">Save Changes</span>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  </div>
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// MessagesView removed - using direct contact instead
+
+function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus }) {
+  return (
+    <div className="p-4 min-h-screen bg-gradient-to-b from-slate-50 to-gray-100 pb-24">
+      <div className="max-w-7xl mx-auto mt-8">
+        {/* Header with Add button */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+          <div className="flex items-center gap-4">
             <div className="w-14 h-14 bg-gradient-to-br from-teal-100 to-cyan-100 rounded-2xl flex items-center justify-center shadow-sm">
               <Home className="w-7 h-7 text-teal-600" />
             </div>
@@ -2951,11 +3550,38 @@ function MyListingsView({ listings, onDelete }) {
               <p className="text-gray-600">
                 {listings.length === 0
                   ? 'Your properties will appear here'
-                  : `${listings.length} active ${listings.length === 1 ? 'listing' : 'listings'}`}
+                  : `${listings.length} ${listings.length === 1 ? 'listing' : 'listings'}`}
               </p>
             </div>
           </div>
+          {listings.length > 0 && (
+            <button
+              onClick={() => (onCreate ? onCreate() : (window.location.hash = '#add'))}
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-semibold px-5 py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg"
+            >
+              <PlusCircle className="w-5 h-5" />
+              Add New Listing
+            </button>
+          )}
         </div>
+
+        {/* Landlord tip banner */}
+        {listings.length > 0 && (
+          <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4 shadow-sm">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Sparkles className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-blue-800 mb-1">Manage Your Listings</h3>
+                <p className="text-blue-700 text-sm leading-relaxed">
+                  <span className="font-medium">Edit</span> to update details, or toggle <span className="font-medium">Status</span> when you find a tenant. 
+                  Rented listings won't appear in search results.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {listings.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
@@ -2967,7 +3593,7 @@ function MyListingsView({ listings, onDelete }) {
               Start earning by posting your first room. It only takes a few minutes!
             </p>
             <button
-              onClick={() => window.location.hash = '#add'}
+              onClick={() => (onCreate ? onCreate() : (window.location.hash = '#add'))}
               className="inline-flex items-center gap-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-semibold px-6 py-3 rounded-xl transition-all shadow-md hover:shadow-lg"
             >
               <PlusCircle className="w-5 h-5" />
@@ -2977,22 +3603,47 @@ function MyListingsView({ listings, onDelete }) {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {listings.map(listing => (
-              <div key={listing.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
-                {listing.photos && listing.photos.length > 0 && (
+              <div key={listing.id} className={`bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-md transition-shadow ${
+                listing.status === 'rented' ? 'border-gray-200 opacity-75' : 'border-gray-100'
+              }`}>
+                {listing.photos && listing.photos.length > 0 ? (
                   <div className="relative">
-                    <img src={listing.photos[0]} alt="Room" className="w-full h-48 object-cover" />
+                    <img 
+                      src={listing.photos[0]} 
+                      alt="Room" 
+                      className={`w-full h-48 object-cover ${listing.status === 'rented' ? 'grayscale' : ''}`} 
+                    />
                     {listing.photos.length > 1 && (
                       <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-xs font-medium">
                         {listing.photos.length} photos
                       </div>
                     )}
-                    <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                      listing.status === 'available' 
-                        ? 'bg-emerald-500 text-white' 
-                        : 'bg-gray-500 text-white'
-                    }`}>
-                      {listing.status === 'available' ? 'Active' : 'Rented'}
-                    </div>
+                    <button
+                      onClick={() => onToggleStatus?.(listing.id)}
+                      className={`absolute top-3 left-3 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer hover:scale-105 ${
+                        listing.status === 'available' 
+                          ? 'bg-emerald-500 hover:bg-emerald-600 text-white' 
+                          : 'bg-gray-500 hover:bg-gray-600 text-white'
+                      }`}
+                      title="Click to toggle status"
+                    >
+                      {listing.status === 'available' ? '● Available' : '○ Rented'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                    <Home className="w-16 h-16 text-gray-300" />
+                    <button
+                      onClick={() => onToggleStatus?.(listing.id)}
+                      className={`absolute top-3 left-3 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer hover:scale-105 ${
+                        listing.status === 'available' 
+                          ? 'bg-emerald-500 hover:bg-emerald-600 text-white' 
+                          : 'bg-gray-500 hover:bg-gray-600 text-white'
+                      }`}
+                      title="Click to toggle status"
+                    >
+                      {listing.status === 'available' ? '● Available' : '○ Rented'}
+                    </button>
                   </div>
                 )}
                 <div className="p-5">
@@ -3004,9 +3655,21 @@ function MyListingsView({ listings, onDelete }) {
                   </div>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => onDelete(listing.id)}
-                      className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium py-2.5 rounded-xl transition-colors text-sm"
+                      onClick={() => onEdit?.(listing)}
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-teal-50 hover:bg-teal-100 text-teal-700 font-medium py-2.5 rounded-xl transition-colors text-sm"
                     >
+                      <Edit className="w-4 h-4" />
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (window.confirm('Are you sure you want to delete this listing? This cannot be undone.')) {
+                          onDelete(listing.id);
+                        }
+                      }}
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 font-medium py-2.5 rounded-xl transition-colors text-sm"
+                    >
+                      <X className="w-4 h-4" />
                       Delete
                     </button>
                   </div>
@@ -3026,7 +3689,7 @@ function MyListingsView({ listings, onDelete }) {
 
 // ConversationModal removed
 
-function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, onSuccess, authFunctions }) {
+function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, onSuccess, authFunctions, turnstileSiteKey = '' }) {
   const [mode, setMode] = useState(defaultMode); // 'signin', 'signup', 'reset'
   const [form, setForm] = useState({ 
     name: '', 
@@ -3040,6 +3703,40 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState('');
   const [resetSent, setResetSent] = useState(false);
+  
+  // Turnstile captcha state
+  const [captchaToken, setCaptchaToken] = useState('');
+  const [captchaError, setCaptchaError] = useState('');
+  const [captchaRefresh, setCaptchaRefresh] = useState(0);
+  
+  const captchaEnabled = Boolean(turnstileSiteKey);
+  const requiresCaptcha = captchaEnabled && (mode === 'signin' || mode === 'signup');
+
+  // Reset captcha when mode changes
+  useEffect(() => {
+    if (!captchaEnabled) return;
+    setCaptchaToken('');
+    setCaptchaError('');
+    setCaptchaRefresh(prev => prev + 1);
+  }, [mode, captchaEnabled]);
+
+  const handleCaptchaVerify = (token) => {
+    setCaptchaToken(token);
+    setCaptchaError('');
+  };
+
+  const handleCaptchaExpire = () => {
+    setCaptchaToken('');
+    setCaptchaError('Verification expired. Please try again.');
+    setCaptchaRefresh(prev => prev + 1);
+  };
+
+  const handleCaptchaError = (err) => {
+    console.error('Turnstile error:', err);
+    setCaptchaToken('');
+    setCaptchaError('Verification failed. Please try again.');
+    setCaptchaRefresh(prev => prev + 1);
+  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -3070,16 +3767,24 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
 
   const handleSubmit = async () => {
     if (!validateForm()) return;
+    
+    // Check captcha if required
+    if (requiresCaptcha && !captchaToken) {
+      setCaptchaError('Please complete the verification.');
+      return;
+    }
+    
     setIsSubmitting(true);
     setAuthError('');
+    setCaptchaError('');
     
     try {
       if (mode === 'signup') {
-        await authFunctions.signUp(form.email, form.password, form.name, form.type);
+        await authFunctions.signUp(form.email, form.password, form.name, form.type, captchaToken);
         onSuccess?.();
         onClose();
       } else if (mode === 'signin') {
-        await authFunctions.signIn(form.email, form.password);
+        await authFunctions.signIn(form.email, form.password, captchaToken);
         onSuccess?.();
         onClose();
       } else if (mode === 'reset') {
@@ -3088,6 +3793,10 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
       }
     } catch (err) {
       console.error('Auth error:', err);
+      // Reset captcha on error so user can try again
+      setCaptchaToken('');
+      setCaptchaRefresh(prev => prev + 1);
+      
       let errorMessage = 'An error occurred. Please try again.';
       if (err.code === 'auth/email-already-in-use') {
         errorMessage = 'This email is already registered. Please sign in instead.';
@@ -3335,6 +4044,24 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
             </>
           )}
 
+          {/* Turnstile Captcha Widget */}
+          {captchaEnabled && (mode === 'signin' || mode === 'signup') && (
+            <div className="flex flex-col items-center">
+              <TurnstileWidget
+                siteKey={turnstileSiteKey}
+                onVerify={handleCaptchaVerify}
+                onExpire={handleCaptchaExpire}
+                onError={handleCaptchaError}
+                refreshTrigger={captchaRefresh}
+              />
+              {captchaError && (
+                <p className="text-rose-500 text-xs mt-2 flex items-center gap-1">
+                  <span>⚠</span>{captchaError}
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Submit Button */}
           <button 
             id="phone-sign-in-button"
@@ -3406,25 +4133,40 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
   );
 }
 
-function BottomNav({ currentView, setCurrentView, userType }) {
+function BottomNav({ currentView, setCurrentView, currentUser, userType }) {
+  const isLandlord = userType === 'landlord';
   const navItems = [
-    { id: 'browse', label: 'Browse', icon: <Search className="w-5 h-5" />, activeColor: 'teal' },
-    { id: 'add', label: 'List', icon: <PlusCircle className="w-5 h-5" />, requiresLandlord: true, activeColor: 'rose' },
-    { id: 'favorites', label: 'Saved', icon: <Heart className="w-5 h-5" />, activeColor: 'rose' },
-    { id: 'profile', label: 'Profile', icon: <User className="w-5 h-5" />, activeColor: 'blue' }
+    { id: 'browse', label: 'Browse', icon: Search, activeColor: 'teal' },
+    { id: 'add', label: 'List', icon: PlusCircle, requiresAuth: true, activeColor: 'rose' },
+    { id: 'my-listings', label: 'My Rooms', icon: Home, requiresAuth: true, activeColor: 'teal', show: isLandlord },
+    { id: 'favorites', label: 'Saved', icon: Heart, activeColor: 'rose' },
+    { id: 'profile', label: 'Profile', icon: User, activeColor: 'blue' }
   ];
 
+  const visibleItems = navItems.filter(item => item && (item.show === undefined || item.show));
+
+  const colorClasses = {
+    teal: 'text-teal-600 bg-teal-50',
+    rose: 'text-rose-600 bg-rose-50',
+    blue: 'text-blue-600 bg-blue-50'
+  };
+
+  const activeShadowClasses = {
+    teal: 'shadow-[inset_0_1px_4px_rgba(15,118,110,0.18)]',
+    rose: 'shadow-[inset_0_1px_4px_rgba(190,24,93,0.18)]',
+    blue: 'shadow-[inset_0_1px_4px_rgba(37,99,235,0.18)]'
+  };
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 px-4 py-2 z-20 md:hidden safe-area-bottom">
-      <div className="grid grid-cols-4 gap-1 max-w-md mx-auto">
-        {navItems.map(item => {
-          const disabled = item.requiresLandlord && userType !== 'landlord';
+    <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100/70 px-3 py-2 z-20 md:hidden safe-area-bottom shadow-[0_-6px_18px_rgba(15,23,42,0.12)]">
+      <div
+        className="grid gap-1 max-w-md mx-auto"
+        style={{ gridTemplateColumns: `repeat(${visibleItems.length}, minmax(0, 1fr))` }}
+      >
+        {visibleItems.map(item => {
+          const Icon = item.icon;
+          const disabled = item.requiresAuth && !currentUser;
           const isActive = currentView === item.id;
-          const colorClasses = {
-            teal: 'text-teal-600 bg-teal-50',
-            rose: 'text-rose-600 bg-rose-50',
-            blue: 'text-blue-600 bg-blue-50'
-          };
           return (
             <button
               key={item.id}
@@ -3432,17 +4174,15 @@ function BottomNav({ currentView, setCurrentView, userType }) {
               disabled={disabled}
               onClick={() => !disabled && setCurrentView(item.id)}
               className={`flex flex-col items-center gap-0.5 py-2 px-1 rounded-xl transition-all duration-200 ${
-                disabled 
-                  ? 'opacity-40 cursor-not-allowed' 
-                  : 'active:scale-95'
+                disabled ? 'opacity-40 cursor-not-allowed' : 'active:scale-95'
               } ${
-                isActive 
-                  ? `${colorClasses[item.activeColor]} font-semibold` 
+                isActive
+                  ? `${colorClasses[item.activeColor]} font-semibold ${activeShadowClasses[item.activeColor]}`
                   : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
               }`}
             >
               <span className={`transition-transform duration-200 ${isActive ? 'scale-110' : ''}`}>
-                {item.icon}
+                <Icon className="w-5 h-5" />
               </span>
               <span className="text-[10px] font-medium">{item.label}</span>
             </button>

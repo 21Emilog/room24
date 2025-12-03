@@ -724,7 +724,7 @@ export default function BrowseView({
                   className={`text-xs px-3 py-1.5 rounded-full transition-all duration-200 ${
                     searchLocation.toLowerCase() === area.toLowerCase()
                       ? 'bg-teal-600 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-600 hover:bg-teal-50 hover:text-teal-700 border border-gray-200'
+                      : 'bg-white text-gray-700 hover:bg-teal-50 hover:text-teal-700 border border-gray-300 shadow-sm'
                   }`}
                 >
                   {area}
@@ -800,12 +800,12 @@ export default function BrowseView({
             )}
           </div>
           <div className="flex gap-2 mb-3 flex-wrap items-center">
-            <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200">
-              <span className="text-sm text-gray-600 font-medium">R{priceRange[0].toLocaleString()} - R{priceRange[1].toLocaleString()}</span>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-200 border border-gray-300">
+              <span className="text-sm font-medium text-gray-700">R{priceRange[0].toLocaleString()} - R{priceRange[1].toLocaleString()}</span>
               <select
                 value={priceRange[0]}
                 onChange={(e) => setPriceRange([parseInt(e.target.value), priceRange[1]])}
-                className="text-xs bg-transparent border-l border-gray-300 pl-2 text-gray-600 focus:outline-none"
+                className="text-xs bg-transparent border-l border-gray-400 pl-2 focus:outline-none text-gray-700"
                 aria-label="Minimum price"
               >
                 <option value="0">Min</option>
@@ -816,7 +816,7 @@ export default function BrowseView({
               <select
                 value={priceRange[1]}
                 onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
-                className="text-xs bg-transparent border-l border-gray-300 pl-2 text-gray-600 focus:outline-none"
+                className="text-xs bg-transparent border-l border-gray-400 pl-2 focus:outline-none text-gray-700"
                 aria-label="Maximum price"
               >
                 <option value="10000">R10k</option>
@@ -830,7 +830,7 @@ export default function BrowseView({
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="text-sm bg-gray-50 border border-gray-200 px-3 py-2 rounded-lg text-gray-700 focus:ring-2 focus:ring-teal-600"
+                className="text-sm px-3 py-2 rounded-lg bg-gray-200 border border-gray-300 text-gray-700 focus:ring-2 focus:ring-teal-600"
                 aria-label="Sort order"
               >
                 <option value="newest">Newest</option>
@@ -843,7 +843,7 @@ export default function BrowseView({
               <select
                 value={paymentFilter}
                 onChange={(e) => setPaymentFilter(e.target.value)}
-                className="text-sm bg-gray-50 border border-gray-200 px-3 py-2 rounded-lg text-gray-700 focus:ring-2 focus:ring-teal-600"
+                className="text-sm px-3 py-2 rounded-lg bg-gray-200 border border-gray-300 text-gray-700 focus:ring-2 focus:ring-teal-600"
                 aria-label="Payment method filter"
               >
                 <option value="">Any</option>

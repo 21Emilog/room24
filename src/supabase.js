@@ -7,29 +7,230 @@ const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // ===========================
-// PROFILE FUNCTIONS
+// AUTHENTICATION FUNCTIONS
 // ===========================
-// Note: Profiles are stored in localStorage only since Firebase UIDs don't match Supabase UUID format
-// The profiles table would need a firebase_uid TEXT column to work properly
 
-export async function getProfile(userId) {
-  // Return null - profiles are handled via localStorage in App.js
-  // This prevents UUID format errors with Firebase Auth UIDs
-  console.log('Profile fetch skipped - using localStorage for profiles');
-  return null;
+// Sign up with email and password
+export async function signUpWithEmail(email, password, captchaToken) {
+  const payload = {
+    email,
+    password,
+    options: {
+      emailRedirectTo: window.location.origin,
+    }
+  };
+
+  if (captchaToken) {
+    payload.options.captchaToken = captchaToken;
+  }
+
+  const { data, error } = await supabase.auth.signUp(payload);
+  
+  if (error) {
+    console.error('Sign up error:', error);
+    throw error;
+  }
+  
+  // Check if email confirmation is required
+  // If user.identities is empty, email confirmation is pending
+  if (data.user && data.user.identities && data.user.identities.length === 0) {
+    throw new Error('Please check your email to confirm your account before signing in.');
+  }
+  
+  // If session exists, user is signed in (email confirmation disabled)
+  if (data.session) {
+    return data.user;
+  }
+  
+  // Email confirmation required
+  if (data.user && !data.session) {
+    throw new Error('Please check your email and click the confirmation link to complete signup.');
+  }
+  
+  return data.user;
 }
 
-export async function saveProfile(userId, profileData) {
-  // Skip Supabase profile save - handled via localStorage in App.js
-  // Firebase UIDs are not valid UUIDs for the Supabase profiles table
-  console.log('Profile save skipped - using localStorage for profiles');
-  return null;
+// Sign in with email and password
+export async function signInWithEmail(email, password, captchaToken) {
+  const payload = {
+    email,
+    password,
+  };
+
+  if (captchaToken) {
+    payload.captchaToken = captchaToken;
+  }
+
+  const { data, error } = await supabase.auth.signInWithPassword(payload);
+  
+  if (error) {
+    console.error('Sign in error:', error);
+    throw error;
+  }
+  
+  return data.user;
 }
 
-export async function updateProfile(userId, updates) {
-  // Skip Supabase profile update - handled via localStorage in App.js
-  console.log('Profile update skipped - using localStorage for profiles');
-  return null;
+// Sign in with Google
+export async function signInWithGoogle() {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.origin,
+    }
+  });
+  
+  if (error) {
+    console.error('Google sign in error:', error);
+    throw error;
+  }
+  
+  return data;
+}
+
+// Sign out
+export async function signOut() {
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    console.error('Sign out error:', error);
+    throw error;
+  }
+}
+
+// Get current user
+export function getCurrentUser() {
+  return supabase.auth.getUser();
+}
+
+// Get current session
+export function getSession() {
+  return supabase.auth.getSession();
+}
+
+// Listen to auth state changes
+export function onAuthStateChange(callback) {
+  return supabase.auth.onAuthStateChange((event, session) => {
+    callback(session?.user || null, event);
+  });
+}
+
+// Send password reset email
+export async function resetPassword(email) {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password`,
+  });
+  
+  if (error) {
+    console.error('Password reset error:', error);
+    throw error;
+  }
+}
+
+// ===========================
+// PROFILE FUNCTIONS (localStorage-based for simplicity)
+// ===========================
+
+export function getProfile(userId) {
+  const profile = localStorage.getItem(`user-profile-${userId}`);
+  return profile ? JSON.parse(profile) : null;
+}
+
+export function saveProfile(userId, profileData) {
+  localStorage.setItem(`user-profile-${userId}`, JSON.stringify(profileData));
+  localStorage.setItem(`user-type-${userId}`, profileData.userType || 'renter');
+  if (profileData.landlordComplete) {
+    localStorage.setItem(`landlord-complete-${userId}`, 'true');
+  }
+  return profileData;
+}
+
+export function updateProfile(userId, updates) {
+  const existing = getProfile(userId) || {};
+  const updated = { ...existing, ...updates };
+  saveProfile(userId, updated);
+  return updated;
+}
+
+export function isLandlordComplete(userId) {
+  return localStorage.getItem(`landlord-complete-${userId}`) === 'true';
+}
+
+export function setLandlordComplete(userId, complete = true) {
+  localStorage.setItem(`landlord-complete-${userId}`, complete ? 'true' : 'false');
+}
+
+export function getUserType(userId) {
+  return localStorage.getItem(`user-type-${userId}`) || 'renter';
+}
+
+export async function ensureProfileRecord(userId) {
+  if (!userId) {
+    return null;
+  }
+
+  try {
+    const { data: existing, error: fetchError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error('Error checking profile record:', fetchError);
+      throw fetchError;
+    }
+
+    if (existing) {
+      return existing;
+    }
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .insert({ id: userId })
+      .select('id')
+      .single();
+
+    if (error) {
+      console.error('Error creating profile record:', error);
+      throw error;
+    }
+
+    return data;
+  } catch (err) {
+    console.error('ensureProfileRecord failed:', err);
+    throw err;
+  }
+}
+
+export async function syncProfileToSupabase(userId, profileData = {}) {
+  if (!userId) return false;
+
+  await ensureProfileRecord(userId);
+
+  const payload = {
+    id: userId,
+    display_name: profileData.displayName || profileData.name || '',
+    email: profileData.email || '',
+    phone: profileData.phone || '',
+    whatsapp: profileData.whatsapp || '',
+    user_type: profileData.userType || 'renter',
+    photo_url: profileData.photoURL || profileData.photo || '',
+    landlord_complete: !!profileData.landlordComplete,
+    landlord_info: profileData.landlordInfo || null,
+    notification_prefs: profileData.notificationPrefs || null,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error } = await supabase
+    .from('profiles')
+    .upsert(payload, { onConflict: 'id' });
+
+  if (error) {
+    console.error('syncProfileToSupabase failed:', error);
+    throw error;
+  }
+
+  return true;
 }
 
 // ===========================
@@ -74,6 +275,13 @@ export async function fetchAllListings() {
 }
 
 export async function createListing(listingData) {
+  if (!listingData?.landlordId) {
+    throw new Error('Missing landlordId for listing creation');
+  }
+
+  // Ensure the foreign-key target exists so inserts don't fail
+  await ensureProfileRecord(listingData.landlordId);
+
   const { data, error } = await supabase
     .from('listings')
     .insert({
