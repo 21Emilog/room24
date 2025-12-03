@@ -33,6 +33,7 @@ import {
 
 const ListingDetailModal = React.lazy(() => import('./components/ListingDetailModal'));
 const PrivacyPolicyModal = React.lazy(() => import('./components/PrivacyPolicyModal'));
+const AboutModal = React.lazy(() => import('./components/AboutModal'));
 const AnalyticsConsentModal = React.lazy(() => import('./components/AnalyticsConsentModal'));
 const NotificationsPanel = React.lazy(() => import('./components/NotificationsPanel'));
 const PhotoEditor = React.lazy(() => import('./components/PhotoEditor'));
@@ -78,6 +79,7 @@ export default function RentalPlatform() {
   // Mobile menu state moved into Header component
   const [toast, setToast] = useState(null);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
   const [notificationBanner, setNotificationBanner] = useState(null);
   const [showAnalyticsConsent, setShowAnalyticsConsent] = useState(false);
   const [showNotificationsPanel, setShowNotificationsPanel] = useState(false);
@@ -1229,6 +1231,12 @@ const filteredListings = listings
         </LazyModalBoundary>
       )}
 
+      {showAbout && (
+        <LazyModalBoundary label="Loading about...">
+          <AboutModal onClose={() => setShowAbout(false)} />
+        </LazyModalBoundary>
+      )}
+
       {showAnalyticsConsent && (
         <LazyModalBoundary label="Loading preferences...">
           <AnalyticsConsentModal
@@ -1258,6 +1266,7 @@ const filteredListings = listings
 
       <Footer 
         onOpenPrivacy={() => setShowPrivacyPolicy(true)} 
+        onOpenAbout={() => setShowAbout(true)}
         onInstallApp={handleInstallClick}
       />
     </div>

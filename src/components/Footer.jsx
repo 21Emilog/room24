@@ -1,7 +1,7 @@
 import React from 'react';
-import { Home, Heart, Shield, Mail, Download, ExternalLink } from 'lucide-react';
+import { Home, Heart, Shield, Mail, Download, ExternalLink, Info } from 'lucide-react';
 
-export default function Footer({ onOpenPrivacy, onInstallApp }) {
+export default function Footer({ onOpenPrivacy, onOpenAbout, onInstallApp }) {
   const currentYear = new Date().getFullYear();
 
   return (
@@ -58,6 +58,15 @@ export default function Footer({ onOpenPrivacy, onInstallApp }) {
                 >
                   <Shield className="w-4 h-4" />
                   Privacy Policy
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={onOpenAbout}
+                  className="text-gray-400 hover:text-teal-400 transition-colors text-sm flex items-center gap-2"
+                >
+                  <Info className="w-4 h-4" />
+                  About Us
                 </button>
               </li>
             </ul>
@@ -125,6 +134,13 @@ export default function Footer({ onOpenPrivacy, onInstallApp }) {
                 className="text-gray-500 hover:text-teal-400 transition-colors"
               >
                 Privacy
+              </button>
+              <span className="text-gray-700">•</span>
+              <button 
+                onClick={onOpenAbout}
+                className="text-gray-500 hover:text-teal-400 transition-colors"
+              >
+                About
               </button>
               <span className="text-gray-700">•</span>
               <button className="text-gray-500 hover:text-teal-400 transition-colors">
