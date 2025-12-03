@@ -429,14 +429,14 @@ export default function BrowseView({
                     key={s.id}
                     type="button"
                     onClick={() => loadSearch(s)}
-                    className="px-2 py-1 rounded-md text-[11px] font-medium bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100"
+                    className="px-2 py-1 rounded-md text-[11px] font-medium bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100"
                   >{s.location || 'Any'} • {s.priceRange[0]}-{s.priceRange[1]}</button>
                 ))}
               </div>
               <button
                 type="button"
                 onClick={saveCurrentSearch}
-                className="mt-1 text-xs text-purple-700 hover:text-purple-800 font-medium underline"
+                className="mt-1 text-xs text-teal-700 hover:text-teal-800 font-medium underline"
               >Save Current Search</button>
             </div>
         <div>
@@ -818,7 +818,7 @@ export default function BrowseView({
                     key={s.id}
                     type="button"
                     onClick={() => loadSearch(s)}
-                    className="text-[11px] px-2 py-1 rounded bg-purple-50 text-purple-700 border border-purple-200"
+                    className="text-[11px] px-2 py-1 rounded bg-teal-50 text-teal-700 border border-teal-200"
                   >{s.location || 'Any'} • {s.priceRange[0]}-{s.priceRange[1]}</button>
                 ))}
               </div>

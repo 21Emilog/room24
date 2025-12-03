@@ -249,7 +249,7 @@ export default function ListingDetailModal({ listing, landlord, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start sm:items-center justify-center p-0 sm:p-4 z-50 overflow-y-auto" aria-modal="true" role="dialog">
       <div className="bg-white rounded-none sm:rounded-3xl max-w-2xl w-full h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto shadow-2xl">
-        <div className="sticky top-0 bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 text-white p-4 flex justify-between items-center z-10 sm:rounded-t-3xl">
+        <div className="sticky top-0 bg-gradient-to-r from-teal-600 via-cyan-600 to-teal-700 text-white p-4 flex justify-between items-center z-10 sm:rounded-t-3xl">
           <div className="flex items-center gap-3">
             <button onClick={onClose} className="text-white/80 hover:text-white sm:hidden p-1 rounded-full hover:bg-white/20 transition-colors" aria-label="Back">
               <ArrowLeft className="w-6 h-6" />
@@ -307,7 +307,7 @@ export default function ListingDetailModal({ listing, landlord, onClose }) {
             />
           )}
           <h3 className="text-2xl font-extrabold mb-2 text-gray-900">{listing.title}</h3>
-          <div className="text-transparent bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text font-bold text-3xl mb-4">
+          <div className="text-transparent bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text font-bold text-3xl mb-4">
             R{typeof listing.price === 'number' ? listing.price.toLocaleString('en-ZA') : listing.price}<span className="text-lg text-gray-500 font-normal">/month</span>
           </div>
           
@@ -363,7 +363,7 @@ export default function ListingDetailModal({ listing, landlord, onClose }) {
                     url: window.location.href,
                   }).catch(() => {});
                 }}
-                className="flex items-center gap-2 px-4 py-2.5 bg-violet-50 hover:bg-violet-100 text-violet-700 rounded-xl text-sm font-bold transition-all border border-violet-200"
+                className="flex items-center gap-2 px-4 py-2.5 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-xl text-sm font-bold transition-all border border-teal-200"
               >
                 <Share2 className="w-4 h-4" />
                 Share
@@ -487,21 +487,21 @@ export default function ListingDetailModal({ listing, landlord, onClose }) {
             </form>
           </div>
           {landlord && (
-            <div className="bg-gradient-to-br from-violet-50 via-purple-50 to-fuchsia-50 rounded-2xl p-5 mb-4 border border-violet-200">
+            <div className="bg-gradient-to-br from-teal-50 via-cyan-50 to-teal-50 rounded-2xl p-5 mb-4 border border-teal-200">
               <div className="flex items-center justify-between mb-4">
                 <h4 className="font-bold text-gray-800">Landlord Information</h4>
                 <button
                   onClick={() => setShowContact(!showContact)}
-                  className="text-violet-700 hover:text-violet-800 text-sm font-semibold px-3 py-1.5 rounded-lg hover:bg-violet-100 transition-colors"
+                  className="text-teal-700 hover:text-teal-800 text-sm font-semibold px-3 py-1.5 rounded-lg hover:bg-teal-100 transition-colors"
                 >
                   {showContact ? 'Hide' : 'Show'} Contact
                 </button>
               </div>
               <div className="flex items-center mb-3">
                 {landlord.photo ? (
-                  <img src={landlord.photo} alt={landlord.name} className="w-14 h-14 rounded-xl object-cover mr-3 ring-2 ring-violet-200" />
+                  <img src={landlord.photo} alt={landlord.name} className="w-14 h-14 rounded-xl object-cover mr-3 ring-2 ring-teal-200" />
                 ) : (
-                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mr-3">
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center mr-3">
                     <User className="w-7 h-7 text-white" />
                   </div>
                 )}
@@ -509,7 +509,7 @@ export default function ListingDetailModal({ listing, landlord, onClose }) {
                   <p className="font-bold text-gray-800 flex items-center gap-2">
                     {landlord.name}
                     {(landlord.verified || landlord.idNumber) && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-violet-600 to-purple-600 text-white text-[10px] font-bold shadow-sm">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-teal-600 to-cyan-600 text-white text-[10px] font-bold shadow-sm">
                         <ShieldCheck className="w-3 h-3" /> Verified
                       </span>
                     )}
@@ -518,13 +518,13 @@ export default function ListingDetailModal({ listing, landlord, onClose }) {
                 </div>
               </div>
               {showContact && (
-                <div className="space-y-3 pt-4 border-t border-violet-200">
+                <div className="space-y-3 pt-4 border-t border-teal-200">
                   {/* Quick Action Buttons */}
                   <div className="grid grid-cols-2 gap-2 mb-3">
                     {landlord.phone && (
                       <a
                         href={`tel:${landlord.phone}`}
-                        className="flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white py-3.5 rounded-xl font-bold text-sm transition-all shadow-lg hover:shadow-xl active:scale-95"
+                        className="flex items-center justify-center gap-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white py-3.5 rounded-xl font-bold text-sm transition-all shadow-lg hover:shadow-xl active:scale-95"
                       >
                         <Phone className="w-4 h-4" />
                         Call Now
@@ -546,12 +546,12 @@ export default function ListingDetailModal({ listing, landlord, onClose }) {
                   {/* Contact Details */}
                   <div className="bg-white rounded-xl p-4 space-y-3 shadow-sm">
                     <div className="flex items-center text-sm">
-                      <Phone className="w-4 h-4 mr-3 text-violet-600" />
-                      <a href={`tel:${landlord.phone}`} className="text-violet-700 hover:underline font-medium">{landlord.phone}</a>
+                      <Phone className="w-4 h-4 mr-3 text-teal-600" />
+                      <a href={`tel:${landlord.phone}`} className="text-teal-700 hover:underline font-medium">{landlord.phone}</a>
                     </div>
                     <div className="flex items-center text-sm">
-                      <Mail className="w-4 h-4 mr-3 text-violet-600" />
-                      <a href={`mailto:${landlord.email}?subject=Inquiry about ${listing.title}`} className="text-violet-700 hover:underline font-medium">{landlord.email}</a>
+                      <Mail className="w-4 h-4 mr-3 text-teal-600" />
+                      <a href={`mailto:${landlord.email}?subject=Inquiry about ${listing.title}`} className="text-teal-700 hover:underline font-medium">{landlord.email}</a>
                     </div>
                   </div>
                 </div>
