@@ -223,7 +223,7 @@ export default function RentalPlatform() {
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === 'accepted') {
         setShowInstallBanner(false);
-        showToast('Room24 installed! Check your home screen', 'success', '🎉 Installed!');
+        showToast('RentMzansi installed! Check your home screen', 'success', '🎉 Installed!');
       }
       setDeferredPrompt(null);
     } else {
@@ -232,14 +232,14 @@ export default function RentalPlatform() {
                        || window.navigator.standalone === true;
       
       if (isInstalled) {
-        showToast('Room24 is already installed on your device!', 'success', '✅ Already Installed');
+        showToast('RentMzansi is already installed on your device!', 'success', '✅ Already Installed');
       } else {
         // iOS or browser that doesn't support install prompt
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
         if (isIOS) {
           showToast('Tap the Share button (□↑) at the bottom, then "Add to Home Screen"', 'info', '📱 Install on iPhone');
         } else {
-          showToast('Click the menu (⋮) then "Install app" or "Add to Home Screen"', 'info', '📱 Install Room24');
+          showToast('Click the menu (⋮) then "Install app" or "Add to Home Screen"', 'info', '📱 Install RentMzansi');
         }
       }
     }
@@ -855,7 +855,7 @@ const filteredListings = listings
       
       {/* PWA Install Banner */}
       {showInstallBanner && (
-        <div className="fixed bottom-20 left-4 right-4 md:left-auto md:right-4 md:max-w-sm z-50 bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-500 rounded-2xl shadow-2xl p-4 fade-in border border-white/20 ring-1 ring-black/5">
+        <div className="fixed bottom-20 left-4 right-4 md:left-auto md:right-4 md:max-w-sm z-50 bg-gradient-to-br from-[#E63946] via-[#E63946] to-[#c5303c] rounded-2xl shadow-2xl p-4 fade-in border border-white/20 ring-1 ring-black/5">
           <div className="flex items-start gap-3">
             <div className="w-12 h-12 bg-white/25 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0 shadow-inner">
               <Smartphone className="w-6 h-6 text-white drop-shadow" />
@@ -863,13 +863,13 @@ const filteredListings = listings
             <div className="flex-1 min-w-0">
               <h4 className="font-bold text-white text-sm flex items-center gap-1.5">
                 <Sparkles className="w-4 h-4" />
-                Install Room24
+                Install RentMzansi
               </h4>
-              <p className="text-teal-50/90 text-xs mt-0.5">Add to home screen for instant access!</p>
+              <p className="text-white/90 text-xs mt-0.5">Add to home screen for instant access!</p>
               <div className="flex gap-2 mt-3">
                 <button
                   onClick={handleInstallClick}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-white text-teal-700 font-bold text-xs rounded-xl hover:bg-teal-50 transition-all shadow-md hover:shadow-lg active:scale-95"
+                  className="flex items-center gap-1.5 px-4 py-2 bg-white text-[#E63946] font-bold text-xs rounded-xl hover:bg-red-50 transition-all shadow-md hover:shadow-lg active:scale-95"
                 >
                   <Download className="w-4 h-4" />
                   Install Now
@@ -923,7 +923,7 @@ const filteredListings = listings
             >
               <div>
                 <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Marketplace pulse</p>
-                <p className="text-base font-bold text-slate-900">See how Room24 is performing</p>
+                <p className="text-base font-bold text-slate-900">See how RentMzansi is performing</p>
               </div>
               <ChevronDown className={`w-5 h-5 text-slate-500 transition-transform ${showPulsePanel ? 'rotate-180' : ''}`} />
             </button>
@@ -1529,14 +1529,14 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-gray-100 pb-24">
       {/* Profile Header with Wave */}
-      <div className="relative bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-500 pt-8 pb-24 px-4 overflow-hidden">
+      <div className="relative bg-gradient-to-br from-[#1D3557] via-[#1D3557] to-[#2d4a6f] pt-8 pb-24 px-4 overflow-hidden">
         {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
         
         <div className="max-w-xl mx-auto flex justify-between items-start relative z-10">
           <div>
-            <p className="text-teal-100 text-sm font-medium mb-1">Welcome back</p>
+            <p className="text-[#F1FAEE]/80 text-sm font-medium mb-1">Welcome back</p>
             <h2 className="text-2xl font-bold text-white">My Profile</h2>
           </div>
           <button
@@ -1567,7 +1567,7 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
                   className="w-28 h-28 rounded-2xl object-cover border-4 border-white shadow-lg mb-4 group-hover:scale-105 transition-transform duration-300" 
                 />
               ) : (
-                <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center border-4 border-white shadow-lg mb-4 group-hover:scale-105 transition-transform duration-300">
+                <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-[#E63946] to-[#c5303c] flex items-center justify-center border-4 border-white shadow-lg mb-4 group-hover:scale-105 transition-transform duration-300">
                   <span className="text-4xl font-bold text-white">
                     {user.name?.charAt(0)?.toUpperCase() || 'U'}
                   </span>
@@ -1868,7 +1868,7 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
                       <LogOut className="w-8 h-8 text-red-500" />
                     </div>
                     <h3 className="text-xl font-bold text-gray-900 text-center mb-2">Sign Out?</h3>
-                    <p className="text-gray-500 text-center text-sm mb-6">Are you sure you want to sign out of your Room24 account?</p>
+                    <p className="text-gray-500 text-center text-sm mb-6">Are you sure you want to sign out of your RentMzansi account?</p>
                     <div className="flex gap-3">
                       <button
                         onClick={() => setShowSignOutConfirm(false)}
@@ -1908,7 +1908,7 @@ function LandlordOnboardingView({ onComplete, onCancel, currentUser }) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-gray-100 pb-24">
       {/* Header Banner */}
-      <div className="bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-500 pt-8 pb-16 px-4">
+      <div className="bg-gradient-to-br from-[#1D3557] via-[#1D3557] to-[#2d4a6f] pt-8 pb-16 px-4">
         <div className="max-w-2xl mx-auto text-center">
           <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/30">
             <span className="text-4xl font-bold text-white">
@@ -1916,7 +1916,7 @@ function LandlordOnboardingView({ onComplete, onCancel, currentUser }) {
             </span>
           </div>
           <h2 className="text-2xl font-bold text-white mb-2">Welcome, {currentUser?.name || 'Landlord'}!</h2>
-          <p className="text-teal-100">Complete your profile to start listing properties</p>
+          <p className="text-[#F1FAEE]/80">Complete your profile to start listing properties</p>
         </div>
       </div>
 
@@ -1927,7 +1927,7 @@ function LandlordOnboardingView({ onComplete, onCancel, currentUser }) {
             {/* Progress Steps */}
             <div className="flex items-center justify-center gap-2 mb-8">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-teal-600 text-white rounded-full flex items-center justify-center text-sm font-bold">1</div>
+                <div className="w-8 h-8 bg-[#E63946] text-white rounded-full flex items-center justify-center text-sm font-bold">1</div>
                 <span className="text-sm font-medium text-gray-700">Profile Details</span>
               </div>
               <div className="w-8 h-0.5 bg-gray-200"></div>
@@ -2797,9 +2797,9 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-cyan-50 to-teal-50 pb-24">
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-rose-50 to-red-50 pb-24">
       {/* Header */}
-      <div className="bg-gradient-to-r from-teal-600 via-cyan-600 to-teal-700 text-white">
+      <div className="bg-gradient-to-r from-[#1D3557] via-[#1D3557] to-[#2d4a6f] text-white">
         <div className="max-w-3xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -2811,7 +2811,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                 <p className="text-white/80 text-sm">List your space in minutes</p>
               </div>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-xl bg-[#E63946] flex items-center justify-center">
               <Home className="w-6 h-6" />
             </div>
           </div>
@@ -2824,7 +2824,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
           <div className="mb-8">
             <div className="flex justify-between items-center mb-3">
               <span className="text-sm font-semibold text-gray-700">Form Progress</span>
-              <span className="text-sm font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
+              <span className="text-sm font-bold bg-gradient-to-r from-[#E63946] to-[#c5303c] bg-clip-text text-transparent">
                 {(() => {
                   let completed = 0;
                   const total = 5;
@@ -2839,7 +2839,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
             </div>
             <div className="h-3 bg-gray-100 rounded-full overflow-hidden shadow-inner">
               <div 
-                className="h-full bg-gradient-to-r from-teal-500 via-cyan-500 to-teal-600 rounded-full transition-all duration-500 relative overflow-hidden"
+                className="h-full bg-gradient-to-r from-[#E63946] via-[#E63946] to-[#c5303c] rounded-full transition-all duration-500 relative overflow-hidden"
                 style={{
                   boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.3)',
                   width: `${(() => {
@@ -4210,7 +4210,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
             </h3>
             <p className="text-sm text-gray-500 mt-1">
               {mode === 'signin' && 'Sign in to continue'}
-              {mode === 'signup' && 'Join Room24 today'}
+              {mode === 'signup' && 'Join RentMzansi today'}
               {mode === 'reset' && "We'll send you a reset link"}
             </p>
           </div>

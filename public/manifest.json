@@ -1,6 +1,6 @@
 {
-  "short_name": "Room24",
-  "name": "Room24 – South Africa Room Rentals",
+  "short_name": "RentMzansi",
+  "name": "RentMzansi – South Africa Room Rentals",
   "icons": [
     {
       "src": "favicon.ico",
@@ -36,6 +36,6 @@
   ],
   "start_url": "/",
   "display": "standalone",
-  "theme_color": "#0d9488",
-  "background_color": "#ffffff"
+  "theme_color": "#E63946",
+  "background_color": "#F1FAEE"
 }

@@ -1056,28 +1056,28 @@ export default function BrowseView({
               {!currentUser && (
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 mb-8">
                   <div className="text-center mb-8">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">How Room24 Works</h3>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">How RentMzansi Works</h3>
                     <p className="text-gray-600">Find your perfect room in 3 simple steps</p>
                   </div>
                   <div className="grid md:grid-cols-3 gap-6">
                     <div className="text-center p-4">
-                      <div className="w-16 h-16 bg-gradient-to-br from-teal-100 to-cyan-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <Search className="w-8 h-8 text-teal-600" />
+                      <div className="w-16 h-16 bg-gradient-to-br from-red-100 to-rose-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <Search className="w-8 h-8 text-[#E63946]" />
                       </div>
-                      <div className="bg-teal-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center mx-auto -mt-8 mb-2 relative z-10 shadow-md">1</div>
+                      <div className="bg-[#E63946] text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center mx-auto -mt-8 mb-2 relative z-10 shadow-md">1</div>
                       <h4 className="font-semibold text-gray-900 mb-2">Search & Filter</h4>
                       <p className="text-sm text-gray-600">Browse rooms by location, price, and amenities. Use filters to find exactly what you need.</p>
                     </div>
                     <div className="text-center p-4">
-                      <div className="w-16 h-16 bg-gradient-to-br from-cyan-100 to-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <Home className="w-8 h-8 text-cyan-600" />
+                      <div className="w-16 h-16 bg-gradient-to-br from-[#1D3557]/10 to-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <Home className="w-8 h-8 text-[#1D3557]" />
                       </div>
-                      <div className="bg-cyan-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center mx-auto -mt-8 mb-2 relative z-10 shadow-md">2</div>
+                      <div className="bg-[#1D3557] text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center mx-auto -mt-8 mb-2 relative z-10 shadow-md">2</div>
                       <h4 className="font-semibold text-gray-900 mb-2">View Details</h4>
                       <p className="text-sm text-gray-600">Check photos, virtual tours, reviews, and landlord verification status.</p>
                     </div>
                     <div className="text-center p-4">
-                      <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                      <div className="w-16 h-16 bg-gradient-to-br from-emerald-100 to-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                         <User className="w-8 h-8 text-blue-600" />
                       </div>
                       <div className="bg-blue-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center mx-auto -mt-8 mb-2 relative z-10 shadow-md">3</div>

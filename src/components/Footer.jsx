@@ -1,8 +1,18 @@
 import React from 'react';
-import { Home, Heart, Shield, Mail, Download, ExternalLink, Info } from 'lucide-react';
+import { Heart, Shield, Mail, Download, ExternalLink, Info, MapPin } from 'lucide-react';
 
 export default function Footer({ onOpenPrivacy, onOpenAbout, onInstallApp }) {
   const currentYear = new Date().getFullYear();
+
+  // Inline SVG logo component
+  const Logo = () => (
+    <svg viewBox="0 0 100 120" className="w-10 h-10">
+      <path d="M50,5 Q70,5 80,20 Q90,35 80,50 L50,90 L20,50 Q10,35 20,20 Q30,5 50,5 Z" fill="#E63946"/>
+      <polygon points="50,30 40,40 40,55 60,55 60,40" fill="#F1FAEE"/>
+      <rect x="45" y="45" width="10" height="10" fill="#F1FAEE"/>
+      <circle cx="50" cy="50" r="3" fill="#1D3557"/>
+    </svg>
+  );
 
   return (
     <footer className="bg-gradient-to-b from-gray-900 to-gray-950 text-gray-300 mt-auto">
@@ -12,12 +22,9 @@ export default function Footer({ onOpenPrivacy, onOpenAbout, onInstallApp }) {
           {/* Brand Column */}
           <div className="lg:col-span-2">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
-                <Home className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-2xl font-extrabold">
-                <span className="text-teal-400">Room</span>
-                <span className="text-rose-400">24</span>
+              <Logo />
+              <span className="text-2xl font-extrabold text-[#1D3557]">
+                Rent<span className="text-[#E63946]">Mzansi</span>
               </span>
             </div>
             <p className="text-gray-400 text-sm leading-relaxed mb-4 max-w-md">
@@ -27,7 +34,7 @@ export default function Footer({ onOpenPrivacy, onOpenAbout, onInstallApp }) {
             <div className="flex items-center gap-3">
               <button
                 onClick={onInstallApp}
-                className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-semibold text-sm rounded-xl transition-all shadow-lg hover:shadow-xl"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#E63946] hover:bg-[#c5303c] text-white font-semibold text-sm rounded-xl transition-all shadow-lg hover:shadow-xl"
               >
                 <Download className="w-4 h-4" />
                 Install App
@@ -40,13 +47,13 @@ export default function Footer({ onOpenPrivacy, onOpenAbout, onInstallApp }) {
             <h4 className="text-white font-semibold mb-4 text-sm uppercase tracking-wider">Quick Links</h4>
             <ul className="space-y-3">
               <li>
-                <button className="text-gray-400 hover:text-teal-400 transition-colors text-sm flex items-center gap-2">
-                  <Home className="w-4 h-4" />
+                <button className="text-gray-400 hover:text-[#E63946] transition-colors text-sm flex items-center gap-2">
+                  <MapPin className="w-4 h-4" />
                   Browse Rooms
                 </button>
               </li>
               <li>
-                <button className="text-gray-400 hover:text-teal-400 transition-colors text-sm flex items-center gap-2">
+                <button className="text-gray-400 hover:text-[#E63946] transition-colors text-sm flex items-center gap-2">
                   <Heart className="w-4 h-4" />
                   Saved Listings
                 </button>
@@ -54,7 +61,7 @@ export default function Footer({ onOpenPrivacy, onOpenAbout, onInstallApp }) {
               <li>
                 <button 
                   onClick={onOpenPrivacy}
-                  className="text-gray-400 hover:text-teal-400 transition-colors text-sm flex items-center gap-2"
+                  className="text-gray-400 hover:text-[#E63946] transition-colors text-sm flex items-center gap-2"
                 >
                   <Shield className="w-4 h-4" />
                   Privacy Policy
@@ -63,7 +70,7 @@ export default function Footer({ onOpenPrivacy, onOpenAbout, onInstallApp }) {
               <li>
                 <button 
                   onClick={onOpenAbout}
-                  className="text-gray-400 hover:text-teal-400 transition-colors text-sm flex items-center gap-2"
+                  className="text-gray-400 hover:text-[#E63946] transition-colors text-sm flex items-center gap-2"
                 >
                   <Info className="w-4 h-4" />
                   About Us
@@ -78,22 +85,22 @@ export default function Footer({ onOpenPrivacy, onOpenAbout, onInstallApp }) {
             <ul className="space-y-3">
               <li>
                 <a 
-                  href="mailto:support@room24.co.za" 
-                  className="text-gray-400 hover:text-teal-400 transition-colors text-sm flex items-center gap-2"
+                  href="mailto:support@rentmzansi.co.za" 
+                  className="text-gray-400 hover:text-[#E63946] transition-colors text-sm flex items-center gap-2"
                 >
                   <Mail className="w-4 h-4" />
-                  support@room24.co.za
+                  support@rentmzansi.co.za
                 </a>
               </li>
               <li>
                 <a 
-                  href="https://room24.co.za" 
+                  href="https://rentmzansi.com" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-teal-400 transition-colors text-sm flex items-center gap-2"
+                  className="text-gray-400 hover:text-[#E63946] transition-colors text-sm flex items-center gap-2"
                 >
                   <ExternalLink className="w-4 h-4" />
-                  room24.co.za
+                  rentmzansi.com
                 </a>
               </li>
             </ul>
@@ -103,7 +110,7 @@ export default function Footer({ onOpenPrivacy, onOpenAbout, onInstallApp }) {
         {/* Trust Badges */}
         <div className="flex flex-wrap items-center justify-center gap-6 py-6 border-t border-gray-800">
           <div className="flex items-center gap-2 text-gray-500 text-xs">
-            <Shield className="w-4 h-4 text-teal-500" />
+            <Shield className="w-4 h-4 text-[#E63946]" />
             <span>Verified Landlords</span>
           </div>
           <div className="flex items-center gap-2 text-gray-500 text-xs">
@@ -126,35 +133,35 @@ export default function Footer({ onOpenPrivacy, onOpenAbout, onInstallApp }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
             <p className="text-gray-500 text-xs">
-              © {currentYear} Room24. All rights reserved.
+              © {currentYear} RentMzansi. All rights reserved.
             </p>
             <div className="flex items-center gap-4 text-xs">
               <button 
                 onClick={onOpenPrivacy}
-                className="text-gray-500 hover:text-teal-400 transition-colors"
+                className="text-gray-500 hover:text-[#E63946] transition-colors"
               >
                 Privacy
               </button>
               <span className="text-gray-700">•</span>
               <button 
                 onClick={onOpenAbout}
-                className="text-gray-500 hover:text-teal-400 transition-colors"
+                className="text-gray-500 hover:text-[#E63946] transition-colors"
               >
                 About
               </button>
               <span className="text-gray-700">•</span>
-              <button className="text-gray-500 hover:text-teal-400 transition-colors">
+              <button className="text-gray-500 hover:text-[#E63946] transition-colors">
                 Terms
               </button>
               <span className="text-gray-700">•</span>
-              <button className="text-gray-500 hover:text-teal-400 transition-colors">
+              <button className="text-gray-500 hover:text-[#E63946] transition-colors">
                 Cookies
               </button>
             </div>
           </div>
           <p className="text-center text-gray-600 text-[10px] mt-3">
-            By using Room24, you agree to our use of cookies for improved user experience. 
-            We display ads to keep Room24 free for everyone.
+            By using RentMzansi, you agree to our use of cookies for improved user experience. 
+            We display ads to keep RentMzansi free for everyone.
           </p>
         </div>
       </div>

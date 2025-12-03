@@ -5,7 +5,7 @@ export default function PrivacyPolicyModal({ onClose }) {
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto animate-fadeIn">
       <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
-        <div className="sticky top-0 bg-gradient-to-r from-teal-600 to-cyan-600 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+        <div className="sticky top-0 bg-gradient-to-r from-[#1D3557] to-[#2d4a6f] px-6 py-4 flex items-center justify-between rounded-t-2xl">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
               <Shield className="w-5 h-5 text-white" />
@@ -26,7 +26,7 @@ export default function PrivacyPolicyModal({ onClose }) {
           <section>
             <h3 className="text-xl font-semibold text-gray-800 mb-3">1. Information We Collect</h3>
             <p className="text-gray-600 mb-3">
-              Room24 collects the following information to provide and improve our services:
+              RentMzansi collects the following information to provide and improve our services:
             </p>
             <ul className="list-disc list-inside space-y-2 text-gray-600 ml-4">
               <li><strong>Personal Information:</strong> Name, email address, phone number, and WhatsApp number (optional) when you create an account</li>
@@ -135,14 +135,14 @@ export default function PrivacyPolicyModal({ onClose }) {
               <li><strong>Withdraw Consent:</strong> Revoke location permissions or other consents at any time</li>
             </ul>
             <p className="text-gray-600 mt-3">
-              To exercise these rights, contact us at: <a href="mailto:privacy@room24.co.za" className="text-teal-600 hover:underline">privacy@room24.co.za</a>
+              To exercise these rights, contact us at: <a href="mailto:privacy@rentmzansi.co.za" className="text-[#E63946] hover:underline">privacy@rentmzansi.co.za</a>
             </p>
           </section>
 
           <section>
             <h3 className="text-xl font-semibold text-gray-800 mb-3">9. Children's Privacy</h3>
             <p className="text-gray-600">
-              Room24 is not intended for users under 18 years of age. We do not knowingly collect information from children. 
+              RentMzansi is not intended for users under 18 years of age. We do not knowingly collect information from children. 
               If you believe we have collected information from a minor, please contact us immediately.
             </p>
           </section>
@@ -170,16 +170,16 @@ export default function PrivacyPolicyModal({ onClose }) {
             <p className="text-gray-600">
               We may update this Privacy Policy periodically to reflect changes in our practices or legal requirements. 
               We will notify users of significant changes via email or prominent notice on the platform. 
-              Continued use of Room24 after changes constitutes acceptance of the updated policy.
+              Continued use of RentMzansi after changes constitutes acceptance of the updated policy.
             </p>
           </section>
 
           <section>
             <h3 className="text-xl font-semibold text-gray-800 mb-3">13. Contact Information</h3>
             <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-gray-700 font-semibold mb-2">Room24 Data Protection Officer</p>
-              <p className="text-gray-600">Email: <a href="mailto:privacy@room24.co.za" className="text-teal-600 hover:underline">privacy@room24.co.za</a></p>
-              <p className="text-gray-600">Support: <a href="mailto:support@room24.co.za" className="text-teal-600 hover:underline">support@room24.co.za</a></p>
+              <p className="text-gray-700 font-semibold mb-2">RentMzansi Data Protection Officer</p>
+              <p className="text-gray-600">Email: <a href="mailto:privacy@rentmzansi.co.za" className="text-[#E63946] hover:underline">privacy@rentmzansi.co.za</a></p>
+              <p className="text-gray-600">Support: <a href="mailto:support@rentmzansi.co.za" className="text-[#E63946] hover:underline">support@rentmzansi.co.za</a></p>
               <p className="text-gray-600 mt-2">For complaints or concerns, you may also contact:</p>
               <p className="text-gray-600">
                 <strong>Information Regulator (South Africa)</strong><br />

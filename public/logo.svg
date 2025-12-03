@@ -1,0 +1,7 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <path d="M100,35 Q120,35 130,50 Q140,65 130,80 L100,120 L70,80 Q60,65 70,50 Q80,35 100,35 Z" fill="#E63946"/>
+  <polygon points="100,60 90,70 90,85 110,85 110,70" fill="#F1FAEE"/>
+  <rect x="95" y="75" width="10" height="10" fill="#F1FAEE"/>
+  <circle cx="100" cy="80" r="3" fill="#1D3557"/>
+  <text x="100" y="155" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#1D3557" text-anchor="middle">RentMzansi</text>
+</svg>
