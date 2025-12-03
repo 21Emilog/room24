@@ -377,7 +377,7 @@ export default function ListingDetailModal({ listing, landlord, onClose }) {
               <div>
                 {/* Show full complete address as entered by landlord */}
                 <p className="text-base font-medium text-gray-800">
-                  {completeAddress || 'Address coming soon'}
+                  {(completeAddress || 'Address coming soon').toUpperCase()}
                 </p>
                 {completeAddress && <p className="text-sm text-gray-500">South Africa</p>}
               </div>

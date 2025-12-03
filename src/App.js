@@ -850,33 +850,37 @@ const filteredListings = listings
       
       {/* PWA Install Banner */}
       {showInstallBanner && (
-        <div className="fixed bottom-20 left-4 right-4 md:left-auto md:right-4 md:max-w-sm z-50 bg-gradient-to-r from-teal-600 to-cyan-600 rounded-2xl shadow-2xl p-4 fade-in border border-teal-400/30">
+        <div className="fixed bottom-20 left-4 right-4 md:left-auto md:right-4 md:max-w-sm z-50 bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-500 rounded-2xl shadow-2xl p-4 fade-in border border-white/20 ring-1 ring-black/5">
           <div className="flex items-start gap-3">
-            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
-              <Smartphone className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 bg-white/25 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0 shadow-inner">
+              <Smartphone className="w-6 h-6 text-white drop-shadow" />
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="font-bold text-white text-sm">Install Room24</h4>
-              <p className="text-teal-100 text-xs mt-0.5">Add to your home screen for the best experience!</p>
+              <h4 className="font-bold text-white text-sm flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4" />
+                Install Room24
+              </h4>
+              <p className="text-teal-50/90 text-xs mt-0.5">Add to home screen for instant access!</p>
               <div className="flex gap-2 mt-3">
                 <button
                   onClick={handleInstallClick}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-white text-teal-700 font-semibold text-xs rounded-lg hover:bg-teal-50 transition-colors shadow-sm"
+                  className="flex items-center gap-1.5 px-4 py-2 bg-white text-teal-700 font-bold text-xs rounded-xl hover:bg-teal-50 transition-all shadow-md hover:shadow-lg active:scale-95"
                 >
                   <Download className="w-4 h-4" />
-                  Install
+                  Install Now
                 </button>
                 <button
                   onClick={dismissInstallBanner}
-                  className="px-3 py-2 text-white/80 hover:text-white text-xs font-medium transition-colors"
+                  className="px-3 py-2 text-white/80 hover:text-white text-xs font-medium transition-colors hover:bg-white/10 rounded-lg"
                 >
-                  Maybe Later
+                  Later
                 </button>
               </div>
             </div>
             <button
               onClick={dismissInstallBanner}
-              className="text-white/60 hover:text-white transition-colors p-1"
+              className="text-white/50 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg"
+              aria-label="Dismiss"
             >
               <X className="w-4 h-4" />
             </button>
@@ -991,32 +995,32 @@ const filteredListings = listings
 
       {/* Toast Notification */}
       {toast && (
-        <div className={`fixed top-20 right-4 z-50 max-w-sm w-full transition-all duration-300 ${
+        <div className={`fixed top-20 right-4 z-50 max-w-sm w-full toast-enter ${
           toast.type === 'error' ? 'bg-gradient-to-r from-rose-50 to-red-50 border-rose-400' :
           toast.type === 'success' ? 'bg-gradient-to-r from-emerald-50 to-green-50 border-emerald-400' :
           toast.type === 'warning' ? 'bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-400' :
           'bg-gradient-to-r from-sky-50 to-blue-50 border-sky-400'
-        } border-l-4 rounded-xl shadow-2xl p-4 fade-in backdrop-blur-sm`}>
+        } border-l-4 rounded-2xl shadow-xl p-4 backdrop-blur-sm ring-1 ring-black/5`} role="alert" aria-live="polite">
           <div className="flex items-start gap-3">
-            <div className={`flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center shadow-sm ${
-              toast.type === 'error' ? 'bg-rose-500' :
-              toast.type === 'success' ? 'bg-emerald-500' :
-              toast.type === 'warning' ? 'bg-amber-500' :
-              'bg-sky-500'
+            <div className={`flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center shadow-md ${
+              toast.type === 'error' ? 'bg-gradient-to-br from-rose-500 to-red-600' :
+              toast.type === 'success' ? 'bg-gradient-to-br from-emerald-500 to-green-600' :
+              toast.type === 'warning' ? 'bg-gradient-to-br from-amber-500 to-orange-500' :
+              'bg-gradient-to-br from-sky-500 to-blue-600'
             }`}>
               {toast.type === 'success' && <CheckCircle className="w-5 h-5 text-white" />}
-              {toast.type === 'error' && <span className="text-white font-bold text-sm">✕</span>}
-              {toast.type === 'warning' && <span className="text-white font-bold text-sm">!</span>}
-              {toast.type === 'info' && <span className="text-white font-bold text-sm">i</span>}
+              {toast.type === 'error' && <AlertTriangle className="w-5 h-5 text-white" />}
+              {toast.type === 'warning' && <AlertTriangle className="w-5 h-5 text-white" />}
+              {toast.type === 'info' && <Bell className="w-5 h-5 text-white" />}
             </div>
-            <div className="flex-1 min-w-0">
-              {toast.title && <p className={`font-bold mb-0.5 ${
-                toast.type === 'error' ? 'text-rose-800' :
-                toast.type === 'success' ? 'text-emerald-800' :
-                toast.type === 'warning' ? 'text-amber-800' :
-                'text-sky-800'
+            <div className="flex-1 min-w-0 pt-0.5">
+              {toast.title && <p className={`font-bold text-sm mb-0.5 ${
+                toast.type === 'error' ? 'text-rose-900' :
+                toast.type === 'success' ? 'text-emerald-900' :
+                toast.type === 'warning' ? 'text-amber-900' :
+                'text-sky-900'
               }`}>{toast.title}</p>}
-              <p className={`text-sm ${
+              <p className={`text-sm leading-snug ${
                 toast.type === 'error' ? 'text-rose-700' :
                 toast.type === 'success' ? 'text-emerald-700' :
                 toast.type === 'warning' ? 'text-amber-700' :
@@ -1025,13 +1029,13 @@ const filteredListings = listings
             </div>
             <button 
               onClick={() => setToast(null)}
-              className={`flex-shrink-0 p-1.5 rounded-lg hover:bg-white/50 transition ${
-                toast.type === 'error' ? 'text-rose-500 hover:text-rose-700' :
-                toast.type === 'success' ? 'text-emerald-500 hover:text-emerald-700' :
-                toast.type === 'warning' ? 'text-amber-500 hover:text-amber-700' :
-                'text-sky-500 hover:text-sky-700'
+              className={`flex-shrink-0 p-1.5 rounded-lg hover:bg-white/60 transition-colors ${
+                toast.type === 'error' ? 'text-rose-400 hover:text-rose-600' :
+                toast.type === 'success' ? 'text-emerald-400 hover:text-emerald-600' :
+                toast.type === 'warning' ? 'text-amber-400 hover:text-amber-600' :
+                'text-sky-400 hover:text-sky-600'
               }`}
-              aria-label="Close notification"
+              aria-label="Dismiss notification"
             >
               <X className="w-4 h-4" />
             </button>
@@ -4136,59 +4140,79 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
 function BottomNav({ currentView, setCurrentView, currentUser, userType }) {
   const isLandlord = userType === 'landlord';
   const navItems = [
-    { id: 'browse', label: 'Browse', icon: Search, activeColor: 'teal' },
-    { id: 'add', label: 'List', icon: PlusCircle, requiresAuth: true, activeColor: 'rose' },
+    { id: 'browse', label: 'Explore', icon: Search, activeColor: 'teal' },
+    { id: 'add', label: 'List', icon: PlusCircle, requiresAuth: true, activeColor: 'rose', highlight: true },
     { id: 'my-listings', label: 'My Rooms', icon: Home, requiresAuth: true, activeColor: 'teal', show: isLandlord },
     { id: 'favorites', label: 'Saved', icon: Heart, activeColor: 'rose' },
-    { id: 'profile', label: 'Profile', icon: User, activeColor: 'blue' }
+    { id: 'profile', label: 'Profile', icon: User, activeColor: 'violet' }
   ];
 
   const visibleItems = navItems.filter(item => item && (item.show === undefined || item.show));
 
   const colorClasses = {
-    teal: 'text-teal-600 bg-teal-50',
-    rose: 'text-rose-600 bg-rose-50',
-    blue: 'text-blue-600 bg-blue-50'
-  };
-
-  const activeShadowClasses = {
-    teal: 'shadow-[inset_0_1px_4px_rgba(15,118,110,0.18)]',
-    rose: 'shadow-[inset_0_1px_4px_rgba(190,24,93,0.18)]',
-    blue: 'shadow-[inset_0_1px_4px_rgba(37,99,235,0.18)]'
+    teal: 'text-teal-600 bg-gradient-to-t from-teal-100 to-teal-50',
+    rose: 'text-rose-600 bg-gradient-to-t from-rose-100 to-rose-50',
+    violet: 'text-violet-600 bg-gradient-to-t from-violet-100 to-violet-50'
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100/70 px-3 py-2 z-20 md:hidden safe-area-bottom shadow-[0_-6px_18px_rgba(15,23,42,0.12)]">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white/98 backdrop-blur-xl border-t border-gray-200/60 px-2 py-1.5 z-20 md:hidden safe-area-bottom shadow-[0_-4px_20px_rgba(15,23,42,0.08)]" role="navigation" aria-label="Main navigation">
       <div
-        className="grid gap-1 max-w-md mx-auto"
+        className="grid gap-0.5 max-w-md mx-auto"
         style={{ gridTemplateColumns: `repeat(${visibleItems.length}, minmax(0, 1fr))` }}
       >
         {visibleItems.map(item => {
           const Icon = item.icon;
           const disabled = item.requiresAuth && !currentUser;
           const isActive = currentView === item.id;
+          
+          // Special highlight style for "List" button
+          if (item.highlight && !disabled) {
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setCurrentView(item.id)}
+                className={`flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-xl transition-all duration-200 active:scale-95 ${
+                  isActive
+                    ? 'text-white bg-gradient-to-br from-rose-500 to-pink-500 shadow-lg shadow-rose-500/30'
+                    : 'text-rose-500 hover:bg-rose-50'
+                }`}
+                aria-current={isActive ? 'page' : undefined}
+              >
+                <span className={`p-1 rounded-lg transition-all duration-200 ${isActive ? 'bg-white/20' : ''}`}>
+                  <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
+                </span>
+                <span className="text-[10px] font-semibold">{item.label}</span>
+              </button>
+            );
+          }
+          
           return (
             <button
               key={item.id}
               type="button"
               disabled={disabled}
               onClick={() => !disabled && setCurrentView(item.id)}
-              className={`flex flex-col items-center gap-0.5 py-2 px-1 rounded-xl transition-all duration-200 ${
-                disabled ? 'opacity-40 cursor-not-allowed' : 'active:scale-95'
+              className={`flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-xl transition-all duration-200 ${
+                disabled ? 'opacity-35 cursor-not-allowed' : 'active:scale-95'
               } ${
                 isActive
-                  ? `${colorClasses[item.activeColor]} font-semibold ${activeShadowClasses[item.activeColor]}`
-                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                  ? `${colorClasses[item.activeColor]} font-semibold shadow-sm`
+                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50/80'
               }`}
+              aria-current={isActive ? 'page' : undefined}
+              aria-disabled={disabled}
             >
-              <span className={`transition-transform duration-200 ${isActive ? 'scale-110' : ''}`}>
-                <Icon className="w-5 h-5" />
+              <span className={`transition-all duration-200 ${isActive ? 'scale-110 -translate-y-0.5' : ''}`}>
+                <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 1.75} />
               </span>
-              <span className="text-[10px] font-medium">{item.label}</span>
+              <span className={`text-[10px] transition-all ${isActive ? 'font-semibold' : 'font-medium'}`}>{item.label}</span>
+              {isActive && <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-current opacity-60" />}
             </button>
           );
         })}
       </div>
-    </div>
+    </nav>
   );
 }

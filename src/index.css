@@ -141,6 +141,32 @@ code {
   border-radius: var(--c-radius-sm);
 }
 
+/* Smooth page transitions */
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-enter {
+  animation: pageEnter 0.3s ease-out;
+}
+
+/* Subtle hover lift */
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1), 0 4px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
 .skeleton-text {
   height: 1em;
   border-radius: var(--c-radius-xs);
@@ -1036,6 +1062,39 @@ body, .app-container {
   color: var(--c-text);
 }
 
+/* Improved scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--c-primary-light), var(--c-primary));
+  border-radius: 10px;
+  opacity: 0.8;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--c-primary), var(--c-primary-dark));
+}
+
+/* Subtle scrollbar for Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-primary-light) transparent;
+}
+
+/* Selection styling */
+::selection {
+  background: var(--c-primary-light);
+  color: white;
+}
+
 /* Gradient accents for personality */
 .gradient-accent-1 {
   background: linear-gradient(135deg, #14b8a6 0%, #8b5cf6 100%);
@@ -1064,4 +1123,166 @@ body, .app-container {
 
 .card-accent-amber {
   border-left: 4px solid #f59e0b;
+}
+
+/* ======================
+   Enhanced Polish Effects
+   ====================== */
+
+/* Smooth image reveal */
+.img-reveal {
+  opacity: 0;
+  transform: scale(1.02);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.img-reveal.loaded {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Button press effect */
+.btn-press {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-press:active {
+  transform: scale(0.96);
+}
+
+/* Card float on hover */
+.card-float {
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+              box-shadow 0.4s ease;
+}
+
+.card-float:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.15);
+}
+
+/* Gradient shine effect on hover */
+.gradient-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.gradient-shine::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transition: left 0.6s ease;
+}
+
+.gradient-shine:hover::before {
+  left: 100%;
+}
+
+/* Soft glow effect */
+.soft-glow {
+  transition: box-shadow 0.3s ease;
+}
+
+.soft-glow:hover {
+  box-shadow: 0 0 30px rgba(13, 148, 136, 0.15);
+}
+
+/* Text gradient animation */
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.text-gradient-animate {
+  background: linear-gradient(90deg, var(--c-primary), var(--c-accent), var(--c-secondary), var(--c-primary));
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-shift 6s ease infinite;
+}
+
+/* Subtle breathing animation for key elements */
+@keyframes breathe {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+.breathe {
+  animation: breathe 4s ease-in-out infinite;
+}
+
+/* Smooth focus ring */
+.focus-ring {
+  transition: box-shadow 0.2s ease, outline 0.2s ease;
+}
+
+.focus-ring:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--c-primary-bg), 0 0 0 5px var(--c-primary-light);
+}
+
+/* Icon bounce on hover */
+.icon-bounce:hover svg {
+  animation: bounce-once 0.4s ease;
+}
+
+@keyframes bounce-once {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-4px);
+  }
+  60% {
+    transform: translateY(-2px);
+  }
+}
+
+/* Stagger animation for lists */
+.stagger-item {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: stagger-in 0.3s ease forwards;
+}
+
+@keyframes stagger-in {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Micro-interaction for checkboxes */
+input[type="checkbox"]:checked {
+  animation: checkbox-pop 0.2s ease;
+}
+
+@keyframes checkbox-pop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
 }

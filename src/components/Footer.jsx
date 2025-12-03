@@ -14,21 +14,21 @@ export default function Footer({ onOpenPrivacy, onInstallApp }) {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-10">
           {/* Brand Section */}
           <div className="md:col-span-1">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
-                <Home className="w-5 h-5 text-white" />
+            <div className="flex items-center gap-3 mb-5 group cursor-default">
+              <div className="w-12 h-12 bg-gradient-to-br from-teal-500 via-teal-400 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-teal-500/40 group-hover:scale-105 transition-all duration-300">
+                <Home className="w-5 h-5 text-white drop-shadow" />
               </div>
-              <span className="text-2xl font-extrabold">
-                <span className="bg-gradient-to-r from-teal-400 to-cyan-400 bg-clip-text text-transparent">Room</span>
+              <span className="text-2xl font-extrabold tracking-tight">
+                <span className="bg-gradient-to-r from-teal-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">Room</span>
                 <span className="text-rose-400">24</span>
               </span>
             </div>
             <p className="text-sm text-gray-400 leading-relaxed mb-4">
-              Find your perfect room in South Africa. Connect directly with verified landlords and discover your next home.
+              South Africa's modern room rental marketplace. Connect with verified landlords and discover your perfect space.
             </p>
-            <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-800/50 px-3 py-2 rounded-lg">
-              <span className="text-lg">🌟</span>
-              <span><strong className="text-gray-400">Free platform</strong> supported by ads</span>
+            <div className="flex items-center gap-2.5 text-xs text-gray-500 bg-gray-800/60 px-3.5 py-2.5 rounded-xl border border-gray-700/50">
+              <span className="text-base">✨</span>
+              <span><strong className="text-gray-300">100% Free</strong> — supported by ads</span>
             </div>
           </div>
           
@@ -39,12 +39,12 @@ export default function Footer({ onOpenPrivacy, onInstallApp }) {
               <li>
                 <button 
                   onClick={onInstallApp}
-                  className="text-gray-400 hover:text-teal-400 transition-colors flex items-center gap-2 group"
+                  className="text-gray-400 hover:text-teal-400 transition-all duration-300 flex items-center gap-2.5 group"
                 >
-                  <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Download className="w-4 h-4 text-white" />
+                  <div className="w-10 h-10 bg-gradient-to-br from-teal-500 via-teal-400 to-cyan-500 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:shadow-xl group-hover:shadow-teal-500/40 group-hover:rotate-3 transition-all duration-300">
+                    <Download className="w-4 h-4 text-white drop-shadow" />
                   </div>
-                  <span className="font-medium">Download App</span>
+                  <span className="font-semibold group-hover:translate-x-1 group-hover:tracking-wide transition-all duration-300">Get the App</span>
                 </button>
               </li>
               <li>
@@ -152,14 +152,14 @@ export default function Footer({ onOpenPrivacy, onInstallApp }) {
         </div>
         
         {/* Bottom Bar */}
-        <div className="border-t border-gray-800 pt-8">
+        <div className="border-t border-gray-800/80 pt-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-gray-500">
-              © {new Date().getFullYear()} Room24. All rights reserved.
+            <p className="text-sm text-gray-400 font-medium">
+              © {new Date().getFullYear()} Room24 — All rights reserved
             </p>
-            <p className="text-xs text-gray-600 text-center md:text-right max-w-lg">
-              By using this site, you agree to our use of location services and cookies for improved user experience. 
-              We display ads to keep Room24 free for everyone.
+            <p className="text-xs text-gray-500 text-center md:text-right max-w-lg leading-relaxed">
+              By using Room24, you agree to our use of location services and cookies for an improved experience. 
+              We display ads to keep the platform free for everyone.
             </p>
           </div>
         </div>

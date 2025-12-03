@@ -51,7 +51,7 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
   return (
     <div
       onClick={onClick}
-      className={`bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden border border-gray-100 hover:border-teal-300 hover:-translate-y-1 group ${listing.premium ? 'ring-2 ring-amber-400 ring-offset-2' : ''}`}
+      className={`bg-white rounded-2xl shadow-sm hover:shadow-2xl transition-all duration-300 cursor-pointer overflow-hidden border border-gray-100/80 hover:border-teal-300/80 hover:-translate-y-2 group ${listing.premium ? 'ring-2 ring-amber-400/80 ring-offset-2 shadow-amber-100' : ''}`}
     >
       {listing.photos && listing.photos.length > 0 ? (
         <div className="relative bg-gray-200 aspect-[4/3] overflow-hidden">
@@ -185,9 +185,9 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
           
           {/* Price and rating */}
           <div className="flex items-center gap-3">
-            <p className="text-rose-600 font-extrabold text-xl tracking-tight">
+            <p className="text-transparent bg-gradient-to-r from-rose-600 to-rose-500 bg-clip-text font-extrabold text-xl tracking-tight">
               R{formattedPrice}
-              <span className="text-sm font-medium text-gray-400 ml-0.5">/mo</span>
+              <span className="text-xs font-semibold text-gray-400 ml-0.5">/mo</span>
             </p>
             {avgRating && (
               <div className="flex items-center gap-1 text-xs bg-amber-50 px-2 py-1 rounded-lg border border-amber-100">
@@ -220,7 +220,7 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
         {/* Location */}
         <div className="flex items-center text-gray-500 text-sm mb-3">
           <MapPin className="w-4 h-4 mr-1.5 text-teal-500 flex-shrink-0" />
-          <span className="truncate font-medium">
+          <span className="truncate font-medium uppercase">
             {addressLine || listing.location || 'Location TBA'}
           </span>
         </div>
@@ -245,10 +245,10 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
         )}
         
         {/* CTA Button */}
-        <button className="w-full bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white py-3 rounded-xl font-semibold text-sm transition-all duration-200 shadow-md hover:shadow-lg hover:shadow-teal-500/25 active:scale-[0.98] flex items-center justify-center gap-2 group/btn">
-          <span>View Details</span>
-          <svg className="w-4 h-4 transform group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+        <button className="w-full bg-gradient-to-r from-teal-500 via-teal-500 to-cyan-500 hover:from-teal-600 hover:via-teal-500 hover:to-cyan-600 text-white py-3.5 rounded-xl font-bold text-sm transition-all duration-300 shadow-lg shadow-teal-500/20 hover:shadow-xl hover:shadow-teal-500/30 active:scale-[0.97] flex items-center justify-center gap-2 group/btn">
+          <span className="group-hover/btn:tracking-wide transition-all duration-300">View Details</span>
+          <svg className="w-4 h-4 transform group-hover/btn:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
           </svg>
         </button>
       </div>

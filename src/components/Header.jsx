@@ -11,14 +11,14 @@ export default function Header({ currentUser, previewAsRenter, setPreviewAsRente
           {/* Logo */}
           <button
             onClick={() => setCurrentView('browse')}
-            className="text-xl md:text-2xl font-extrabold flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 px-1 rounded-lg transition-transform hover:scale-105 active:scale-95"
+            className="text-xl md:text-2xl font-extrabold flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 px-1.5 py-1 rounded-xl transition-all duration-300 hover:scale-[1.03] active:scale-[0.97] group"
             aria-label="Go to browse"
           >
-            <div className="w-8 h-8 md:w-9 md:h-9 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-lg flex items-center justify-center shadow-md hover:shadow-lg transition-shadow">
-              <Home className="w-4 h-4 md:w-5 md:h-5 text-white" />
+            <div className="w-9 h-9 md:w-10 md:h-10 bg-gradient-to-br from-teal-500 via-teal-400 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:shadow-teal-500/30 transition-all duration-300 group-hover:rotate-3">
+              <Home className="w-4.5 h-4.5 md:w-5 md:h-5 text-white drop-shadow" />
             </div>
-            <span className="bg-gradient-to-r from-teal-500 to-cyan-500 bg-clip-text text-transparent">Room</span>
-            <span className="text-rose-500">24</span>
+            <span className="bg-gradient-to-r from-teal-600 via-teal-500 to-cyan-600 bg-clip-text text-transparent tracking-tight">Room</span>
+            <span className="text-rose-500 tracking-tight">24</span>
           </button>
 
           {/* Desktop Right Section */}
@@ -34,10 +34,10 @@ export default function Header({ currentUser, previewAsRenter, setPreviewAsRente
                 </button>
                 <button 
                   onClick={() => openAuthModal('landlord', 'signup')} 
-                  className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-md hover:shadow-lg hover:shadow-rose-500/25 transition-all duration-200 flex items-center gap-2"
+                  className="bg-gradient-to-r from-rose-500 via-rose-500 to-pink-500 hover:from-rose-600 hover:via-rose-500 hover:to-pink-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg hover:shadow-xl hover:shadow-rose-500/30 transition-all duration-300 flex items-center gap-2 active:scale-[0.97] group"
                 >
-                  <Home className="w-4 h-4" />
-                  List Your Room
+                  <Home className="w-4 h-4 group-hover:rotate-6 transition-transform duration-300" />
+                  <span className="group-hover:tracking-wide transition-all duration-300">List Your Room</span>
                 </button>
               </div>
             )}
