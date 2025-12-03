@@ -1,169 +1,150 @@
 import React from 'react';
-import { FooterAd } from './AdBanner';
-import { Home, Mail, Phone, HelpCircle, Shield, FileText, Cookie, Download } from 'lucide-react';
+import { Home, Heart, Shield, Mail, Download, ExternalLink } from 'lucide-react';
 
 export default function Footer({ onOpenPrivacy, onInstallApp }) {
+  const currentYear = new Date().getFullYear();
+
   return (
-    <footer className="bg-gradient-to-b from-gray-900 to-gray-950 text-gray-300 pt-12 pb-8 mt-auto" role="contentinfo">
-      <div className="max-w-7xl mx-auto px-4">
-        {/* Ad Banner Above Footer Content */}
-        <div className="mb-10">
-          <FooterAd />
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-10">
-          {/* Brand Section */}
-          <div className="md:col-span-1">
-            <div className="flex items-center gap-3 mb-5 group cursor-default">
-              <div className="w-12 h-12 bg-gradient-to-br from-teal-500 via-teal-400 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-teal-500/40 group-hover:scale-105 transition-all duration-300">
-                <Home className="w-5 h-5 text-white drop-shadow" />
+    <footer className="bg-gradient-to-b from-gray-900 to-gray-950 text-gray-300 mt-auto">
+      {/* Main Footer Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+          {/* Brand Column */}
+          <div className="lg:col-span-2">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
+                <Home className="w-5 h-5 text-white" />
               </div>
-              <span className="text-2xl font-extrabold tracking-tight">
-                <span className="bg-gradient-to-r from-teal-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">Room</span>
+              <span className="text-2xl font-extrabold">
+                <span className="text-teal-400">Room</span>
                 <span className="text-rose-400">24</span>
               </span>
             </div>
-            <p className="text-sm text-gray-400 leading-relaxed mb-4">
-              South Africa's modern room rental marketplace. Connect with verified landlords and discover your perfect space.
+            <p className="text-gray-400 text-sm leading-relaxed mb-4 max-w-md">
+              Find your perfect room in South Africa. Connect directly with verified landlords, 
+              no middleman fees. Safe, simple, and completely free for renters.
             </p>
-            <div className="flex items-center gap-2.5 text-xs text-gray-500 bg-gray-800/60 px-3.5 py-2.5 rounded-xl border border-gray-700/50">
-              <span className="text-base">✨</span>
-              <span><strong className="text-gray-300">100% Free</strong> — supported by ads</span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={onInstallApp}
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-semibold text-sm rounded-xl transition-all shadow-lg hover:shadow-xl"
+              >
+                <Download className="w-4 h-4" />
+                Install App
+              </button>
             </div>
           </div>
-          
+
           {/* Quick Links */}
           <div>
             <h4 className="text-white font-semibold mb-4 text-sm uppercase tracking-wider">Quick Links</h4>
-            <ul className="space-y-3 text-sm">
+            <ul className="space-y-3">
               <li>
-                <button 
-                  onClick={onInstallApp}
-                  className="text-gray-400 hover:text-teal-400 transition-all duration-300 flex items-center gap-2.5 group"
-                >
-                  <div className="w-10 h-10 bg-gradient-to-br from-teal-500 via-teal-400 to-cyan-500 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:shadow-xl group-hover:shadow-teal-500/40 group-hover:rotate-3 transition-all duration-300">
-                    <Download className="w-4 h-4 text-white drop-shadow" />
-                  </div>
-                  <span className="font-semibold group-hover:translate-x-1 group-hover:tracking-wide transition-all duration-300">Get the App</span>
+                <button className="text-gray-400 hover:text-teal-400 transition-colors text-sm flex items-center gap-2">
+                  <Home className="w-4 h-4" />
+                  Browse Rooms
                 </button>
               </li>
               <li>
-                <a href="#browse" className="text-gray-400 hover:text-teal-400 transition-colors flex items-center gap-2">
-                  Browse Rooms
-                </a>
+                <button className="text-gray-400 hover:text-teal-400 transition-colors text-sm flex items-center gap-2">
+                  <Heart className="w-4 h-4" />
+                  Saved Listings
+                </button>
               </li>
-              <li>
-                <a href="#list" className="text-gray-400 hover:text-teal-400 transition-colors flex items-center gap-2">
-                  List Your Room
-                </a>
-              </li>
-              <li>
-                <a href="#pricing" className="text-gray-400 hover:text-teal-400 transition-colors flex items-center gap-2">
-                  Pricing
-                </a>
-              </li>
-            </ul>
-          </div>
-          
-          {/* Legal */}
-          <div>
-            <h4 className="text-white font-semibold mb-4 text-sm uppercase tracking-wider">Legal</h4>
-            <ul className="space-y-3 text-sm">
               <li>
                 <button 
                   onClick={onOpenPrivacy}
-                  className="text-gray-400 hover:text-teal-400 transition-colors flex items-center gap-2 text-left"
+                  className="text-gray-400 hover:text-teal-400 transition-colors text-sm flex items-center gap-2"
                 >
                   <Shield className="w-4 h-4" />
                   Privacy Policy
                 </button>
               </li>
-              <li>
-                <a href="#terms" className="text-gray-400 hover:text-teal-400 transition-colors flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  Terms of Service
-                </a>
-              </li>
-              <li>
-                <a href="#cookies" className="text-gray-400 hover:text-teal-400 transition-colors flex items-center gap-2">
-                  <Cookie className="w-4 h-4" />
-                  Cookie Policy
-                </a>
-              </li>
             </ul>
           </div>
-          
+
           {/* Contact */}
           <div>
             <h4 className="text-white font-semibold mb-4 text-sm uppercase tracking-wider">Contact</h4>
-            <ul className="space-y-3 text-sm">
+            <ul className="space-y-3">
               <li>
-                <a href="mailto:support@room24.co.za" className="text-gray-400 hover:text-teal-400 transition-colors flex items-center gap-2">
+                <a 
+                  href="mailto:support@room24.co.za" 
+                  className="text-gray-400 hover:text-teal-400 transition-colors text-sm flex items-center gap-2"
+                >
                   <Mail className="w-4 h-4" />
                   support@room24.co.za
                 </a>
               </li>
               <li>
-                <a href="#help" className="text-gray-400 hover:text-teal-400 transition-colors flex items-center gap-2">
-                  <HelpCircle className="w-4 h-4" />
-                  Help Center
-                </a>
-              </li>
-              <li>
-                <a href="tel:+27123456789" className="text-gray-400 hover:text-teal-400 transition-colors flex items-center gap-2">
-                  <Phone className="w-4 h-4" />
-                  +27 12 345 6789
+                <a 
+                  href="https://room24.co.za" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-teal-400 transition-colors text-sm flex items-center gap-2"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  room24.co.za
                 </a>
               </li>
             </ul>
-            
-            {/* Social Links */}
-            <div className="flex gap-3 mt-6">
-              <a 
-                href="#facebook" 
-                className="w-10 h-10 bg-gray-800 hover:bg-blue-600 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110 hover:shadow-lg hover:shadow-blue-600/25" 
-                aria-label="Facebook"
-              >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-              </a>
-              <a 
-                href="#twitter" 
-                className="w-10 h-10 bg-gray-800 hover:bg-sky-500 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110 hover:shadow-lg hover:shadow-sky-500/25" 
-                aria-label="Twitter"
-              >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg>
-              </a>
-              <a 
-                href="#instagram" 
-                className="w-10 h-10 bg-gray-800 hover:bg-gradient-to-br hover:from-purple-600 hover:to-pink-500 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110 hover:shadow-lg hover:shadow-pink-500/25" 
-                aria-label="Instagram"
-              >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
-              </a>
-              <a 
-                href="#whatsapp" 
-                className="w-10 h-10 bg-gray-800 hover:bg-green-600 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110 hover:shadow-lg hover:shadow-green-600/25" 
-                aria-label="WhatsApp"
-              >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-              </a>
-            </div>
           </div>
         </div>
-        
-        {/* Bottom Bar */}
-        <div className="border-t border-gray-800/80 pt-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-gray-400 font-medium">
-              © {new Date().getFullYear()} Room24 — All rights reserved
-            </p>
-            <p className="text-xs text-gray-500 text-center md:text-right max-w-lg leading-relaxed">
-              By using Room24, you agree to our use of location services and cookies for an improved experience. 
-              We display ads to keep the platform free for everyone.
-            </p>
+
+        {/* Trust Badges */}
+        <div className="flex flex-wrap items-center justify-center gap-6 py-6 border-t border-gray-800">
+          <div className="flex items-center gap-2 text-gray-500 text-xs">
+            <Shield className="w-4 h-4 text-teal-500" />
+            <span>Verified Landlords</span>
+          </div>
+          <div className="flex items-center gap-2 text-gray-500 text-xs">
+            <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+            <span>Secure Platform</span>
+          </div>
+          <div className="flex items-center gap-2 text-gray-500 text-xs">
+            <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>No Hidden Fees</span>
           </div>
         </div>
       </div>
+
+      {/* Bottom Bar */}
+      <div className="bg-gray-950 border-t border-gray-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+            <p className="text-gray-500 text-xs">
+              © {currentYear} Room24. All rights reserved.
+            </p>
+            <div className="flex items-center gap-4 text-xs">
+              <button 
+                onClick={onOpenPrivacy}
+                className="text-gray-500 hover:text-teal-400 transition-colors"
+              >
+                Privacy
+              </button>
+              <span className="text-gray-700">•</span>
+              <button className="text-gray-500 hover:text-teal-400 transition-colors">
+                Terms
+              </button>
+              <span className="text-gray-700">•</span>
+              <button className="text-gray-500 hover:text-teal-400 transition-colors">
+                Cookies
+              </button>
+            </div>
+          </div>
+          <p className="text-center text-gray-600 text-[10px] mt-3">
+            By using Room24, you agree to our use of cookies for improved user experience. 
+            We display ads to keep Room24 free for everyone.
+          </p>
+        </div>
+      </div>
+
+      {/* Safe area padding for mobile */}
+      <div className="h-20 md:h-0 bg-gray-950" aria-hidden="true" />
     </footer>
   );
 }

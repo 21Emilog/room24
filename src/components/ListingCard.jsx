@@ -2,21 +2,18 @@ import React, { useState } from 'react';
 import { Home, MapPin, User, ShieldCheck, Star, Heart, Clock } from 'lucide-react';
 
 function formatRelativeTime(date) {
-  const diffMs = Date.now() - date.getTime();
-  const sec = Math.floor(diffMs / 1000);
-  if (sec < 45) return 'Just now';
-  const min = Math.floor(sec / 60);
-  if (min < 60) return `${min}m ago`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}h ago`;
-  const day = Math.floor(hr / 24);
-  if (day < 7) return `${day}d ago`;
-  const wk = Math.floor(day / 7);
-  if (wk < 4) return `${wk}w ago`;
-  const mo = Math.floor(day / 30);
-  if (mo < 12) return `${mo}mo ago`;
-  const yr = Math.floor(day / 365);
-  return `${yr}y ago`;
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+  return date.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' });
 }
 
 export default function ListingCard({ listing, onClick, isFavorite, onToggleFavorite }) {
@@ -29,7 +26,7 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
     if (onToggleFavorite) onToggleFavorite(listing.id);
   };
 
-  // Calculate average rating
+  // Calculate average rating from reviews
   const reviews = listing.reviews || [];
   const avgRating = reviews.length > 0
     ? (reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length).toFixed(1)
@@ -51,8 +48,13 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
   return (
     <div
       onClick={onClick}
-      className={`bg-white rounded-2xl shadow-sm hover:shadow-2xl transition-all duration-300 cursor-pointer overflow-hidden border border-gray-100/80 hover:border-teal-300/80 hover:-translate-y-2 group ${listing.premium ? 'ring-2 ring-amber-400/80 ring-offset-2 shadow-amber-100' : ''}`}
+      className={`bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden border border-gray-100 hover:border-teal-300 hover:-translate-y-1 group w-full max-w-sm ${listing.premium ? 'ring-2 ring-amber-400 ring-offset-2' : ''}`}
+      role="article"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(); } }}
+      aria-label={`${listing.title} - R${formattedPrice} per month in ${listing.location || 'unknown location'}`}
     >
+      {/* Image Section */}
       {listing.photos && listing.photos.length > 0 ? (
         <div className="relative bg-gray-200 aspect-[4/3] overflow-hidden">
           {/* Skeleton placeholder while loading */}
@@ -67,7 +69,7 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
           )}
           <img
             src={listing.photos[0]}
-            alt="Room"
+            alt={`Room: ${listing.title}`}
             className={`w-full h-full object-cover group-hover:scale-110 transition-all duration-500 ease-out ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
             loading="lazy"
             onLoad={() => setImageLoaded(true)}
@@ -86,6 +88,7 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
                   : 'bg-white/95 backdrop-blur-sm hover:bg-white'
               }`}
               aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+              aria-pressed={isFavorite}
             >
               <Heart
                 className={`w-5 h-5 transition-all duration-300 ${
@@ -101,7 +104,7 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
           <div className="absolute top-3 right-3 flex gap-2 flex-wrap justify-end">
             {listing.photos.length > 1 && (
               <div className="bg-black/70 backdrop-blur-sm text-white px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1">
-                <span>📷</span> {listing.photos.length}
+                <span aria-hidden="true">📷</span> {listing.photos.length}
               </div>
             )}
             <div
@@ -114,18 +117,15 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
               {listing.status === 'available' ? '✓ Available' : 'Rented'}
             </div>
           </div>
-
-          {/* Badges row */}
+          
+          {/* Additional badges row */}
           <div className="absolute top-12 right-3 flex flex-col gap-1.5 items-end">
             {isNew && (
               <div className="px-2 py-1 rounded-lg text-[10px] font-bold bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg uppercase tracking-wider animate-pulse">
                 ✨ New
               </div>
             )}
-            {(() => {
-              const verified = listing.landlordVerified || (listing.landlord && listing.landlord.idNumber);
-              return verified;
-            })() && (
+            {(listing.landlordVerified || listing.landlord?.idNumber) && (
               <div className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold bg-blue-600 text-white shadow-lg">
                 <ShieldCheck className="w-3 h-3" /> Verified
               </div>
@@ -141,7 +141,7 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
           <div className="absolute bottom-3 left-3 flex items-center gap-2">
             <div className="w-9 h-9 rounded-xl bg-white shadow-lg ring-2 ring-white overflow-hidden flex items-center justify-center">
               {listing.landlordPhoto ? (
-                <img src={listing.landlordPhoto} alt={listing.landlordName} className="w-full h-full object-cover" />
+                <img src={listing.landlordPhoto} alt={listing.landlordName || 'Landlord'} className="w-full h-full object-cover" />
               ) : (
                 <User className="w-5 h-5 text-gray-400" />
               )}
@@ -154,6 +154,7 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
           </div>
         </div>
       ) : (
+        /* No photo fallback */
         <div className="bg-gradient-to-br from-gray-100 to-gray-200 aspect-[4/3] flex items-center justify-center relative">
           <div className="w-16 h-16 rounded-2xl bg-white/80 flex items-center justify-center shadow-lg">
             <Home className="w-8 h-8 text-gray-400" />
@@ -168,6 +169,7 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
         </div>
       )}
       
+      {/* Content Section */}
       <div className="p-4">
         {/* Title and time */}
         <div className="mb-3">
@@ -185,9 +187,9 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
           
           {/* Price and rating */}
           <div className="flex items-center gap-3">
-            <p className="text-transparent bg-gradient-to-r from-rose-600 to-rose-500 bg-clip-text font-extrabold text-xl tracking-tight">
+            <p className="text-rose-600 font-extrabold text-xl tracking-tight">
               R{formattedPrice}
-              <span className="text-xs font-semibold text-gray-400 ml-0.5">/mo</span>
+              <span className="text-sm font-medium text-gray-400 ml-0.5">/mo</span>
             </p>
             {avgRating && (
               <div className="flex items-center gap-1 text-xs bg-amber-50 px-2 py-1 rounded-lg border border-amber-100">
@@ -203,24 +205,24 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
         <div className="flex flex-wrap gap-2 mb-3">
           {listing.paymentMethod && (
             <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 text-xs px-2.5 py-1 rounded-lg font-medium border border-emerald-100">
-              <span>💳</span> {listing.paymentMethod}
+              <span aria-hidden="true">💳</span> {listing.paymentMethod}
             </span>
           )}
           {isAvailableNow ? (
             <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 text-xs px-2.5 py-1 rounded-lg font-medium border border-green-100">
-              <span>🏠</span> Available Now
+              <span aria-hidden="true">🏠</span> Available Now
             </span>
-          ) : isAvailableSoon && (
+          ) : isAvailableSoon && availableDate && (
             <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 text-xs px-2.5 py-1 rounded-lg font-medium border border-blue-100">
-              <span>📅</span> {availableDate.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' })}
+              <span aria-hidden="true">📅</span> {availableDate.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' })}
             </span>
           )}
         </div>
         
         {/* Location */}
         <div className="flex items-center text-gray-500 text-sm mb-3">
-          <MapPin className="w-4 h-4 mr-1.5 text-teal-500 flex-shrink-0" />
-          <span className="truncate font-medium uppercase">
+          <MapPin className="w-4 h-4 mr-1.5 text-teal-500 flex-shrink-0" aria-hidden="true" />
+          <span className="truncate font-medium">
             {addressLine || listing.location || 'Location TBA'}
           </span>
         </div>
@@ -245,10 +247,10 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
         )}
         
         {/* CTA Button */}
-        <button className="w-full bg-gradient-to-r from-teal-500 via-teal-500 to-cyan-500 hover:from-teal-600 hover:via-teal-500 hover:to-cyan-600 text-white py-3.5 rounded-xl font-bold text-sm transition-all duration-300 shadow-lg shadow-teal-500/20 hover:shadow-xl hover:shadow-teal-500/30 active:scale-[0.97] flex items-center justify-center gap-2 group/btn">
-          <span className="group-hover/btn:tracking-wide transition-all duration-300">View Details</span>
-          <svg className="w-4 h-4 transform group-hover/btn:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
+        <button className="w-full bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white py-3 rounded-xl font-semibold text-sm transition-all duration-200 shadow-md hover:shadow-lg hover:shadow-teal-500/25 active:scale-[0.98] flex items-center justify-center gap-2 group/btn">
+          <span>View Details</span>
+          <svg className="w-4 h-4 transform group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
           </svg>
         </button>
       </div>

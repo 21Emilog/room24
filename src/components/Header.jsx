@@ -1,224 +1,303 @@
-import React, { useState } from 'react';
-import { User, Menu, X, Bell, Home } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Home, Menu, X, Bell, User, LogOut, Search, PlusCircle, Heart, Settings, ChevronDown, Eye, EyeOff } from 'lucide-react';
 
-export default function Header({ currentUser, previewAsRenter, setPreviewAsRenter, openAuthModal, handleSignOut, setCurrentView, showToast, unreadCount, onOpenNotifications }) {
+export default function Header({
+  currentUser,
+  previewAsRenter,
+  setPreviewAsRenter,
+  openAuthModal,
+  handleSignOut,
+  setCurrentView,
+  unreadCount,
+  onOpenNotifications
+}) {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef(null);
+  const mobileMenuRef = useRef(null);
+
+  // Close menus when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setShowUserMenu(false);
+      }
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
+        setShowMobileMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Close mobile menu on escape
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        setShowMobileMenu(false);
+        setShowUserMenu(false);
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, []);
+
+  const isLandlord = currentUser?.type === 'landlord';
+
+  const navLinks = [
+    { id: 'browse', label: 'Browse', icon: Search, show: true },
+    { id: 'add', label: 'List Room', icon: PlusCircle, show: currentUser && isLandlord && !previewAsRenter },
+    { id: 'my-listings', label: 'My Rooms', icon: Home, show: currentUser && isLandlord && !previewAsRenter },
+    { id: 'favorites', label: 'Saved', icon: Heart, show: true },
+  ].filter(link => link.show);
 
   return (
-    <header className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-gray-100 dark:border-slate-700 sticky top-0 z-50 shadow-sm" role="banner" style={{ backgroundColor: 'var(--c-surface)', borderColor: 'var(--c-border)' }}>
-      <div className="max-w-7xl mx-auto px-4 py-2.5 md:py-3">
-        <div className="flex items-center justify-between min-h-[52px]">
+    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-xl border-b border-gray-100 shadow-sm safe-area-top">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <button
+          <button 
             onClick={() => setCurrentView('browse')}
-            className="text-xl md:text-2xl font-extrabold flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 px-1.5 py-1 rounded-xl transition-all duration-300 hover:scale-[1.03] active:scale-[0.97] group"
-            aria-label="Go to browse"
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 rounded-lg"
+            aria-label="Go to home page"
           >
-            <div className="w-9 h-9 md:w-10 md:h-10 bg-gradient-to-br from-teal-500 via-teal-400 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:shadow-teal-500/30 transition-all duration-300 group-hover:rotate-3">
-              <Home className="w-4.5 h-4.5 md:w-5 md:h-5 text-white drop-shadow" />
+            <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/25">
+              <Home className="w-5 h-5 text-white" />
             </div>
-            <span className="bg-gradient-to-r from-teal-600 via-teal-500 to-cyan-600 bg-clip-text text-transparent tracking-tight">Room</span>
-            <span className="text-rose-500 tracking-tight">24</span>
+            <span className="text-xl font-extrabold hidden sm:block">
+              <span className="bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">Room</span>
+              <span className="text-rose-500">24</span>
+            </span>
           </button>
 
-          {/* Desktop Right Section */}
-          <div className="hidden md:flex items-center gap-3">
-            {!currentUser && (
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => openAuthModal('renter')} 
-                  className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                  style={{ color: 'var(--c-text-secondary)' }}
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center gap-1" role="navigation" aria-label="Main navigation">
+            {navLinks.map(link => {
+              const Icon = link.icon;
+              return (
+                <button
+                  key={link.id}
+                  onClick={() => setCurrentView(link.id)}
+                  className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-teal-600 hover:bg-teal-50 rounded-xl font-medium text-sm transition-all duration-200"
                 >
-                  Sign in
+                  <Icon className="w-4 h-4" />
+                  {link.label}
                 </button>
-                <button 
-                  onClick={() => openAuthModal('landlord', 'signup')} 
-                  className="bg-gradient-to-r from-rose-500 via-rose-500 to-pink-500 hover:from-rose-600 hover:via-rose-500 hover:to-pink-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg hover:shadow-xl hover:shadow-rose-500/30 transition-all duration-300 flex items-center gap-2 active:scale-[0.97] group"
+              );
+            })}
+          </nav>
+
+          {/* Right Side Actions */}
+          <div className="flex items-center gap-2">
+            {/* Landlord Preview Toggle */}
+            {currentUser && isLandlord && (
+              <button
+                onClick={() => setPreviewAsRenter(!previewAsRenter)}
+                className={`hidden md:flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                  previewAsRenter
+                    ? 'bg-amber-100 text-amber-700 border border-amber-200'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+                title={previewAsRenter ? 'Exit renter view' : 'Preview as renter'}
+                aria-pressed={previewAsRenter}
+              >
+                {previewAsRenter ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                <span className="hidden lg:inline">{previewAsRenter ? 'Exit Preview' : 'Renter View'}</span>
+              </button>
+            )}
+
+            {/* Notifications */}
+            {currentUser && (
+              <button
+                onClick={onOpenNotifications}
+                className="relative p-2.5 text-gray-600 hover:text-teal-600 hover:bg-teal-50 rounded-xl transition-all duration-200"
+                aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
+              >
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+            )}
+
+            {/* User Menu / Auth Buttons */}
+            {currentUser ? (
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-2 p-1.5 pr-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all duration-200"
+                  aria-expanded={showUserMenu}
+                  aria-haspopup="true"
                 >
-                  <Home className="w-4 h-4 group-hover:rotate-6 transition-transform duration-300" />
-                  <span className="group-hover:tracking-wide transition-all duration-300">List Your Room</span>
+                  {currentUser.photo ? (
+                    <img src={currentUser.photo} alt="" className="w-8 h-8 rounded-lg object-cover ring-2 ring-white" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center">
+                      <span className="text-white text-sm font-bold">
+                        {currentUser.name?.charAt(0)?.toUpperCase() || 'U'}
+                      </span>
+                    </div>
+                  )}
+                  <span className="hidden sm:block text-sm font-medium text-gray-700 max-w-[100px] truncate">
+                    {currentUser.name?.split(' ')[0] || 'User'}
+                  </span>
+                  <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Dropdown Menu */}
+                {showUserMenu && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 animate-fadeIn z-50">
+                    <div className="px-4 py-3 border-b border-gray-100">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{currentUser.name}</p>
+                      <p className="text-xs text-gray-500 capitalize">{currentUser.type || 'Member'}</p>
+                    </div>
+                    <div className="py-1">
+                      <button
+                        onClick={() => { setCurrentView('profile'); setShowUserMenu(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <User className="w-4 h-4 text-gray-400" />
+                        My Profile
+                      </button>
+                      {isLandlord && !previewAsRenter && (
+                        <button
+                          onClick={() => { setCurrentView('my-listings'); setShowUserMenu(false); }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          <Home className="w-4 h-4 text-gray-400" />
+                          My Listings
+                        </button>
+                      )}
+                      <button
+                        onClick={() => { setCurrentView('favorites'); setShowUserMenu(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <Heart className="w-4 h-4 text-gray-400" />
+                        Saved Rooms
+                      </button>
+                    </div>
+                    <div className="border-t border-gray-100 pt-1">
+                      <button
+                        onClick={() => { handleSignOut(); setShowUserMenu(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Sign Out
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => openAuthModal('renter', 'signin')}
+                  className="hidden sm:block px-4 py-2 text-gray-600 hover:text-teal-600 font-medium text-sm transition-colors"
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => openAuthModal('landlord', 'signup')}
+                  className="px-4 py-2 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-semibold text-sm rounded-xl shadow-md hover:shadow-lg transition-all duration-200"
+                >
+                  List Room
                 </button>
               </div>
             )}
-            {currentUser && (
-              <>
-                {onOpenNotifications && (
-                  <button
-                    onClick={onOpenNotifications}
-                    className="relative p-2.5 rounded-xl transition-all duration-200"
-                    style={{ color: unreadCount > 0 ? 'var(--c-primary)' : 'var(--c-text-muted)' }}
-                    aria-label="Notifications"
-                  >
-                    <Bell className="w-5 h-5" />
-                    {unreadCount > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 bg-gradient-to-r from-rose-500 to-pink-500 text-white text-[10px] font-bold rounded-full min-w-[20px] h-[20px] flex items-center justify-center shadow-md animate-pulse">
-                        {unreadCount > 99 ? '99+' : unreadCount}
-                      </span>
-                    )}
-                  </button>
-                )}
-                <div 
-                  className="flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer transition-colors group"
-                  style={{ backgroundColor: 'transparent' }}
-                  onClick={() => setCurrentView('profile')}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--c-surface-hover)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                >
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center text-white font-bold shadow-md ring-2 ring-white/50 group-hover:shadow-lg transition-all duration-200 overflow-hidden">
-                    {currentUser.photo ? (
-                      <img src={currentUser.photo} alt={currentUser.name || 'User'} className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-sm">{currentUser?.name?.charAt(0)?.toUpperCase() || 'U'}</span>
-                    )}
-                  </div>
-                  <div className="hidden lg:block">
-                    <p className="font-semibold leading-tight group-hover:text-teal-500 transition text-sm" style={{ color: 'var(--c-text)' }}>{currentUser.name || 'User'}</p>
-                    <p className="text-xs leading-tight flex items-center gap-1.5" style={{ color: 'var(--c-text-muted)' }}>
-                      {previewAsRenter ? (
-                        <><span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span> Preview Mode</>
-                      ) : currentUser.type === 'landlord' ? (
-                        <><span className="w-1.5 h-1.5 bg-teal-500 rounded-full"></span> Property Owner</>
-                      ) : (
-                        <><span className="w-1.5 h-1.5 bg-violet-500 rounded-full"></span> Looking for a Room</>
-                      )}
-                    </p>
-                  </div>
-                </div>
-                {currentUser.type === 'landlord' && (
-                  <button
-                    onClick={() => setPreviewAsRenter(!previewAsRenter)}
-                    className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-all duration-200 ${
-                      previewAsRenter 
-                        ? 'bg-amber-100 text-amber-700 border border-amber-300 hover:bg-amber-200' 
-                        : 'border hover:text-teal-600 hover:border-teal-300'
-                    }`}
-                    style={!previewAsRenter ? { backgroundColor: 'var(--c-surface)', borderColor: 'var(--c-border)', color: 'var(--c-text-secondary)' } : {}}
-                    aria-pressed={previewAsRenter ? 'true' : 'false'}
-                  >
-                    {previewAsRenter ? '✕ Exit Preview' : '👁 Preview'}
-                  </button>
-                )}
-                <button
-                  onClick={handleSignOut}
-                  className="text-xs px-3 py-1.5 rounded-lg border transition-all duration-200 font-medium hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200"
-                  style={{ borderColor: 'var(--c-border)', color: 'var(--c-text-muted)' }}
-                >
-                  Sign Out
-                </button>
-              </>
-            )}
-          </div>
 
-          {/* Mobile Menu / Auth CTAs */}
-          <div className="flex md:hidden items-center gap-2">
-            {!currentUser ? (
-              <>
-                <button 
-                  onClick={() => openAuthModal('renter')} 
-                  className="text-sm px-3 py-1.5 font-medium transition-colors"
-                  style={{ color: 'var(--c-text-secondary)' }}
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              className="md:hidden p-2.5 text-gray-600 hover:text-teal-600 hover:bg-teal-50 rounded-xl transition-colors"
+              aria-label="Toggle menu"
+              aria-expanded={showMobileMenu}
+            >
+              {showMobileMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Menu */}
+      {showMobileMenu && (
+        <div 
+          ref={mobileMenuRef}
+          className="md:hidden bg-white border-t border-gray-100 shadow-lg animate-slideDown"
+          role="menu"
+        >
+          <nav className="px-4 py-4 space-y-1">
+            {navLinks.map(link => {
+              const Icon = link.icon;
+              return (
+                <button
+                  key={link.id}
+                  onClick={() => { setCurrentView(link.id); setShowMobileMenu(false); }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-xl font-medium transition-colors"
+                  role="menuitem"
                 >
-                  Sign in
+                  <Icon className="w-5 h-5" />
+                  {link.label}
                 </button>
-                <button 
-                  onClick={() => openAuthModal('landlord', 'signup')} 
-                  className="text-sm bg-gradient-to-r from-rose-500 to-pink-500 text-white px-4 py-2 rounded-xl font-semibold shadow-md"
+              );
+            })}
+            
+            {currentUser && isLandlord && (
+              <button
+                onClick={() => { setPreviewAsRenter(!previewAsRenter); setShowMobileMenu(false); }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${
+                  previewAsRenter
+                    ? 'bg-amber-100 text-amber-700'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+                role="menuitem"
+              >
+                {previewAsRenter ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                {previewAsRenter ? 'Exit Renter Preview' : 'Preview as Renter'}
+              </button>
+            )}
+
+            {currentUser ? (
+              <>
+                <div className="border-t border-gray-100 my-2" />
+                <button
+                  onClick={() => { setCurrentView('profile'); setShowMobileMenu(false); }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-xl font-medium transition-colors"
+                  role="menuitem"
                 >
-                  List Room
+                  <Settings className="w-5 h-5" />
+                  Settings
+                </button>
+                <button
+                  onClick={() => { handleSignOut(); setShowMobileMenu(false); }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-rose-600 hover:bg-rose-50 rounded-xl font-medium transition-colors"
+                  role="menuitem"
+                >
+                  <LogOut className="w-5 h-5" />
+                  Sign Out
                 </button>
               </>
             ) : (
               <>
-                {onOpenNotifications && (
-                  <button
-                    onClick={onOpenNotifications}
-                    className="relative p-2 rounded-xl transition"
-                    style={{ color: 'var(--c-text-muted)' }}
-                    aria-label="Notifications"
-                  >
-                    <Bell className="w-5 h-5" />
-                    {unreadCount > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 bg-gradient-to-r from-rose-500 to-pink-500 text-white text-[9px] font-bold rounded-full w-5 h-5 flex items-center justify-center shadow">
-                        {unreadCount > 9 ? '9+' : unreadCount}
-                      </span>
-                    )}
-                  </button>
-                )}
+                <div className="border-t border-gray-100 my-2" />
                 <button
-                  onClick={() => setShowMobileMenu(!showMobileMenu)}
-                  className="p-2 rounded-xl transition"
-                  style={{ color: 'var(--c-text-secondary)' }}
-                  aria-label="Menu"
+                  onClick={() => { openAuthModal('renter', 'signin'); setShowMobileMenu(false); }}
+                  className="w-full px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-xl font-medium transition-colors text-center"
+                  role="menuitem"
                 >
-                  {showMobileMenu ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                  Sign In
+                </button>
+                <button
+                  onClick={() => { openAuthModal('landlord', 'signup'); setShowMobileMenu(false); }}
+                  className="w-full px-4 py-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-xl font-semibold transition-all shadow-md"
+                  role="menuitem"
+                >
+                  Get Started
                 </button>
               </>
             )}
-          </div>
-        </div>
-
-        {/* Mobile Dropdown */}
-        {currentUser && showMobileMenu && (
-          <div className="md:hidden mt-2 pb-4 pt-4 animate-slideDown" role="navigation" aria-label="Mobile" style={{ borderTop: '1px solid var(--c-border)' }}>
-            <div className="flex items-center gap-3 mb-4 pb-4 px-1" style={{ borderBottom: '1px solid var(--c-border)' }}>
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center text-white font-bold text-lg shadow-md">
-                {currentUser.photo ? (
-                  <img src={currentUser.photo} alt={currentUser.name || 'User'} className="w-full h-full rounded-xl object-cover" />
-                ) : (
-                  currentUser?.name?.charAt(0)?.toUpperCase() || 'U'
-                )}
-              </div>
-              <div>
-                <p className="font-semibold" style={{ color: 'var(--c-text)' }}>{currentUser.name || 'User'}</p>
-                <p className="text-xs flex items-center gap-1.5" style={{ color: 'var(--c-text-muted)' }}>
-                  <span className={`w-2 h-2 rounded-full ${currentUser.type === 'landlord' ? 'bg-teal-500' : 'bg-violet-500'}`}></span>
-                  {currentUser.type === 'landlord' ? 'Property Owner' : 'Looking for a Room'}
-                </p>
-              </div>
-            </div>
-            <div className="space-y-1 px-1">
-              <button 
-                onClick={() => { setCurrentView('profile'); setShowMobileMenu(false); }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition font-medium hover:bg-teal-50"
-                style={{ color: 'var(--c-text-secondary)' }}
-              >
-                <User className="w-5 h-5" />
-                <span>My Profile</span>
-              </button>
-              {currentUser.type === 'landlord' && (
-                <button
-                  onClick={() => { setPreviewAsRenter(!previewAsRenter); setShowMobileMenu(false); }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition text-sm font-medium ${
-                    previewAsRenter 
-                      ? 'bg-amber-50 text-amber-700 hover:bg-amber-100' 
-                      : ''
-                  }`}
-                  style={!previewAsRenter ? { color: 'var(--c-text-secondary)' } : {}}
-                  aria-pressed={previewAsRenter ? 'true' : 'false'}
-                >
-                  <span className="text-lg">{previewAsRenter ? '✕' : '👁'}</span>
-                  <span>{previewAsRenter ? 'Exit Renter Preview' : 'Preview as Renter'}</span>
-                </button>
-              )}
-              <button
-                onClick={() => { handleSignOut(); setShowMobileMenu(false); }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition text-sm font-medium hover:bg-rose-50 hover:text-rose-600"
-                style={{ color: 'var(--c-text-muted)' }}
-              >
-                <X className="w-5 h-5" />
-                <span>Sign Out</span>
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-      {previewAsRenter && currentUser?.type === 'landlord' && (
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200 text-amber-700 text-xs py-1.5 text-center font-medium" role="status" aria-live="polite">
-          <span className="inline-flex items-center gap-1.5">
-            <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></span>
-            Preview Mode: Viewing as a renter. Toggle off to manage your listings.
-          </span>
+          </nav>
         </div>
       )}
     </header>
