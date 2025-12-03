@@ -36,6 +36,7 @@ export default function BrowseView({
   const [genderPreference, setGenderPreference] = useState(''); // '', 'male', 'female', 'any'
   const [recentSearches, setRecentSearches] = useState([]);
   const [showWelcomeHero, setShowWelcomeHero] = useState(true);
+  const [searchFocused, setSearchFocused] = useState(false);
   const suggestionCacheRef = React.useRef({}); // cache: { queryLower: { data: [...], ts } }
   const SUGGESTION_TTL_MS = 15 * 60 * 1000; // 15 minutes
 
@@ -642,7 +643,12 @@ export default function BrowseView({
                 placeholder="Search by location, suburb, or area..."
                 value={searchLocation}
                 onChange={(e) => setSearchLocation(e.target.value)}
-                onBlur={() => { if (searchLocation) addRecentSearch(searchLocation); }}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => { 
+                  // Delay hiding to allow click on dropdown items
+                  setTimeout(() => setSearchFocused(false), 200);
+                  if (searchLocation) addRecentSearch(searchLocation); 
+                }}
                 className="w-full pl-16 pr-12 py-4 border-2 border-gray-200 rounded-2xl text-gray-800 text-lg focus:ring-2 focus:ring-[#E63946] focus:border-[#E63946] shadow-sm transition-all duration-200 hover:border-red-300 placeholder-gray-400"
                 aria-label="Location search"
               />
@@ -682,8 +688,8 @@ export default function BrowseView({
                 </div>
               )}
               {/* Recent searches dropdown - show when input focused and no suggestions */}
-              {!searchLocation && recentSearches.length > 0 && locationSuggestions.length === 0 && (
-                <div className="absolute left-0 right-0 top-full mt-2 bg-white border-2 border-gray-200 rounded-2xl shadow-xl z-20 overflow-hidden">
+              {searchFocused && recentSearches.length > 0 && locationSuggestions.length === 0 && (
+                <div className="absolute left-0 right-0 top-full mt-2 bg-white border-2 border-gray-200 rounded-2xl shadow-xl z-20 overflow-hidden animate-fadeIn">
                   <div className="text-xs text-gray-600 px-4 py-2.5 bg-gray-50 border-b border-gray-100 font-semibold flex items-center gap-2">
                     <Clock className="w-3.5 h-3.5" /> Recent Searches
                   </div>
@@ -691,11 +697,12 @@ export default function BrowseView({
                     <button
                       key={`recent-${i}`}
                       type="button"
-                      onClick={() => { setSearchLocation(s); }}
-                      className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-50 flex items-center gap-3 transition-colors ${i > 0 ? 'border-t border-gray-100' : ''}`}
+                      onMouseDown={(e) => e.preventDefault()} 
+                      onClick={() => { setSearchLocation(s); setSearchFocused(false); }}
+                      className={`w-full text-left px-4 py-3 text-sm hover:bg-red-50 flex items-center gap-3 transition-colors ${i > 0 ? 'border-t border-gray-100' : ''}`}
                     >
-                      <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
-                        <Clock className="w-4 h-4 text-gray-500" />
+                      <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
+                        <Clock className="w-4 h-4 text-[#E63946]" />
                       </div>
                       <span className="text-gray-700">{s}</span>
                     </button>
