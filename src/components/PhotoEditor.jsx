@@ -218,48 +218,55 @@ export default function PhotoEditor({ photos, onPhotosChange, onClose, maxPhotos
 
           {/* Crop Modal */}
           {editingIndex !== null && (
-            <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-              <div className="bg-white rounded-lg max-w-2xl w-full p-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-bold">Crop Photo</h3>
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+              <div className="bg-white rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl">
+                <div className="bg-gradient-to-r from-violet-600 to-purple-600 px-5 py-4 flex justify-between items-center">
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <Crop className="w-5 h-5" />
+                    Crop Photo
+                  </h3>
                   <button
                     onClick={() => {
                       setEditingIndex(null);
                       setCropData(null);
                     }}
-                    className="text-gray-500 hover:text-gray-700"
+                    className="text-white/80 hover:text-white hover:bg-white/20 p-1.5 rounded-lg transition-all"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
                 
-                <div className="relative">
-                  <img
-                    src={photos[editingIndex]}
-                    alt="Crop preview"
-                    className="w-full max-h-96 object-contain"
-                  />
-                  <div className="mt-4 text-sm text-gray-600 text-center">
-                    <p>Drag to adjust crop area (simplified preview)</p>
+                <div className="p-5">
+                  <div className="relative bg-gray-100 rounded-xl overflow-hidden">
+                    <img
+                      src={photos[editingIndex]}
+                      alt="Crop preview"
+                      className="w-full max-h-80 object-contain"
+                    />
+                  </div>
+                  <div className="mt-4 text-center">
+                    <p className="text-sm text-gray-500 bg-gray-50 rounded-lg px-4 py-2 inline-block">
+                      ✨ Drag to adjust crop area
+                    </p>
                   </div>
                 </div>
 
-                <div className="flex gap-2 mt-4">
-                  <button
-                    onClick={applyCrop}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-                  >
-                    <Check className="w-4 h-4" />
-                    Apply Crop
-                  </button>
+                <div className="flex gap-3 p-5 pt-0">
                   <button
                     onClick={() => {
                       setEditingIndex(null);
                       setCropData(null);
                     }}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+                    className="flex-1 px-4 py-3 border-2 border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 font-semibold transition-all"
                   >
                     Cancel
+                  </button>
+                  <button
+                    onClick={applyCrop}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all"
+                  >
+                    <Check className="w-4 h-4" />
+                    Apply Crop
                   </button>
                 </div>
               </div>

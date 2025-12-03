@@ -96,6 +96,24 @@ textarea:focus-visible {
   }
 }
 
+@keyframes shrink {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
 @keyframes scaleIn {
   from {
     opacity: 0;
@@ -170,6 +188,14 @@ textarea:focus-visible {
 
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+.animate-shrink {
+  animation: shrink linear forwards;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
 }
 
 /* ===== Toast Animations ===== */

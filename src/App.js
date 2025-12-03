@@ -41,10 +41,13 @@ const PhotoEditor = React.lazy(() => import('./components/PhotoEditor'));
 const TURNSTILE_SITE_KEY = process.env.REACT_APP_TURNSTILE_SITE_KEY || '';
 
 const ModalLoader = ({ label }) => (
-  <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/15 backdrop-blur-[2px]">
-    <div className="bg-white border border-slate-100 rounded-2xl px-5 py-3 shadow-xl flex items-center gap-3 text-sm font-semibold text-slate-600">
-      <div className="w-5 h-5 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" aria-label="Loading" />
-      <span>{label}</span>
+  <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/20 backdrop-blur-sm">
+    <div className="bg-white border border-slate-100 rounded-2xl px-6 py-4 shadow-2xl flex flex-col items-center gap-3">
+      <div className="relative">
+        <div className="w-10 h-10 rounded-full border-3 border-teal-100" />
+        <div className="absolute inset-0 w-10 h-10 rounded-full border-3 border-transparent border-t-teal-500 animate-spin" />
+      </div>
+      <span className="text-sm font-semibold text-slate-600">{label}</span>
     </div>
   </div>
 );

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
+import { Shield } from 'lucide-react';
 
 const SCRIPT_ID = 'cf-turnstile-script';
 const SCRIPT_SRC = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
@@ -151,7 +152,15 @@ export default function TurnstileWidget({
 
   return (
     <div className={className}>
-      <div ref={containerRef} className="flex justify-center min-h-[65px]" />
+      <div ref={containerRef} className="flex justify-center min-h-[65px] items-center">
+        {/* Loading placeholder shown until Turnstile loads */}
+        <noscript>
+          <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
+            <Shield className="w-5 h-5 text-gray-400" />
+            <span className="text-sm text-gray-500">Security verification loading...</span>
+          </div>
+        </noscript>
+      </div>
     </div>
   );
 }

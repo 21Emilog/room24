@@ -36,16 +36,20 @@ export default function AdBanner({
   if (process.env.NODE_ENV !== 'production' || !adClient) {
     return (
       <div 
-        className={`bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center overflow-hidden ${className}`}
-        style={{ minHeight: '100px', ...style }}
+        className={`bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 border border-gray-200/60 rounded-2xl flex items-center justify-center overflow-hidden shadow-sm ${className}`}
+        style={{ minHeight: '90px', ...style }}
       >
         <div className="text-center p-4 relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
-          <div className="w-10 h-10 mx-auto mb-2 bg-gray-200 rounded-lg flex items-center justify-center">
-            <span className="text-lg">📢</span>
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
+          <div className="flex items-center justify-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center shadow-inner">
+              <span className="text-lg animate-float">📢</span>
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-semibold text-gray-500">Advertisement</p>
+              <p className="text-xs text-gray-400">Sponsor content appears here</p>
+            </div>
           </div>
-          <p className="text-sm font-semibold text-gray-500 mb-0.5">Ad Space</p>
-          <p className="text-xs text-gray-400">Live in production</p>
         </div>
       </div>
     );
