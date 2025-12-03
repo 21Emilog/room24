@@ -1,9 +1,11 @@
 /* ===== Base Styles & CSS Variables ===== */
 :root {
-  --c-bg: #f8fafc;
+  --c-bg: #fef7f7;
   --c-primary: #E63946;
+  --c-primary-dark: #c5303c;
   --c-primary-light: #ff6b6b;
   --c-secondary: #1D3557;
+  --c-secondary-light: #2d4a6f;
   --c-accent: #F1FAEE;
   --c-text: #1e293b;
   --c-text-muted: #64748b;
@@ -11,10 +13,21 @@
   --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
   --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
   --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+  --shadow-red: 0 4px 14px -3px rgba(230, 57, 70, 0.4);
+  --shadow-red-lg: 0 10px 25px -5px rgba(230, 57, 70, 0.35);
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
   --radius-xl: 1.5rem;
+  --gradient-primary: linear-gradient(135deg, #E63946 0%, #c5303c 100%);
+  --gradient-secondary: linear-gradient(135deg, #1D3557 0%, #2d4a6f 100%);
+  --gradient-warm: linear-gradient(135deg, #E63946 0%, #ff6b6b 50%, #ffa07a 100%);
+}
+
+/* ===== Body Background ===== */
+body {
+  background: linear-gradient(180deg, #fef7f7 0%, #fff5f5 50%, #fefefe 100%);
+  min-height: 100vh;
 }
 
 /* ===== Smooth Scrolling ===== */

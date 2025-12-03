@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, PlusCircle, Home, User, MapPin, Clock, Sparkles, ArrowRight, Building2, Shield, Zap, Bell } from 'lucide-react';
+import { Search, PlusCircle, Home, User, MapPin, Clock, Sparkles, ArrowRight, Building2, Shield, Zap, Bell, ChevronDown } from 'lucide-react';
 import ListingCard from './ListingCard';
 import ListingSkeletonCard from './ListingSkeletonCard';
 import { SidebarAd, InFeedAd } from './AdBanner';
@@ -630,13 +630,29 @@ export default function BrowseView({
         </div>
       )}
 
-      <div className="bg-white border-b border-gray-200 shadow-sm">
+      <div className="bg-gradient-to-b from-[#fff5f5] to-white border-b border-red-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="mb-4 space-y-4">
+          {/* Marketplace Pulse Header */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#E63946] to-[#c5303c] rounded-xl flex items-center justify-center shadow-lg shadow-red-500/30">
+                <Home className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-[#1D3557]">MARKETPLACE PULSE</h2>
+                <p className="text-xs text-gray-500">See how RentMzansi is performing</p>
+              </div>
+            </div>
+            <button className="text-sm text-[#E63946] hover:text-[#c5303c] font-semibold flex items-center gap-1">
+              <ChevronDown className="w-4 h-4" />
+            </button>
+          </div>
+          
+          <div className="mb-6 space-y-4">
             {/* Search Input */}
             <div className="relative">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-gradient-to-br from-[#E63946] to-[#c5303c] rounded-xl flex items-center justify-center shadow-md">
-                <MapPin className="w-5 h-5 text-white" />
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-gradient-to-br from-[#E63946] to-[#c5303c] rounded-2xl flex items-center justify-center shadow-lg shadow-red-500/30">
+                <MapPin className="w-6 h-6 text-white" />
               </div>
               <input
                 type="text"
@@ -649,7 +665,7 @@ export default function BrowseView({
                   setTimeout(() => setSearchFocused(false), 200);
                   if (searchLocation) addRecentSearch(searchLocation); 
                 }}
-                className="w-full pl-16 pr-12 py-4 border-2 border-gray-200 rounded-2xl text-gray-800 text-lg focus:ring-2 focus:ring-[#E63946] focus:border-[#E63946] shadow-sm transition-all duration-200 hover:border-red-300 placeholder-gray-400"
+                className="w-full pl-20 pr-12 py-5 border-2 border-red-200 rounded-2xl text-gray-800 text-lg focus:ring-4 focus:ring-red-100 focus:border-[#E63946] shadow-md transition-all duration-200 hover:border-[#E63946] placeholder-gray-400 bg-white"
                 aria-label="Location search"
               />
               {locationLoading && (

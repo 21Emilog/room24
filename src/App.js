@@ -4499,16 +4499,10 @@ function BottomNav({ currentView, setCurrentView, currentUser, userType }) {
 
   const visibleItems = navItems.filter(item => item && (item.show === undefined || item.show));
 
-  const colorClasses = {
-    red: 'text-[#E63946] bg-gradient-to-t from-red-100 to-red-50',
-    navy: 'text-[#1D3557] bg-gradient-to-t from-blue-100 to-blue-50',
-    rose: 'text-rose-600 bg-gradient-to-t from-rose-100 to-rose-50'
-  };
-
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white/98 backdrop-blur-xl border-t border-gray-200/60 px-2 py-1.5 z-20 md:hidden safe-area-bottom shadow-[0_-4px_20px_rgba(15,23,42,0.08)]" role="navigation" aria-label="Main navigation">
+    <nav className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#1D3557] to-[#2d4a6f] backdrop-blur-xl px-2 py-2 z-20 md:hidden safe-area-bottom shadow-[0_-4px_20px_rgba(15,23,42,0.2)]" role="navigation" aria-label="Main navigation">
       <div
-        className="grid gap-0.5 max-w-md mx-auto"
+        className="grid gap-1 max-w-md mx-auto"
         style={{ gridTemplateColumns: `repeat(${visibleItems.length}, minmax(0, 1fr))` }}
       >
         {visibleItems.map(item => {
@@ -4516,24 +4510,29 @@ function BottomNav({ currentView, setCurrentView, currentUser, userType }) {
           const disabled = item.requiresAuth && !currentUser;
           const isActive = currentView === item.id;
           
-          // Special highlight style for "List" button
+          // Special highlight style for "List" button - floating action button style
           if (item.highlight && !disabled) {
             return (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => setCurrentView(item.id)}
-                className={`flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-xl transition-all duration-200 active:scale-95 ${
+                className={`relative flex flex-col items-center gap-0.5 py-1 px-1 rounded-xl transition-all duration-200 active:scale-95 ${
                   isActive
-                    ? 'text-white bg-gradient-to-br from-[#E63946] to-[#c5303c] shadow-lg shadow-red-500/30'
-                    : 'text-[#E63946] hover:bg-red-50'
+                    ? 'text-white'
+                    : 'text-white/80 hover:text-white'
                 }`}
                 aria-current={isActive ? 'page' : undefined}
               >
-                <span className={`p-1 rounded-lg transition-all duration-200 ${isActive ? 'bg-white/20' : ''}`}>
-                  <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
+                <span className={`p-2.5 rounded-2xl transition-all duration-200 shadow-lg ${
+                  isActive 
+                    ? 'bg-[#E63946] shadow-red-500/50 -translate-y-2 scale-110' 
+                    : 'bg-[#E63946]/90 hover:bg-[#E63946] hover:-translate-y-1'
+                }`}>
+                  <Icon className="w-5 h-5 text-white" strokeWidth={2.5} />
                 </span>
-                <span className="text-[10px] font-semibold">{item.label}</span>
+                <span className="text-[10px] font-bold">{item.label}</span>
+                {isActive && <span className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-[#E63946]" />}
               </button>
             );
           }
@@ -4548,8 +4547,8 @@ function BottomNav({ currentView, setCurrentView, currentUser, userType }) {
                 disabled ? 'opacity-35 cursor-not-allowed' : 'active:scale-95'
               } ${
                 isActive
-                  ? `${colorClasses[item.activeColor]} font-semibold shadow-sm`
-                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50/80'
+                  ? 'text-white font-semibold'
+                  : 'text-white/50 hover:text-white/80'
               }`}
               aria-current={isActive ? 'page' : undefined}
               aria-disabled={disabled}
@@ -4558,7 +4557,7 @@ function BottomNav({ currentView, setCurrentView, currentUser, userType }) {
                 <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 1.75} />
               </span>
               <span className={`text-[10px] transition-all ${isActive ? 'font-semibold' : 'font-medium'}`}>{item.label}</span>
-              {isActive && <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-current opacity-60" />}
+              {isActive && <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#E63946]" />}
             </button>
           );
         })}
