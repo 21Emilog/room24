@@ -3861,9 +3861,9 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
 
 function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-fuchsia-50 pb-24">
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-cyan-50 to-teal-50 pb-24">
       {/* Header */}
-      <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 text-white">
+      <div className="bg-gradient-to-r from-teal-600 via-cyan-600 to-teal-700 text-white">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-4">
@@ -3882,7 +3882,7 @@ function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus }
             {listings.length > 0 && (
               <button
                 onClick={() => (onCreate ? onCreate() : (window.location.hash = '#add'))}
-                className="inline-flex items-center gap-2 bg-white text-violet-700 hover:bg-violet-50 font-bold px-5 py-3 rounded-xl transition-all shadow-lg hover:shadow-xl active:scale-95"
+                className="inline-flex items-center gap-2 bg-white text-teal-700 hover:bg-teal-50 font-bold px-5 py-3 rounded-xl transition-all shadow-lg hover:shadow-xl active:scale-95"
               >
                 <PlusCircle className="w-5 h-5" />
                 Add New Room
@@ -3897,7 +3897,7 @@ function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus }
         {listings.length > 0 && (
           <div className="grid grid-cols-3 gap-3 mb-6">
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-              <p className="text-2xl font-bold text-violet-600">{listings.filter(l => l.status === 'available').length}</p>
+              <p className="text-2xl font-bold text-teal-600">{listings.filter(l => l.status === 'available').length}</p>
               <p className="text-xs text-gray-500">Available</p>
             </div>
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
@@ -3913,9 +3913,9 @@ function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus }
 
         {/* Landlord tip banner */}
         {listings.length > 0 && (
-          <div className="mb-6 bg-white border border-violet-200 rounded-2xl p-4 shadow-sm">
+          <div className="mb-6 bg-white border border-teal-200 rounded-2xl p-4 shadow-sm">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-xl flex items-center justify-center flex-shrink-0">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -3930,8 +3930,8 @@ function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus }
 
         {listings.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-12 text-center">
-            <div className="w-24 h-24 bg-gradient-to-br from-violet-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Home className="w-12 h-12 text-violet-400" />
+            <div className="w-24 h-24 bg-gradient-to-br from-teal-100 to-cyan-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Home className="w-12 h-12 text-teal-400" />
             </div>
             <h3 className="text-2xl font-bold text-gray-800 mb-2">No Rooms Yet</h3>
             <p className="text-gray-500 mb-6 max-w-md mx-auto">
@@ -3939,7 +3939,7 @@ function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus }
             </p>
             <button
               onClick={() => (onCreate ? onCreate() : (window.location.hash = '#add'))}
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 hover:from-violet-700 hover:via-purple-700 hover:to-fuchsia-700 text-white font-bold px-8 py-4 rounded-xl transition-all shadow-lg hover:shadow-xl active:scale-95"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-teal-600 via-cyan-600 to-teal-700 hover:from-teal-700 hover:via-cyan-700 hover:to-teal-800 text-white font-bold px-8 py-4 rounded-xl transition-all shadow-lg hover:shadow-xl active:scale-95"
             >
               <PlusCircle className="w-5 h-5" />
               Post Your First Room
@@ -3949,7 +3949,7 @@ function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus }
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {listings.map(listing => (
               <div key={listing.id} className={`bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-lg transition-all duration-300 group ${
-                listing.status === 'rented' ? 'border-gray-200' : 'border-gray-100 hover:border-violet-200'
+                listing.status === 'rented' ? 'border-gray-200' : 'border-gray-100 hover:border-teal-200'
               }`}>
                 {listing.photos && listing.photos.length > 0 ? (
                   <div className="relative overflow-hidden">
@@ -3976,8 +3976,8 @@ function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus }
                     </button>
                   </div>
                 ) : (
-                  <div className="relative h-48 bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center">
-                    <Home className="w-16 h-16 text-violet-300" />
+                  <div className="relative h-48 bg-gradient-to-br from-teal-100 to-cyan-100 flex items-center justify-center">
+                    <Home className="w-16 h-16 text-teal-300" />
                     <button
                       onClick={() => onToggleStatus?.(listing.id)}
                       className={`absolute top-3 left-3 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer hover:scale-105 shadow-lg ${
@@ -3992,16 +3992,16 @@ function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus }
                   </div>
                 )}
                 <div className="p-5">
-                  <h3 className="font-bold text-lg text-gray-900 mb-1 line-clamp-1">{listing.title}</h3>
-                  <div className="text-violet-600 font-bold text-xl mb-2">R{listing.price?.toLocaleString()}<span className="text-sm font-normal text-gray-500">/month</span></div>
-                  <div className="flex items-center text-gray-500 text-sm mb-4">
-                    <MapPin className="w-4 h-4 mr-1.5 text-violet-400" />
-                    <span className="line-clamp-1">{listing.location}</span>
+                  <h3 className="font-bold text-lg text-gray-800 mb-1 line-clamp-1 uppercase tracking-wide">{listing.title}</h3>
+                  <div className="text-teal-600 font-bold text-xl mb-2">R{listing.price?.toLocaleString()}<span className="text-sm font-normal text-gray-500">/month</span></div>
+                  <div className="flex items-center text-sm mb-4">
+                    <MapPin className="w-4 h-4 mr-1.5 text-teal-500" />
+                    <span className="line-clamp-1 uppercase tracking-wide font-semibold text-teal-700">{listing.location}</span>
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => onEdit?.(listing)}
-                      className="flex-1 flex items-center justify-center gap-1.5 bg-violet-50 hover:bg-violet-100 text-violet-700 font-semibold py-2.5 rounded-xl transition-colors text-sm"
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-teal-50 hover:bg-teal-100 text-teal-700 font-semibold py-2.5 rounded-xl transition-colors text-sm"
                     >
                       <Edit className="w-4 h-4" />
                       Edit
