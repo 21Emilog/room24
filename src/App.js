@@ -2788,9 +2788,9 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-fuchsia-50 pb-24">
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-cyan-50 to-teal-50 pb-24">
       {/* Header */}
-      <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 text-white">
+      <div className="bg-gradient-to-r from-teal-600 via-cyan-600 to-teal-700 text-white">
         <div className="max-w-3xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
