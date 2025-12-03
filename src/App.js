@@ -1470,6 +1470,7 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
   const [linkingInProgress, setLinkingInProgress] = React.useState(null);
   const [linkError, setLinkError] = React.useState('');
   const [linkSuccess, setLinkSuccess] = React.useState('');
+  const [showSignOutConfirm, setShowSignOutConfirm] = React.useState(false);
 
   const togglePref = (key) => {
     const next = { ...localPrefs, [key]: !localPrefs[key] };
@@ -1497,46 +1498,85 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
     onLinkPhone();
   };
 
+  const handleSignOut = () => {
+    setShowSignOutConfirm(false);
+    onSignOut?.();
+  };
+
   const hasGoogle = linkedProviders?.includes('google.com');
   const hasPhone = linkedProviders?.includes('phone');
   const hasPassword = linkedProviders?.includes('password');
 
+  // Calculate account completion percentage
+  const completionItems = [
+    !!user.name,
+    !!user.email,
+    !!user.phone,
+    !!user.photo,
+    hasGoogle || hasPhone || hasPassword
+  ];
+  const completionPercent = Math.round((completionItems.filter(Boolean).length / completionItems.length) * 100);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-gray-100 pb-24">
-      {/* Profile Header with Gradient */}
-      <div className="bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-500 pt-8 pb-20 px-4">
-        <div className="max-w-xl mx-auto flex justify-between items-start">
-          <h2 className="text-2xl font-bold text-white">My Profile</h2>
+      {/* Profile Header with Wave */}
+      <div className="relative bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-500 pt-8 pb-24 px-4 overflow-hidden">
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+        
+        <div className="max-w-xl mx-auto flex justify-between items-start relative z-10">
+          <div>
+            <p className="text-teal-100 text-sm font-medium mb-1">Welcome back</p>
+            <h2 className="text-2xl font-bold text-white">My Profile</h2>
+          </div>
           <button
             onClick={onEdit}
-            className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2 rounded-xl transition-all duration-200 flex items-center gap-2 border border-white/30"
+            className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2 border border-white/30 hover:scale-105 active:scale-95 shadow-lg"
           >
             <Edit className="w-4 h-4" />
             Edit
           </button>
         </div>
+        
+        {/* Wave SVG */}
+        <svg className="absolute bottom-0 left-0 right-0 text-slate-50" viewBox="0 0 1440 120" preserveAspectRatio="none">
+          <path fill="currentColor" d="M0,64L60,69.3C120,75,240,85,360,80C480,75,600,53,720,48C840,43,960,53,1080,58.7C1200,64,1320,64,1380,64L1440,64L1440,120L1380,120C1320,120,1200,120,1080,120C960,120,840,120,720,120C600,120,480,120,360,120C240,120,120,120,60,120L0,120Z"></path>
+        </svg>
       </div>
 
       {/* Profile Card - Overlapping Header */}
-      <div className="px-4 -mt-16">
+      <div className="px-4 -mt-20">
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 max-w-xl mx-auto">
           {/* Avatar & Name */}
           <div className="flex flex-col items-center -mt-16 mb-6">
-            {user.photo ? (
-              <img 
-                src={user.photo} 
-                alt="Profile" 
-                className="w-28 h-28 rounded-2xl object-cover border-4 border-white shadow-lg mb-4" 
-              />
-            ) : (
-              <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center border-4 border-white shadow-lg mb-4">
-                <span className="text-4xl font-bold text-white">
-                  {user.name?.charAt(0)?.toUpperCase() || 'U'}
-                </span>
-              </div>
-            )}
+            <div className="relative group">
+              {user.photo ? (
+                <img 
+                  src={user.photo} 
+                  alt="Profile" 
+                  className="w-28 h-28 rounded-2xl object-cover border-4 border-white shadow-lg mb-4 group-hover:scale-105 transition-transform duration-300" 
+                />
+              ) : (
+                <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center border-4 border-white shadow-lg mb-4 group-hover:scale-105 transition-transform duration-300">
+                  <span className="text-4xl font-bold text-white">
+                    {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                  </span>
+                </div>
+              )}
+              {/* Verified badge for landlords */}
+              {user.type === 'landlord' && (
+                <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-gradient-to-br from-emerald-400 to-green-500 rounded-full flex items-center justify-center border-2 border-white shadow-md">
+                  <CheckCircle className="w-4 h-4 text-white" />
+                </div>
+              )}
+            </div>
             <h3 className="text-2xl font-bold text-gray-900">{user.name}</h3>
-            <span className="inline-flex items-center mt-2 px-4 py-1.5 bg-gradient-to-r from-teal-50 to-cyan-50 text-teal-700 rounded-full text-sm font-semibold border border-teal-100">
+            <span className={`inline-flex items-center mt-2 px-4 py-1.5 rounded-full text-sm font-semibold border transition-all hover:scale-105 ${
+              user.type === 'landlord' 
+                ? 'bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 border-amber-200'
+                : 'bg-gradient-to-r from-teal-50 to-cyan-50 text-teal-700 border-teal-100'
+            }`}>
               {user.type === 'landlord' ? (
                 <>
                   <Home className="w-4 h-4 mr-1.5" />
@@ -1550,6 +1590,23 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
               )}
             </span>
           </div>
+
+          {/* Profile Completion Bar */}
+          {completionPercent < 100 && (
+            <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-semibold text-gray-700">Profile Completion</span>
+                <span className="text-sm font-bold text-blue-600">{completionPercent}%</span>
+              </div>
+              <div className="w-full h-2 bg-blue-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500"
+                  style={{ width: `${completionPercent}%` }}
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-2">Complete your profile to build trust with {user.type === 'landlord' ? 'renters' : 'landlords'}</p>
+            </div>
+          )}
 
           {user.type !== 'landlord' && onBecomeLandlord && (
             <div className="mb-6 w-full">
@@ -1570,33 +1627,71 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
 
           {/* Contact Info Cards */}
           <div className="space-y-3 mb-6">
-            <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-4 border border-gray-100 hover:border-gray-200 transition-colors">
+            <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-4 border border-gray-100 hover:border-teal-200 hover:shadow-md transition-all duration-300 group cursor-default">
               <div className="flex items-center">
-                <div className="w-11 h-11 bg-gradient-to-br from-teal-100 to-cyan-100 rounded-xl flex items-center justify-center mr-4 shadow-sm">
+                <div className="w-11 h-11 bg-gradient-to-br from-teal-100 to-cyan-100 rounded-xl flex items-center justify-center mr-4 shadow-sm group-hover:scale-110 transition-transform duration-300">
                   <Phone className="w-5 h-5 text-teal-600" />
                 </div>
-                <div>
+                <div className="flex-1">
                   <p className="text-xs font-medium text-gray-500 mb-0.5">Phone Number</p>
-                  <p className="font-semibold text-gray-800">{user.phone}</p>
+                  <p className="font-semibold text-gray-800">{user.phone || 'Not set'}</p>
                 </div>
+                {user.phone && (
+                  <a 
+                    href={`tel:${user.phone}`}
+                    className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
+                    aria-label="Call this number"
+                  >
+                    <Phone className="w-4 h-4" />
+                  </a>
+                )}
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-4 border border-gray-100 hover:border-gray-200 transition-colors">
+            <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-4 border border-gray-100 hover:border-cyan-200 hover:shadow-md transition-all duration-300 group cursor-default">
               <div className="flex items-center">
-                <div className="w-11 h-11 bg-gradient-to-br from-cyan-100 to-blue-100 rounded-xl flex items-center justify-center mr-4 shadow-sm">
+                <div className="w-11 h-11 bg-gradient-to-br from-cyan-100 to-blue-100 rounded-xl flex items-center justify-center mr-4 shadow-sm group-hover:scale-110 transition-transform duration-300">
                   <Mail className="w-5 h-5 text-cyan-600" />
                 </div>
-                <div>
+                <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-gray-500 mb-0.5">Email Address</p>
-                  <p className="font-semibold text-gray-800">{user.email}</p>
+                  <p className="font-semibold text-gray-800 truncate">{user.email}</p>
                 </div>
+                <a 
+                  href={`mailto:${user.email}`}
+                  className="p-2 text-cyan-600 hover:bg-cyan-50 rounded-lg transition-colors flex-shrink-0"
+                  aria-label="Send email"
+                >
+                  <Mail className="w-4 h-4" />
+                </a>
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-4 border border-gray-100 hover:border-gray-200 transition-colors">
+            {user.whatsapp && (
+              <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-4 border border-gray-100 hover:border-green-200 hover:shadow-md transition-all duration-300 group cursor-default">
+                <div className="flex items-center">
+                  <div className="w-11 h-11 bg-gradient-to-br from-green-100 to-emerald-100 rounded-xl flex items-center justify-center mr-4 shadow-sm group-hover:scale-110 transition-transform duration-300">
+                    <span className="text-lg">💬</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-medium text-gray-500 mb-0.5">WhatsApp</p>
+                    <p className="font-semibold text-gray-800">{user.whatsapp}</p>
+                  </div>
+                  <a 
+                    href={`https://wa.me/${user.whatsapp.replace(/[^0-9]/g, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1"
+                  >
+                    Chat
+                  </a>
+                </div>
+              </div>
+            )}
+
+            <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-4 border border-gray-100 hover:border-violet-200 hover:shadow-md transition-all duration-300 group cursor-default">
               <div className="flex items-center">
-                <div className="w-11 h-11 bg-gradient-to-br from-violet-100 to-purple-100 rounded-xl flex items-center justify-center mr-4 shadow-sm">
+                <div className="w-11 h-11 bg-gradient-to-br from-violet-100 to-purple-100 rounded-xl flex items-center justify-center mr-4 shadow-sm group-hover:scale-110 transition-transform duration-300">
                   <Calendar className="w-5 h-5 text-violet-600" />
                 </div>
                 <div>
@@ -1747,13 +1842,42 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
 
           {/* Sign Out Button */}
           {onSignOut && (
-            <button
-              onClick={onSignOut}
-              className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
-            >
-              <LogOut className="w-5 h-5" />
-              Sign Out
-            </button>
+            <>
+              <button
+                onClick={() => setShowSignOutConfirm(true)}
+                className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3.5 bg-gray-100 hover:bg-red-50 text-gray-700 hover:text-red-600 font-semibold rounded-xl transition-all duration-200 group"
+              >
+                <LogOut className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
+                Sign Out
+              </button>
+              
+              {/* Sign Out Confirmation Modal */}
+              {showSignOutConfirm && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+                  <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl">
+                    <div className="w-16 h-16 bg-gradient-to-br from-red-100 to-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <LogOut className="w-8 h-8 text-red-500" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 text-center mb-2">Sign Out?</h3>
+                    <p className="text-gray-500 text-center text-sm mb-6">Are you sure you want to sign out of your Room24 account?</p>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setShowSignOutConfirm(false)}
+                        className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleSignOut}
+                        className="flex-1 px-4 py-3 bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white font-semibold rounded-xl transition-all shadow-md"
+                      >
+                        Sign Out
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -1888,6 +2012,7 @@ function EditProfileView({ user, onSubmit, onCancel }) {
   });
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
 
   const validateField = (name, value, extras = {}) => {
     const newErrors = { ...errors };
@@ -1930,158 +2055,193 @@ function EditProfileView({ user, onSubmit, onCancel }) {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setTouched({ name: true, phone: true, email: true });
     validateField('name', formData.name);
     validateField('phone', formData.phone);
     validateField('email', formData.email);
     if (Object.keys(errors).length === 0 && formData.name && formData.phone && formData.email) {
-      onSubmit(formData);
+      setIsSaving(true);
+      await onSubmit(formData);
+      setIsSaving(false);
     }
   };
 
   return (
-    <div className="p-4 min-h-screen bg-gradient-to-b from-slate-50 to-gray-100 pb-24">
-      <div className="max-w-2xl mx-auto mt-8">
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-extrabold text-gray-900">Edit Profile</h2>
-            <button onClick={onCancel} className="text-gray-400 hover:text-gray-600 transition">
-              <X className="w-6 h-6" />
-            </button>
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-gray-100 pb-24">
+      {/* Header */}
+      <div className="bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-600 pt-6 pb-20 px-4 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+        <div className="max-w-2xl mx-auto flex items-center justify-between relative z-10">
+          <div>
+            <p className="text-purple-200 text-sm font-medium mb-1">Update your info</p>
+            <h2 className="text-2xl font-bold text-white">Edit Profile</h2>
           </div>
+          <button 
+            onClick={onCancel} 
+            className="p-2 bg-white/20 hover:bg-white/30 rounded-xl text-white transition-all hover:scale-110 active:scale-95"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        
+        {/* Wave */}
+        <svg className="absolute bottom-0 left-0 right-0 text-slate-50" viewBox="0 0 1440 120" preserveAspectRatio="none">
+          <path fill="currentColor" d="M0,64L60,69.3C120,75,240,85,360,80C480,75,600,53,720,48C840,43,960,53,1080,58.7C1200,64,1320,64,1380,64L1440,64L1440,120L1380,120C1320,120,1200,120,1080,120C960,120,840,120,720,120C600,120,480,120,360,120C240,120,120,120,60,120L0,120Z"></path>
+        </svg>
+      </div>
 
-          <div className="space-y-6">
-            {/* Photo Upload */}
-            <div className="flex justify-center mb-8">
-              <div className="relative">
-                {formData.photo ? (
-                  <img src={formData.photo} alt="Profile" className="w-32 h-32 rounded-full object-cover border-4 border-blue-200 shadow-lg" />
-                ) : (
-                  <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center border-4 border-blue-200 shadow-lg">
-                    <User className="w-16 h-16 text-blue-600" />
-                  </div>
-                )}
-                <label className="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full cursor-pointer shadow-lg transition" aria-label="Upload new profile photo">
-                  <Edit className="w-5 h-5" />
+      <div className="px-4 -mt-16">
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+            <div className="space-y-6">
+              {/* Photo Upload */}
+              <div className="flex justify-center -mt-20 mb-4">
+                <div className="relative group">
+                  {formData.photo ? (
+                    <img 
+                      src={formData.photo} 
+                      alt="Profile" 
+                      className="w-32 h-32 rounded-2xl object-cover border-4 border-white shadow-xl group-hover:scale-105 transition-transform duration-300" 
+                    />
+                  ) : (
+                    <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-violet-100 to-purple-200 flex items-center justify-center border-4 border-white shadow-xl group-hover:scale-105 transition-transform duration-300">
+                      <User className="w-16 h-16 text-violet-500" />
+                    </div>
+                  )}
+                  <label className="absolute -bottom-2 -right-2 bg-gradient-to-br from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white p-3 rounded-xl cursor-pointer shadow-lg transition-all hover:scale-110 active:scale-95" aria-label="Upload new profile photo">
+                    <Edit className="w-5 h-5" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+              <p className="text-center text-sm text-gray-500 -mt-2 mb-4">Tap the edit icon to upload a new photo</p>
+
+              {/* Form Fields */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.name}
+                  onChange={(e) => { setFormData({ ...formData, name: e.target.value }); if (touched.name) validateField('name', e.target.value); }}
+                  onBlur={(e) => { setTouched({ ...touched, name: true }); validateField('name', e.target.value); }}
+                  aria-invalid={errors.name ? 'true' : 'false'}
+                  aria-describedby={errors.name ? 'edit-name-error' : undefined}
+                  className={`w-full px-4 py-3 border-2 ${errors.name ? 'border-red-400' : 'border-gray-200'} bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-violet-400 focus:border-transparent transition placeholder-gray-400`}
+                />
+                {errors.name && touched.name && <p id="edit-name-error" className="mt-1 text-xs text-red-600">{errors.name}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">Phone Number</label>
+                <div className="relative">
+                  <Phone className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
                   <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePhotoUpload}
-                    className="hidden"
+                    type="tel"
+                    required
+                    value={formData.phone}
+                    onChange={(e) => { setFormData({ ...formData, phone: e.target.value }); if (touched.phone) validateField('phone', e.target.value); }}
+                    onBlur={(e) => { setTouched({ ...touched, phone: true }); validateField('phone', e.target.value); }}
+                    aria-invalid={errors.phone ? 'true' : 'false'}
+                    aria-describedby={errors.phone ? 'edit-phone-error' : undefined}
+                    className={`w-full pl-11 pr-4 py-3 border-2 ${errors.phone ? 'border-red-400' : 'border-gray-200'} bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-violet-400 focus:border-transparent transition placeholder-gray-400`}
                   />
-                </label>
+                </div>
+                {errors.phone && touched.phone && <p id="edit-phone-error" className="mt-1 text-xs text-red-600">{errors.phone}</p>}
               </div>
-            </div>
 
-            {/* Form Fields */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">Full Name</label>
-              <input
-                type="text"
-                required
-                value={formData.name}
-                onChange={(e) => { setFormData({ ...formData, name: e.target.value }); if (touched.name) validateField('name', e.target.value); }}
-                onBlur={(e) => { setTouched({ ...touched, name: true }); validateField('name', e.target.value); }}
-                aria-invalid={errors.name ? 'true' : 'false'}
-                aria-describedby={errors.name ? 'edit-name-error' : undefined}
-                className={`w-full px-4 py-3 border-2 ${errors.name ? 'border-red-400' : 'border-gray-200'} bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition placeholder-gray-400`}
-              />
-              {errors.name && touched.name && <p id="edit-name-error" className="mt-1 text-xs text-red-600">{errors.name}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">Phone Number</label>
-              <div className="relative">
-                <Phone className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
-                <input
-                  type="tel"
-                  required
-                  value={formData.phone}
-                  onChange={(e) => { setFormData({ ...formData, phone: e.target.value }); if (touched.phone) validateField('phone', e.target.value); }}
-                  onBlur={(e) => { setTouched({ ...touched, phone: true }); validateField('phone', e.target.value); }}
-                  aria-invalid={errors.phone ? 'true' : 'false'}
-                  aria-describedby={errors.phone ? 'edit-phone-error' : undefined}
-                  className={`w-full pl-11 pr-4 py-3 border-2 ${errors.phone ? 'border-red-400' : 'border-gray-200'} bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition placeholder-gray-400`}
-                />
+              <div>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">Email Address</label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
+                  <input
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => { setFormData({ ...formData, email: e.target.value }); if (touched.email) validateField('email', e.target.value); }}
+                    onBlur={(e) => { setTouched({ ...touched, email: true }); validateField('email', e.target.value); }}
+                    aria-invalid={errors.email ? 'true' : 'false'}
+                    aria-describedby={errors.email ? 'edit-email-error' : undefined}
+                    className={`w-full pl-11 pr-4 py-3 border-2 ${errors.email ? 'border-red-400' : 'border-gray-200'} bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-violet-400 focus:border-transparent transition placeholder-gray-400`}
+                  />
+                </div>
+                {errors.email && touched.email && <p id="edit-email-error" className="mt-1 text-xs text-red-600">{errors.email}</p>}
               </div>
-              {errors.phone && touched.phone && <p id="edit-phone-error" className="mt-1 text-xs text-red-600">{errors.phone}</p>}
-            </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">Email Address</label>
-              <div className="relative">
-                <Mail className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
-                <input
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => { setFormData({ ...formData, email: e.target.value }); if (touched.email) validateField('email', e.target.value); }}
-                  onBlur={(e) => { setTouched({ ...touched, email: true }); validateField('email', e.target.value); }}
-                  aria-invalid={errors.email ? 'true' : 'false'}
-                  aria-describedby={errors.email ? 'edit-email-error' : undefined}
-                  className={`w-full pl-11 pr-4 py-3 border-2 ${errors.email ? 'border-red-400' : 'border-gray-200'} bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition placeholder-gray-400`}
-                />
+              <div>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">WhatsApp (optional)</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-3 text-lg">💬</span>
+                  <input
+                    type="tel"
+                    value={formData.whatsapp}
+                    onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
+                    placeholder="e.g., +27 71 234 5678"
+                    className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-violet-400 focus:border-transparent transition placeholder-gray-400"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Used to create a WhatsApp chat link on your listings.</p>
               </div>
-              {errors.email && touched.email && <p id="edit-email-error" className="mt-1 text-xs text-red-600">{errors.email}</p>}
-            </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">WhatsApp (optional)</label>
-              <div className="relative">
-                <Phone className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
-                <input
-                  type="tel"
-                  value={formData.whatsapp}
-                  onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
-                  placeholder="e.g., +27 71 234 5678"
-                  className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition placeholder-gray-400"
-                />
+              <div>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">Account Role</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {['renter', 'landlord'].map(role => (
+                    <button
+                      key={role}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, userType: role })}
+                      className={`flex flex-col items-center px-4 py-4 rounded-xl border-2 transition-all font-semibold text-sm ${
+                        formData.userType === role
+                          ? 'border-violet-500 bg-gradient-to-br from-violet-50 to-purple-50 text-violet-700 shadow-md scale-[1.02]'
+                          : 'border-gray-200 bg-white text-gray-600 hover:border-violet-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${
+                        formData.userType === role 
+                          ? 'bg-gradient-to-br from-violet-500 to-purple-600 text-white' 
+                          : 'bg-gray-100 text-gray-500'
+                      }`}>
+                        {role === 'landlord' ? <Home className="w-5 h-5" /> : <Search className="w-5 h-5" />}
+                      </div>
+                      <span>{role === 'landlord' ? 'Landlord' : 'Renter'}</span>
+                      <span className="text-xs font-normal text-gray-500 mt-0.5">
+                        {role === 'landlord' ? 'Post rooms' : 'Find rooms'}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
-              <p className="text-xs text-gray-500 mt-1">Used to create a WhatsApp chat link on your listings.</p>
-            </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">Account Role</label>
-              <div className="grid grid-cols-2 gap-3">
-                {['renter', 'landlord'].map(role => (
-                  <button
-                    key={role}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, userType: role })}
-                    className={`flex flex-col items-start px-4 py-3 rounded-xl border-2 transition font-semibold text-sm ${
-                      formData.userType === role
-                        ? 'border-teal-500 bg-teal-50 text-teal-700 shadow-sm'
-                        : 'border-gray-200 bg-white text-gray-600 hover:border-teal-200'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      {role === 'landlord' ? <Home className="w-4 h-4" /> : <User className="w-4 h-4" />}
-                      {role === 'landlord' ? 'Landlord' : 'Renter'}
-                    </span>
-                    <span className="text-xs font-normal text-gray-500 mt-1">
-                      {role === 'landlord' ? 'Post and manage rooms' : 'Search for rooms'}
-                    </span>
-                  </button>
-                ))}
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-6 border-t border-gray-200">
+                <button
+                  onClick={onCancel}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3.5 rounded-xl transition-all active:scale-95"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  disabled={isSaving}
+                  className="flex-1 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-semibold py-3.5 rounded-xl transition-all shadow-lg hover:shadow-xl active:scale-95 disabled:opacity-70 flex items-center justify-center gap-2"
+                >
+                  {isSaving ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Changes'
+                  )}
+                </button>
               </div>
-              <p className="text-xs text-gray-500 mt-2">Switch to landlord to unlock the My Rooms dashboard. Onboarding steps may still be required before posting.</p>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-3 pt-6 border-t border-gray-200">
-              <button
-                onClick={onCancel}
-                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 rounded-xl transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmit}
-                className="flex-1 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-semibold py-3 rounded-xl transition shadow-lg"
-              >
-                Save Changes
-              </button>
             </div>
           </div>
         </div>
