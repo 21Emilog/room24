@@ -174,7 +174,7 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
         {/* Title and time */}
         <div className="mb-3">
           <div className="flex items-start justify-between gap-2 mb-1.5">
-            <h3 className="font-bold text-base text-gray-900 group-hover:text-teal-600 transition-colors line-clamp-1 flex-1">
+            <h3 className="font-bold text-base text-gray-800 group-hover:text-teal-600 transition-colors line-clamp-1 flex-1 uppercase tracking-wide">
               {listing.title}
             </h3>
             {listing.createdAt && (
@@ -187,7 +187,7 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
           
           {/* Price and rating */}
           <div className="flex items-center gap-3">
-            <p className="text-rose-600 font-extrabold text-xl tracking-tight">
+            <p className="text-teal-600 font-extrabold text-xl tracking-tight">
               R{formattedPrice}
               <span className="text-sm font-medium text-gray-400 ml-0.5">/mo</span>
             </p>
@@ -220,9 +220,9 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
         </div>
         
         {/* Location */}
-        <div className="flex items-center text-gray-500 text-sm mb-3">
+        <div className="flex items-center text-sm mb-3">
           <MapPin className="w-4 h-4 mr-1.5 text-teal-500 flex-shrink-0" aria-hidden="true" />
-          <span className="truncate font-medium">
+          <span className="truncate font-semibold text-teal-700 uppercase tracking-wide">
             {addressLine || listing.location || 'Location TBA'}
           </span>
         </div>
