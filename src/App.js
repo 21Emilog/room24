@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, Suspense } from 'react';
-import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone, Sparkles, TrendingUp, ShieldCheck, ChevronDown } from 'lucide-react';
+import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone, Sparkles, TrendingUp, ShieldCheck, ChevronDown, ArrowLeft, RefreshCw, AlertCircle } from 'lucide-react';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import BrowseView from './components/BrowseView';
@@ -2788,21 +2788,34 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
   };
 
   return (
-    <div className="p-4 bg-gradient-to-b from-slate-50 to-gray-100 min-h-screen pb-24">
-      <div className="max-w-3xl mx-auto mt-8">
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-3xl font-extrabold text-gray-900">Post a Room</h2>
-            <button onClick={onCancel} className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100">
-              <X className="w-6 h-6" />
-            </button>
+    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-fuchsia-50 pb-24">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 text-white">
+        <div className="max-w-3xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button onClick={onCancel} className="w-10 h-10 rounded-xl bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all active:scale-95">
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div>
+                <h2 className="text-2xl font-bold">Post a Room</h2>
+                <p className="text-white/80 text-sm">List your space in minutes</p>
+              </div>
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
+              <Home className="w-6 h-6" />
+            </div>
           </div>
+        </div>
+      </div>
 
+      <div className="max-w-3xl mx-auto px-4 -mt-4">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 md:p-8">
           {/* Progress Indicator */}
           <div className="mb-8">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-gray-600">Form Progress</span>
-              <span className="text-sm font-semibold text-teal-600">
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-sm font-semibold text-gray-700">Form Progress</span>
+              <span className="text-sm font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
                 {(() => {
                   let completed = 0;
                   const total = 5;
@@ -2815,10 +2828,11 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                 })()}
               </span>
             </div>
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-3 bg-gray-100 rounded-full overflow-hidden shadow-inner">
               <div 
-                className="h-full bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full transition-all duration-500"
+                className="h-full bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 rounded-full transition-all duration-500 relative overflow-hidden"
                 style={{
+                  boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.3)',
                   width: `${(() => {
                     let completed = 0;
                     if (formData.title && formData.title.trim().length >= 5) completed++;
@@ -2835,29 +2849,40 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
 
           <div className="space-y-6">
             {currentUser?.type === 'landlord' && (
-              <div className="bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-200 text-teal-800 text-sm rounded-xl p-4 flex items-start gap-3">
-                <CheckCircle className="w-5 h-5 text-teal-600 mt-0.5" />
+              <div className="bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-200 text-violet-800 text-sm rounded-xl p-4 flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                  <Sparkles className="w-4 h-4 text-white" />
+                </div>
                 <div className="space-y-2">
-                  <p>
-                    We remember your latest listing details (address, price, and more) so you only need to upload fresh photos next time.
-                    Update any field below and we'll save it automatically.
+                  <p className="font-medium">
+                    Smart Fill Active! We remember your latest listing details so you only need to upload fresh photos next time.
                   </p>
                   <button
                     type="button"
                     onClick={handleResetSavedTemplate}
-                    className="text-xs font-semibold text-teal-700 underline hover:text-teal-900 transition-colors"
+                    className="text-xs font-semibold text-violet-700 hover:text-violet-900 transition-colors flex items-center gap-1"
                   >
-                    Reset saved info
+                    <RefreshCw className="w-3 h-3" /> Reset saved info
                   </button>
                 </div>
               </div>
             )}
+            {/* Section: Basic Info */}
+            <div className="border-b border-gray-100 pb-2 mb-4">
+              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                  <Edit className="w-4 h-4 text-white" />
+                </div>
+                Basic Information
+              </h3>
+            </div>
+
             {/* Title */}
             <div>
               <label className="block text-sm font-semibold text-gray-800 mb-2">
                 Room Title *
                 {formData.title && formData.title.trim().length >= 5 && !errors.title && (
-                  <span className="ml-2 text-green-600 text-xs">✓ Looks good</span>
+                  <span className="ml-2 text-emerald-600 text-xs font-medium">✓ Looks good</span>
                 )}
               </label>
               <div className="relative">
@@ -2871,19 +2896,19 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                   }}
                   onBlur={(e) => validateField('title', e.target.value)}
                   placeholder="e.g., Cozy backroom with private bathroom"
-                  className={`w-full px-4 py-3 pr-10 border-2 ${
+                  className={`w-full px-4 py-3.5 pr-10 border-2 ${
                     errors.title ? 'border-red-400 bg-red-50' : 
-                    formData.title && formData.title.trim().length >= 5 ? 'border-teal-400 bg-teal-50/30' : 
-                    'border-gray-200'
+                    formData.title && formData.title.trim().length >= 5 ? 'border-violet-400 bg-violet-50/30' : 
+                    'border-gray-200 hover:border-gray-300'
                   } text-gray-800 rounded-xl focus:ring-2 ${
-                    errors.title ? 'focus:ring-red-400' : 'focus:ring-teal-400'
+                    errors.title ? 'focus:ring-red-400' : 'focus:ring-violet-400'
                   } focus:border-transparent transition-all placeholder-gray-400`}
                 />
                 {formData.title && formData.title.trim().length >= 5 && !errors.title && (
-                  <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-teal-600" />
+                  <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />
                 )}
               </div>
-              {errors.title && <p className="text-red-500 text-xs mt-1 flex items-center gap-1"><span>⚠</span> {errors.title}</p>}
+              {errors.title && <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {errors.title}</p>}
             </div>
 
             {/* Price */}
@@ -2891,11 +2916,13 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
               <label className="block text-sm font-semibold text-gray-800 mb-2">
                 Monthly Price (R) *
                 {formData.price && parseFloat(formData.price) >= 500 && parseFloat(formData.price) <= 50000 && !errors.price && (
-                  <span className="ml-2 text-green-600 text-xs">✓ Valid price</span>
+                  <span className="ml-2 text-emerald-600 text-xs font-medium">✓ Valid price</span>
                 )}
               </label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">R</span>
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">R</span>
+                </div>
                 <input
                   type="number"
                   required
@@ -2908,28 +2935,38 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                   placeholder="2500"
                   min="500"
                   max="50000"
-                  className={`w-full pl-10 pr-4 py-3 border-2 ${
+                  className={`w-full pl-14 pr-4 py-3.5 border-2 ${
                     errors.price ? 'border-red-400 bg-red-50' : 
-                    formData.price && parseFloat(formData.price) >= 500 && parseFloat(formData.price) <= 50000 ? 'border-teal-400 bg-teal-50/30' : 
-                    'border-gray-200'
+                    formData.price && parseFloat(formData.price) >= 500 && parseFloat(formData.price) <= 50000 ? 'border-violet-400 bg-violet-50/30' : 
+                    'border-gray-200 hover:border-gray-300'
                   } text-gray-800 rounded-xl focus:ring-2 ${
-                    errors.price ? 'focus:ring-red-400' : 'focus:ring-teal-400'
-                  } focus:border-transparent transition-all placeholder-gray-400`}
+                    errors.price ? 'focus:ring-red-400' : 'focus:ring-violet-400'
+                  } focus:border-transparent transition-all placeholder-gray-400 text-lg font-semibold`}
                 />
                 {formData.price && parseFloat(formData.price) >= 500 && parseFloat(formData.price) <= 50000 && !errors.price && (
-                  <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-teal-600" />
+                  <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />
                 )}
               </div>
-              {errors.price && <p className="text-red-500 text-xs mt-1 flex items-center gap-1"><span>⚠</span> {errors.price}</p>}
+              {errors.price && <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {errors.price}</p>}
               {!errors.price && formData.price && (
-                <p className="text-gray-500 text-xs mt-1">Suggested range: R500 - R50,000 per month</p>
+                <p className="text-gray-500 text-xs mt-1.5">💡 Suggested range: R500 - R50,000 per month</p>
               )}
+            </div>
+
+            {/* Section: Location */}
+            <div className="border-b border-gray-100 pb-2 mb-4 mt-8">
+              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                  <MapPin className="w-4 h-4 text-white" />
+                </div>
+                Location Details
+              </h3>
             </div>
 
             {/* Full Address */}
             <div>
               <label className="block text-sm font-semibold text-gray-800 mb-1">Full South African Address *</label>
-              <p className="text-xs text-gray-500 mb-2">Example: 5170 Molefe St, Ivory Park, Midrand, 1693</p>
+              <p className="text-xs text-gray-500 mb-2">📍 Example: 5170 Molefe St, Ivory Park, Midrand, 1693</p>
               <textarea
                 required
                 rows="2"
@@ -2938,12 +2975,12 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                 onFocus={() => setIsFullAddressEditing(true)}
                 onBlur={(e) => { setIsFullAddressEditing(false); handleFullAddressChange(e.target.value); }}
                 placeholder="Type the full street + suburb + city + postal code"
-                className={`w-full px-4 py-3 border-2 ${errors.location ? 'border-red-400' : 'border-gray-200'} bg-white text-gray-800 rounded-xl focus:ring-2 ${errors.location ? 'focus:ring-red-400' : 'focus:ring-teal-400'} focus:border-transparent transition placeholder-gray-400`}
+                className={`w-full px-4 py-3.5 border-2 ${errors.location ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-gray-300'} bg-white text-gray-800 rounded-xl focus:ring-2 ${errors.location ? 'focus:ring-red-400' : 'focus:ring-violet-400'} focus:border-transparent transition placeholder-gray-400`}
               />
-              {errors.location && <p className="text-red-500 text-xs mt-1" aria-live="assertive">{errors.location}</p>}
+              {errors.location && <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1" aria-live="assertive"><AlertCircle className="w-3 h-3" /> {errors.location}</p>}
               {!errors.location && (
-                <p className="text-gray-500 text-xs mt-1">
-                  Include the street/stand number plus suburb, city, and postal code. Commas are optional; we will split it for you.
+                <p className="text-gray-500 text-xs mt-1.5">
+                  Include the street/stand number plus suburb, city, and postal code. Commas are optional.
                 </p>
               )}
             </div>
@@ -3026,165 +3063,263 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
               </div>
             </div>
 
+            {/* Section: Room Details */}
+            <div className="border-b border-gray-100 pb-2 mb-4 mt-8">
+              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                  <Home className="w-4 h-4 text-white" />
+                </div>
+                Room Details
+              </h3>
+            </div>
+
             {/* Status and Available Date - Two columns */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-800 mb-2">Status</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition"
-                >
-                  <option value="available">Available</option>
-                  <option value="rented">Rented</option>
-                </select>
+                <div className="grid grid-cols-2 gap-2">
+                  {['available', 'rented'].map(status => (
+                    <button
+                      key={status}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, status })}
+                      className={`py-3 px-4 rounded-xl font-medium transition-all text-sm ${
+                        formData.status === status
+                          ? status === 'available' 
+                            ? 'bg-emerald-500 text-white shadow-lg scale-[1.02]' 
+                            : 'bg-gray-500 text-white shadow-lg scale-[1.02]'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-transparent'
+                      }`}
+                    >
+                      {status === 'available' ? '● Available' : '○ Rented'}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-2">Available Date</label>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">
+                  <Calendar className="w-4 h-4 inline mr-1" />
+                  Available Date
+                </label>
                 <input
                   type="date"
                   value={formData.availableDate}
                   onChange={(e) => setFormData({ ...formData, availableDate: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition"
+                  className="w-full px-4 py-3.5 border-2 border-gray-200 hover:border-gray-300 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-violet-400 focus:border-transparent transition"
                 />
               </div>
             </div>
 
             {/* Payment Method */}
             <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">Payment Method</label>
-              <select
-                value={formData.paymentMethod}
-                onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
-                className="w-full px-4 py-3 border-2 border-gray-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition"
-              >
-                <option value="Bank and Cash">Bank and Cash</option>
-                <option value="Cash Only">Cash Only</option>
-                <option value="Bank Only">Bank Only</option>
-              </select>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">💳 Payment Method</label>
+              <div className="grid grid-cols-3 gap-2">
+                {['Bank and Cash', 'Cash Only', 'Bank Only'].map(method => (
+                  <button
+                    key={method}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, paymentMethod: method })}
+                    className={`py-3 px-3 rounded-xl font-medium transition-all text-xs md:text-sm text-center ${
+                      formData.paymentMethod === method
+                        ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg scale-[1.02]'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-transparent'
+                    }`}
+                  >
+                    {method}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Room Type and Lease Duration - Two columns */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-2">Room Type</label>
-                <select
-                  value={formData.roomType}
-                  onChange={(e) => setFormData({ ...formData, roomType: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition"
-                >
-                  <option value="private">Private Room</option>
-                  <option value="shared">Shared Room</option>
-                </select>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">🚪 Room Type</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[{ value: 'private', label: 'Private Room', icon: '🔒' }, { value: 'shared', label: 'Shared Room', icon: '👥' }].map(type => (
+                    <button
+                      key={type.value}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, roomType: type.value })}
+                      className={`py-3 px-3 rounded-xl font-medium transition-all text-sm flex items-center justify-center gap-2 ${
+                        formData.roomType === type.value
+                          ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg scale-[1.02]'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-transparent'
+                      }`}
+                    >
+                      <span>{type.icon}</span>
+                      <span className="hidden sm:inline">{type.label.split(' ')[0]}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-2">Lease Duration (months)</label>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">📅 Lease Duration</label>
                 <select
                   value={formData.leaseDuration}
                   onChange={(e) => setFormData({ ...formData, leaseDuration: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition"
+                  className="w-full px-4 py-3.5 border-2 border-gray-200 hover:border-gray-300 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-violet-400 focus:border-transparent transition cursor-pointer"
                 >
-                  <option value="1-3">1-3 months</option>
-                  <option value="4-6">4-6 months</option>
-                  <option value="7-12">7-12 months</option>
-                  <option value="12+">12+ months</option>
+                  <option value="1-3">1-3 months (Short)</option>
+                  <option value="4-6">4-6 months (Medium)</option>
+                  <option value="7-12">7-12 months (Long)</option>
+                  <option value="12+">12+ months (Extended)</option>
                 </select>
               </div>
             </div>
 
             {/* Pet Friendly and Gender Preference */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  checked={formData.petFriendly}
-                  onChange={(e) => setFormData({ ...formData, petFriendly: e.target.checked })}
-                  id="petFriendly"
-                  className="w-5 h-5 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
-                />
-                <label htmlFor="petFriendly" className="text-sm font-medium text-gray-700">
-                  🐾 Pet Friendly
-                </label>
-              </div>
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, petFriendly: !formData.petFriendly })}
+                className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+                  formData.petFriendly
+                    ? 'border-violet-400 bg-violet-50 shadow-md scale-[1.02]'
+                    : 'border-gray-200 bg-white hover:border-gray-300'
+                }`}
+              >
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl ${
+                  formData.petFriendly ? 'bg-violet-500 text-white' : 'bg-gray-100'
+                }`}>
+                  🐾
+                </div>
+                <div className="text-left">
+                  <p className="font-semibold text-gray-800">Pet Friendly</p>
+                  <p className="text-xs text-gray-500">{formData.petFriendly ? 'Pets welcome!' : 'No pets allowed'}</p>
+                </div>
+                <div className={`ml-auto w-6 h-6 rounded-full flex items-center justify-center ${
+                  formData.petFriendly ? 'bg-violet-500 text-white' : 'bg-gray-200'
+                }`}>
+                  {formData.petFriendly && <CheckCircle className="w-4 h-4" />}
+                </div>
+              </button>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-2">Gender Preference</label>
-                <select
-                  value={formData.genderPreference}
-                  onChange={(e) => setFormData({ ...formData, genderPreference: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition"
-                >
-                  <option value="any">Any</option>
-                  <option value="male">Male Only</option>
-                  <option value="female">Female Only</option>
-                </select>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">👤 Gender Preference</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[{ value: 'any', label: 'Any', icon: '👥' }, { value: 'male', label: 'Male', icon: '👨' }, { value: 'female', label: 'Female', icon: '👩' }].map(option => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, genderPreference: option.value })}
+                      className={`py-2.5 px-3 rounded-xl font-medium transition-all text-xs flex flex-col items-center gap-1 ${
+                        formData.genderPreference === option.value
+                          ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg scale-[1.02]'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-transparent'
+                      }`}
+                    >
+                      <span className="text-lg">{option.icon}</span>
+                      <span>{option.label}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
             {/* Premium Flag */}
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                checked={!!formData.premium}
-                onChange={(e) => setFormData({ ...formData, premium: e.target.checked })}
-                id="premiumFlag"
-              />
-              <label htmlFor="premiumFlag" className="text-sm font-medium text-gray-700">
-                Premium listing (highlight & priority sorting)
-              </label>
+            <button
+              type="button"
+              onClick={() => setFormData({ ...formData, premium: !formData.premium })}
+              className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
+                formData.premium
+                  ? 'border-amber-400 bg-gradient-to-r from-amber-50 to-yellow-50 shadow-md scale-[1.01]'
+                  : 'border-gray-200 bg-white hover:border-gray-300'
+              }`}
+            >
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                formData.premium ? 'bg-gradient-to-br from-amber-400 to-yellow-500' : 'bg-gray-100'
+              }`}>
+                <Sparkles className={`w-6 h-6 ${formData.premium ? 'text-white' : 'text-gray-400'}`} />
+              </div>
+              <div className="text-left flex-1">
+                <p className="font-bold text-gray-800">Premium Listing</p>
+                <p className="text-xs text-gray-500">Highlight & priority sorting in search results</p>
+              </div>
+              <div className={`w-12 h-6 rounded-full transition-all relative ${
+                formData.premium ? 'bg-amber-400' : 'bg-gray-300'
+              }`}>
+                <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${
+                  formData.premium ? 'left-7' : 'left-1'
+                }`} />
+              </div>
+            </button>
+
+            {/* Section: Contact */}
+            <div className="border-b border-gray-100 pb-2 mb-4 mt-8">
+              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                  <Phone className="w-4 h-4 text-white" />
+                </div>
+                Contact Details
+              </h3>
+              <p className="text-xs text-gray-500 mt-1 ml-9">How tenants can reach you</p>
             </div>
 
             {/* Contact Details */}
-            <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-xl p-4">
-              <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                📞 Contact Details
-                <span className="text-xs font-normal text-gray-500">(How tenants can reach you)</span>
-              </h3>
+            <div className="bg-gradient-to-br from-violet-50 via-purple-50 to-fuchsia-50 border border-violet-200 rounded-2xl p-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone Number (for calls)
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    📱 Phone Number
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">📱</span>
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-violet-400" />
                     <input
                       type="tel"
                       value={formData.contactPhone}
                       onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
                       placeholder="e.g., 071 234 5678"
-                      className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition placeholder-gray-400"
+                      className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-200 hover:border-violet-300 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-violet-400 focus:border-transparent transition placeholder-gray-400"
                     />
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">For direct phone calls from interested tenants</p>
+                  <p className="text-xs text-gray-500 mt-1.5">For direct calls from tenants</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    WhatsApp Number
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    💬 WhatsApp Number
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-green-500">💬</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xl">💬</span>
                     <input
                       type="tel"
                       value={formData.contactWhatsapp}
                       onChange={(e) => setFormData({ ...formData, contactWhatsapp: e.target.value })}
                       placeholder="e.g., 071 234 5678"
-                      className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent transition placeholder-gray-400"
+                      className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-200 hover:border-violet-300 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-violet-400 focus:border-transparent transition placeholder-gray-400"
                     />
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Leave blank if same as phone number</p>
+                  <p className="text-xs text-gray-500 mt-1.5">Leave blank if same as phone</p>
                 </div>
               </div>
+            </div>
+
+            {/* Section: Description & Media */}
+            <div className="border-b border-gray-100 pb-2 mb-4 mt-8">
+              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                  <Edit className="w-4 h-4 text-white" />
+                </div>
+                Description & Media
+              </h3>
             </div>
 
             {/* Description */}
             <div>
               <label className="block text-sm font-semibold text-gray-800 mb-2">
-                Description 
+                ✍️ Description 
                 {formData.description && (
-                  <span className={`ml-2 text-xs ${formData.description.length > 500 ? 'text-red-500' : 'text-gray-500'}`}>
-                    ({formData.description.length}/500 characters)
+                  <span className={`ml-2 text-xs font-medium ${
+                    formData.description.length > 500 
+                      ? 'text-red-500' 
+                      : formData.description.length >= 10 
+                        ? 'text-emerald-600' 
+                        : 'text-gray-500'
+                  }`}>
+                    {formData.description.length}/500 characters
+                    {formData.description.length >= 10 && formData.description.length <= 500 && ' ✓'}
                   </span>
                 )}
               </label>
@@ -3195,83 +3330,99 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                   validateField('description', e.target.value);
                 }}
                 onBlur={(e) => validateField('description', e.target.value)}
-                placeholder="Describe the room, amenities, rules, and any other details..."
-                rows="4"
-                className={`w-full px-4 py-3 border-2 ${errors.description ? 'border-red-400' : 'border-gray-200'} bg-white text-gray-800 rounded-xl focus:ring-2 ${errors.description ? 'focus:ring-red-400' : 'focus:ring-teal-400'} focus:border-transparent transition placeholder-gray-400`}
+                placeholder="Describe the room, amenities, house rules, nearby transport, and what makes it special..."
+                rows="5"
+                className={`w-full px-4 py-3.5 border-2 ${
+                  errors.description ? 'border-red-400 bg-red-50' : 
+                  formData.description && formData.description.length >= 10 ? 'border-violet-400 bg-violet-50/30' :
+                  'border-gray-200 hover:border-gray-300'
+                } bg-white text-gray-800 rounded-xl focus:ring-2 ${errors.description ? 'focus:ring-red-400' : 'focus:ring-violet-400'} focus:border-transparent transition placeholder-gray-400 resize-none`}
               />
-              {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
+              {errors.description && <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {errors.description}</p>}
+              {!errors.description && <p className="text-gray-500 text-xs mt-1.5">💡 Include transport links, amenities, and house rules for better engagement</p>}
             </div>
 
             {/* Amenities */}
             <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-3">Amenities</label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              <label className="block text-sm font-semibold text-gray-800 mb-3">✨ Amenities</label>
+              <p className="text-xs text-gray-500 mb-3">Select all that apply to your room</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {availableAmenities.map(amenity => (
                   <button
                     key={amenity}
                     type="button"
                     onClick={() => toggleAmenity(amenity)}
-                    className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                    className={`px-3 py-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${
                       formData.amenities.includes(amenity)
-                        ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md'
-                        : 'bg-gray-100 text-gray-700 border-2 border-gray-200 hover:border-teal-300 hover:bg-teal-50'
+                        ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg scale-[1.02]'
+                        : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:border-violet-300 hover:bg-violet-50'
                     }`}
                   >
+                    {formData.amenities.includes(amenity) && <CheckCircle className="w-4 h-4" />}
                     {amenity}
                   </button>
                 ))}
               </div>
+              {formData.amenities.length > 0 && (
+                <p className="text-xs text-violet-600 font-medium mt-2">{formData.amenities.length} amenities selected</p>
+              )}
             </div>
 
             {/* Photos */}
             <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">Photos (Max 5)</label>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
+                📸 Photos <span className="text-violet-600 font-bold">{formData.photos.length}/5</span>
+              </label>
               <div 
-                className="relative border-2 border-dashed border-gray-300 bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-6 hover:border-teal-400 hover:bg-teal-50/30 transition-all duration-300 cursor-pointer group"
+                className="relative border-2 border-dashed border-violet-300 bg-gradient-to-br from-violet-50 via-purple-50 to-fuchsia-50 rounded-2xl p-8 hover:border-violet-500 hover:shadow-lg transition-all duration-300 cursor-pointer group"
                 onClick={() => setShowPhotoEditor(true)}
               >
                 <div className="text-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-teal-100 to-cyan-100 rounded-2xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
-                    <span className="text-3xl">📷</span>
+                  <div className="w-20 h-20 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                    <span className="text-4xl">📸</span>
                   </div>
-                  <p className="text-gray-700 font-semibold mb-1">
-                    {formData.photos.length === 0 ? 'Add Photos' : `${formData.photos.length}/5 Photos Added`}
+                  <p className="text-gray-800 font-bold text-lg mb-1">
+                    {formData.photos.length === 0 ? 'Add Photos' : `${formData.photos.length} Photo${formData.photos.length > 1 ? 's' : ''} Added`}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-gray-500 text-sm">
                     Click to upload • JPG, PNG up to 5MB each
                   </p>
                   {formData.photos.length === 0 && (
-                    <p className="text-xs text-teal-600 mt-2 font-medium">
-                      Tip: Listings with photos get 3x more views!
-                    </p>
+                    <div className="mt-4 bg-white rounded-xl px-4 py-2 inline-block">
+                      <p className="text-sm text-violet-600 font-semibold">
+                        ✨ Listings with photos get 3x more views!
+                      </p>
+                    </div>
                   )}
                 </div>
               </div>
               {formData.photos.length > 0 && (
-                <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-3">
                   {formData.photos.map((photo, index) => (
-                    <div key={index} className="relative group">
+                    <div key={index} className="relative group aspect-square">
                       {index === 0 && (
-                        <div className="absolute top-2 left-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-xs px-2 py-1 rounded-full font-semibold z-10">
+                        <div className="absolute top-2 left-2 bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs px-2 py-1 rounded-full font-semibold z-10 shadow">
                           Cover
                         </div>
                       )}
                       <img 
                         src={photo} 
                         alt={`Preview ${index + 1}`} 
-                        className="w-full h-32 object-cover rounded-xl border-2 border-gray-200 shadow-sm" 
+                        className="w-full h-full object-cover rounded-xl border-2 border-violet-200 shadow-sm group-hover:shadow-md transition-shadow" 
                       />
                     </div>
                   ))}
                 </div>
               )}
-              <button
-                type="button"
-                onClick={() => setShowPhotoEditor(true)}
-                className="mt-3 text-sm text-teal-600 hover:text-teal-700 font-medium"
-              >
-                {formData.photos.length > 0 ? '✏️ Edit Photos' : ''}
-              </button>
+              {formData.photos.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowPhotoEditor(true)}
+                  className="mt-4 text-sm text-violet-600 hover:text-violet-700 font-semibold flex items-center gap-1"
+                >
+                  <Edit className="w-4 h-4" /> Edit Photos
+                </button>
+              )}
             </div>
 
             {showPhotoEditor && (
@@ -3286,29 +3437,35 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
             )}
 
             {/* Submit Button */}
-            <div className="border-t border-gray-200 pt-6">
+            <div className="border-t border-gray-200 pt-8 mt-8">
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting || Object.keys(errors).length > 0}
-                className={`w-full font-semibold py-3.5 rounded-xl transition-all shadow-lg relative ${
+                className={`w-full font-bold py-4 rounded-2xl transition-all relative text-lg ${
                   isSubmitting || Object.keys(errors).length > 0
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white hover:shadow-xl hover:shadow-teal-500/25'
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 hover:from-violet-700 hover:via-purple-700 hover:to-fuchsia-700 text-white shadow-xl hover:shadow-2xl hover:shadow-violet-500/30 active:scale-[0.98]'
                 }`}
               >
                 {isSubmitting ? (
-                  <>
-                    <span className="opacity-0">Post Room</span>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    </div>
-                  </>
+                  <div className="flex items-center justify-center gap-3">
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Posting Your Room...</span>
+                  </div>
                 ) : (
-                  'Post Room'
+                  <span className="flex items-center justify-center gap-2">
+                    <PlusCircle className="w-5 h-5" />
+                    Post Your Room
+                  </span>
                 )}
               </button>
               {Object.keys(errors).length > 0 && (
-                <p className="text-red-500 text-xs mt-2 text-center">Please fix the errors above before submitting</p>
+                <div className="mt-3 bg-red-50 border border-red-200 rounded-xl p-3 text-center">
+                  <p className="text-red-600 text-sm font-medium flex items-center justify-center gap-2">
+                    <AlertCircle className="w-4 h-4" />
+                    Please fix the errors above before submitting
+                  </p>
+                </div>
               )}
             </div>
           </div>
@@ -3704,46 +3861,67 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
 
 function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus }) {
   return (
-    <div className="p-4 min-h-screen bg-gradient-to-b from-slate-50 to-gray-100 pb-24">
-      <div className="max-w-7xl mx-auto mt-8">
-        {/* Header with Add button */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-gradient-to-br from-teal-100 to-cyan-100 rounded-2xl flex items-center justify-center shadow-sm">
-              <Home className="w-7 h-7 text-teal-600" />
+    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-fuchsia-50 pb-24">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 text-white">
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center">
+                <Home className="w-7 h-7" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold">My Rooms</h2>
+                <p className="text-white/80">
+                  {listings.length === 0
+                    ? 'Your properties will appear here'
+                    : `${listings.length} ${listings.length === 1 ? 'room' : 'rooms'} listed`}
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-3xl font-extrabold text-gray-900">My Listings</h2>
-              <p className="text-gray-600">
-                {listings.length === 0
-                  ? 'Your properties will appear here'
-                  : `${listings.length} ${listings.length === 1 ? 'listing' : 'listings'}`}
-              </p>
+            {listings.length > 0 && (
+              <button
+                onClick={() => (onCreate ? onCreate() : (window.location.hash = '#add'))}
+                className="inline-flex items-center gap-2 bg-white text-violet-700 hover:bg-violet-50 font-bold px-5 py-3 rounded-xl transition-all shadow-lg hover:shadow-xl active:scale-95"
+              >
+                <PlusCircle className="w-5 h-5" />
+                Add New Room
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 -mt-4">
+        {/* Stats Cards */}
+        {listings.length > 0 && (
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <p className="text-2xl font-bold text-violet-600">{listings.filter(l => l.status === 'available').length}</p>
+              <p className="text-xs text-gray-500">Available</p>
+            </div>
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <p className="text-2xl font-bold text-gray-600">{listings.filter(l => l.status === 'rented').length}</p>
+              <p className="text-xs text-gray-500">Rented</p>
+            </div>
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <p className="text-2xl font-bold text-emerald-600">{listings.length}</p>
+              <p className="text-xs text-gray-500">Total</p>
             </div>
           </div>
-          {listings.length > 0 && (
-            <button
-              onClick={() => (onCreate ? onCreate() : (window.location.hash = '#add'))}
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-semibold px-5 py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg"
-            >
-              <PlusCircle className="w-5 h-5" />
-              Add New Listing
-            </button>
-          )}
-        </div>
+        )}
 
         {/* Landlord tip banner */}
         {listings.length > 0 && (
-          <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4 shadow-sm">
+          <div className="mb-6 bg-white border border-violet-200 rounded-2xl p-4 shadow-sm">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Sparkles className="w-5 h-5 text-blue-600" />
+              <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 className="font-semibold text-blue-800 mb-1">Manage Your Listings</h3>
-                <p className="text-blue-700 text-sm leading-relaxed">
-                  <span className="font-medium">Edit</span> to update details, or toggle <span className="font-medium">Status</span> when you find a tenant. 
-                  Rented listings won't appear in search results.
+                <h3 className="font-semibold text-gray-800 mb-1">Quick Tips</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  Click the <span className="font-semibold text-emerald-600">status badge</span> to toggle availability. Rented rooms won't appear in search.
                 </p>
               </div>
             </div>
@@ -3751,43 +3929,43 @@ function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus }
         )}
 
         {listings.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
-            <div className="w-24 h-24 bg-gradient-to-br from-teal-50 to-cyan-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Home className="w-12 h-12 text-teal-400" />
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-12 text-center">
+            <div className="w-24 h-24 bg-gradient-to-br from-violet-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Home className="w-12 h-12 text-violet-400" />
             </div>
-            <h3 className="text-xl font-bold text-gray-800 mb-2">No Listings Yet</h3>
-            <p className="text-gray-500 text-sm mb-6 max-w-md mx-auto">
+            <h3 className="text-2xl font-bold text-gray-800 mb-2">No Rooms Yet</h3>
+            <p className="text-gray-500 mb-6 max-w-md mx-auto">
               Start earning by posting your first room. It only takes a few minutes!
             </p>
             <button
               onClick={() => (onCreate ? onCreate() : (window.location.hash = '#add'))}
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-semibold px-6 py-3 rounded-xl transition-all shadow-md hover:shadow-lg"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 hover:from-violet-700 hover:via-purple-700 hover:to-fuchsia-700 text-white font-bold px-8 py-4 rounded-xl transition-all shadow-lg hover:shadow-xl active:scale-95"
             >
               <PlusCircle className="w-5 h-5" />
               Post Your First Room
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {listings.map(listing => (
-              <div key={listing.id} className={`bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-md transition-shadow ${
-                listing.status === 'rented' ? 'border-gray-200 opacity-75' : 'border-gray-100'
+              <div key={listing.id} className={`bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-lg transition-all duration-300 group ${
+                listing.status === 'rented' ? 'border-gray-200' : 'border-gray-100 hover:border-violet-200'
               }`}>
                 {listing.photos && listing.photos.length > 0 ? (
-                  <div className="relative">
+                  <div className="relative overflow-hidden">
                     <img 
                       src={listing.photos[0]} 
                       alt="Room" 
-                      className={`w-full h-48 object-cover ${listing.status === 'rented' ? 'grayscale' : ''}`} 
+                      className={`w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500 ${listing.status === 'rented' ? 'grayscale' : ''}`} 
                     />
                     {listing.photos.length > 1 && (
                       <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-xs font-medium">
-                        {listing.photos.length} photos
+                        📷 {listing.photos.length}
                       </div>
                     )}
                     <button
                       onClick={() => onToggleStatus?.(listing.id)}
-                      className={`absolute top-3 left-3 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer hover:scale-105 ${
+                      className={`absolute top-3 left-3 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer hover:scale-105 shadow-lg ${
                         listing.status === 'available' 
                           ? 'bg-emerald-500 hover:bg-emerald-600 text-white' 
                           : 'bg-gray-500 hover:bg-gray-600 text-white'
@@ -3798,11 +3976,11 @@ function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus }
                     </button>
                   </div>
                 ) : (
-                  <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                    <Home className="w-16 h-16 text-gray-300" />
+                  <div className="relative h-48 bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center">
+                    <Home className="w-16 h-16 text-violet-300" />
                     <button
                       onClick={() => onToggleStatus?.(listing.id)}
-                      className={`absolute top-3 left-3 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer hover:scale-105 ${
+                      className={`absolute top-3 left-3 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer hover:scale-105 shadow-lg ${
                         listing.status === 'available' 
                           ? 'bg-emerald-500 hover:bg-emerald-600 text-white' 
                           : 'bg-gray-500 hover:bg-gray-600 text-white'
@@ -3815,15 +3993,15 @@ function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus }
                 )}
                 <div className="p-5">
                   <h3 className="font-bold text-lg text-gray-900 mb-1 line-clamp-1">{listing.title}</h3>
-                  <div className="text-teal-600 font-bold text-xl mb-2">R{listing.price?.toLocaleString()}/month</div>
+                  <div className="text-violet-600 font-bold text-xl mb-2">R{listing.price?.toLocaleString()}<span className="text-sm font-normal text-gray-500">/month</span></div>
                   <div className="flex items-center text-gray-500 text-sm mb-4">
-                    <MapPin className="w-4 h-4 mr-1.5 text-gray-400" />
+                    <MapPin className="w-4 h-4 mr-1.5 text-violet-400" />
                     <span className="line-clamp-1">{listing.location}</span>
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => onEdit?.(listing)}
-                      className="flex-1 flex items-center justify-center gap-1.5 bg-teal-50 hover:bg-teal-100 text-teal-700 font-medium py-2.5 rounded-xl transition-colors text-sm"
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-violet-50 hover:bg-violet-100 text-violet-700 font-semibold py-2.5 rounded-xl transition-colors text-sm"
                     >
                       <Edit className="w-4 h-4" />
                       Edit

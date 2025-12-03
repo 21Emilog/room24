@@ -248,15 +248,15 @@ export default function ListingDetailModal({ listing, landlord, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start sm:items-center justify-center p-0 sm:p-4 z-50 overflow-y-auto" aria-modal="true" role="dialog">
-      <div className="bg-white rounded-none sm:rounded-2xl max-w-2xl w-full h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto shadow-2xl">
-        <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-gray-100 p-4 flex justify-between items-center z-10">
+      <div className="bg-white rounded-none sm:rounded-3xl max-w-2xl w-full h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div className="sticky top-0 bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 text-white p-4 flex justify-between items-center z-10 sm:rounded-t-3xl">
           <div className="flex items-center gap-3">
-            <button onClick={onClose} className="text-gray-500 hover:text-gray-700 sm:hidden p-1 rounded-full hover:bg-gray-100 transition-colors" aria-label="Back">
+            <button onClick={onClose} className="text-white/80 hover:text-white sm:hidden p-1 rounded-full hover:bg-white/20 transition-colors" aria-label="Back">
               <ArrowLeft className="w-6 h-6" />
             </button>
-            <h2 className="text-lg md:text-xl font-bold text-gray-900">Room Details</h2>
+            <h2 className="text-lg md:text-xl font-bold">Room Details</h2>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 hidden sm:block p-2 rounded-full hover:bg-gray-100 transition-colors" aria-label="Close">
+          <button onClick={onClose} className="text-white/80 hover:text-white hidden sm:block p-2 rounded-full hover:bg-white/20 transition-colors" aria-label="Close">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -307,12 +307,12 @@ export default function ListingDetailModal({ listing, landlord, onClose }) {
             />
           )}
           <h3 className="text-2xl font-extrabold mb-2 text-gray-900">{listing.title}</h3>
-          <div className="text-transparent bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text font-bold text-2xl mb-4">
-            R{typeof listing.price === 'number' ? listing.price.toLocaleString('en-ZA') : listing.price}/month
+          <div className="text-transparent bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text font-bold text-3xl mb-4">
+            R{typeof listing.price === 'number' ? listing.price.toLocaleString('en-ZA') : listing.price}<span className="text-lg text-gray-500 font-normal">/month</span>
           </div>
           
           {/* Share & Action Buttons */}
-          <div className="flex flex-wrap gap-2 mb-4">
+          <div className="flex flex-wrap gap-2 mb-6">
             <button
               onClick={() => {
                 const shareUrl = window.location.href;
@@ -320,7 +320,7 @@ export default function ListingDetailModal({ listing, landlord, onClose }) {
                 const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`;
                 window.open(whatsappUrl, '_blank');
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-xl text-sm font-semibold transition-all shadow-md hover:shadow-lg"
+              className="flex items-center gap-2 px-4 py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-xl text-sm font-bold transition-all shadow-md hover:shadow-lg active:scale-95"
             >
               <MessageCircle className="w-4 h-4" />
               Share on WhatsApp
@@ -345,9 +345,9 @@ export default function ListingDetailModal({ listing, landlord, onClose }) {
                   setTimeout(() => setCopied(false), 2000);
                 }
               }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-sm ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm ${
                 copied 
-                  ? 'bg-green-100 text-green-700 border border-green-300' 
+                  ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' 
                   : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200'
               }`}
             >
@@ -363,7 +363,7 @@ export default function ListingDetailModal({ listing, landlord, onClose }) {
                     url: window.location.href,
                   }).catch(() => {});
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-sm font-semibold transition-all border border-blue-200"
+                className="flex items-center gap-2 px-4 py-2.5 bg-violet-50 hover:bg-violet-100 text-violet-700 rounded-xl text-sm font-bold transition-all border border-violet-200"
               >
                 <Share2 className="w-4 h-4" />
                 Share
@@ -487,29 +487,29 @@ export default function ListingDetailModal({ listing, landlord, onClose }) {
             </form>
           </div>
           {landlord && (
-            <div className="bg-gradient-to-r from-teal-50 to-cyan-50 rounded-xl p-5 mb-4 border border-teal-100">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="font-semibold text-gray-800">Landlord Information</h4>
+            <div className="bg-gradient-to-br from-violet-50 via-purple-50 to-fuchsia-50 rounded-2xl p-5 mb-4 border border-violet-200">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-bold text-gray-800">Landlord Information</h4>
                 <button
                   onClick={() => setShowContact(!showContact)}
-                  className="text-teal-700 hover:text-teal-800 text-sm font-medium px-3 py-1 rounded-lg hover:bg-teal-100 transition-colors"
+                  className="text-violet-700 hover:text-violet-800 text-sm font-semibold px-3 py-1.5 rounded-lg hover:bg-violet-100 transition-colors"
                 >
                   {showContact ? 'Hide' : 'Show'} Contact
                 </button>
               </div>
               <div className="flex items-center mb-3">
                 {landlord.photo ? (
-                  <img src={landlord.photo} alt={landlord.name} className="w-12 h-12 rounded-full object-cover mr-3 ring-2 ring-teal-200" />
+                  <img src={landlord.photo} alt={landlord.name} className="w-14 h-14 rounded-xl object-cover mr-3 ring-2 ring-violet-200" />
                 ) : (
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-teal-100 to-cyan-100 flex items-center justify-center mr-3">
-                    <User className="w-6 h-6 text-teal-600" />
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mr-3">
+                    <User className="w-7 h-7 text-white" />
                   </div>
                 )}
                 <div>
-                  <p className="font-semibold text-gray-800 flex items-center gap-2">
+                  <p className="font-bold text-gray-800 flex items-center gap-2">
                     {landlord.name}
                     {(landlord.verified || landlord.idNumber) && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-semibold shadow-sm">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-violet-600 to-purple-600 text-white text-[10px] font-bold shadow-sm">
                         <ShieldCheck className="w-3 h-3" /> Verified
                       </span>
                     )}
@@ -518,13 +518,13 @@ export default function ListingDetailModal({ listing, landlord, onClose }) {
                 </div>
               </div>
               {showContact && (
-                <div className="space-y-3 pt-4 border-t border-teal-100">
+                <div className="space-y-3 pt-4 border-t border-violet-200">
                   {/* Quick Action Buttons */}
                   <div className="grid grid-cols-2 gap-2 mb-3">
                     {landlord.phone && (
                       <a
                         href={`tel:${landlord.phone}`}
-                        className="flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-xl font-semibold text-sm transition-all shadow-md hover:shadow-lg"
+                        className="flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white py-3.5 rounded-xl font-bold text-sm transition-all shadow-lg hover:shadow-xl active:scale-95"
                       >
                         <Phone className="w-4 h-4" />
                         Call Now
@@ -535,7 +535,7 @@ export default function ListingDetailModal({ listing, landlord, onClose }) {
                         href={`https://wa.me/${landlord.phone.replace(/[^0-9]/g,'').replace(/^0/, '27')}?text=${encodeURIComponent(`Hi, I'm interested in your room listing: ${listing.title} - R${listing.price}/month`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white py-3 rounded-xl font-semibold text-sm transition-all shadow-md hover:shadow-lg"
+                        className="flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white py-3.5 rounded-xl font-bold text-sm transition-all shadow-lg hover:shadow-xl active:scale-95"
                       >
                         <MessageCircle className="w-4 h-4" />
                         WhatsApp
@@ -544,14 +544,14 @@ export default function ListingDetailModal({ listing, landlord, onClose }) {
                   </div>
                   
                   {/* Contact Details */}
-                  <div className="bg-white rounded-lg p-3 space-y-2">
+                  <div className="bg-white rounded-xl p-4 space-y-3 shadow-sm">
                     <div className="flex items-center text-sm">
-                      <Phone className="w-4 h-4 mr-2 text-teal-700" />
-                      <a href={`tel:${landlord.phone}`} className="text-teal-700 hover:underline font-medium">{landlord.phone}</a>
+                      <Phone className="w-4 h-4 mr-3 text-violet-600" />
+                      <a href={`tel:${landlord.phone}`} className="text-violet-700 hover:underline font-medium">{landlord.phone}</a>
                     </div>
                     <div className="flex items-center text-sm">
-                      <Mail className="w-4 h-4 mr-2 text-teal-700" />
-                      <a href={`mailto:${landlord.email}?subject=Inquiry about ${listing.title}`} className="text-teal-700 hover:underline font-medium">{landlord.email}</a>
+                      <Mail className="w-4 h-4 mr-3 text-violet-600" />
+                      <a href={`mailto:${landlord.email}?subject=Inquiry about ${listing.title}`} className="text-violet-700 hover:underline font-medium">{landlord.email}</a>
                     </div>
                   </div>
                 </div>
@@ -559,7 +559,7 @@ export default function ListingDetailModal({ listing, landlord, onClose }) {
               <div className="mt-4 text-right">
                 <button
                   onClick={() => setShowReport(true)}
-                  className="text-xs font-medium text-red-600 hover:text-red-700 underline"
+                  className="text-xs font-medium text-red-500 hover:text-red-600 hover:underline"
                 >
                   Report Listing
                 </button>
