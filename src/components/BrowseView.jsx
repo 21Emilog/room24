@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Search, PlusCircle, Home, User, MapPin, Clock, Sparkles, ArrowRight, Building2, Shield, Zap, Bell, ChevronDown } from 'lucide-react';
+import { Search, Home, User, MapPin, Clock, Sparkles, ArrowRight, Building2, Shield, Zap, Bell, ChevronDown } from 'lucide-react';
 import ListingCard from './ListingCard';
 import ListingSkeletonCard from './ListingSkeletonCard';
-import { SidebarAd, InFeedAd } from './AdBanner';
+import { InFeedAd } from './AdBanner';
 import { getSavedSearches, checkNewListings, checkPriceDrops, addNotification, saveSearch as saveSearchToEngine } from '../utils/notificationEngine';
 
 export default function BrowseView({
@@ -241,14 +241,6 @@ export default function BrowseView({
     return () => { clearTimeout(t); controller.abort(); };
   }, [searchLocation, SUGGESTION_TTL_MS]);
 
-  // Sidebar navigation items (desktop only)
-  const desktopNavItems = [
-    { id: 'browse', label: 'Browse', icon: Search },
-    { id: 'add', label: 'List Room', icon: PlusCircle, show: currentUser && currentUser.type === 'landlord' && !previewMode },
-    { id: 'my-listings', label: 'My Rooms', icon: Home, show: currentUser && currentUser.type === 'landlord' && !previewMode },
-    { id: 'profile', label: 'Profile', icon: User }
-  ];
-
   const amenityOptions = ['WiFi', 'Parking', 'Kitchen', 'Laundry', 'Air Conditioning', 'Heating', 'Furnished'];
 
   const toggleAmenity = (amenity) => {
@@ -347,228 +339,242 @@ export default function BrowseView({
     setSortBy(s.sort || 'newest');
   };
 
-  const renderFiltersBox = () => (
-    <div className="filters-box" aria-label="Filters panel">
-      <div className="flex items-center gap-2 mb-2">
-        <MapPin className="w-4 h-4 text-gray-400" />
-        <input
-          type="text"
-          placeholder="Search location..."
-          value={searchLocation}
-          onChange={(e) => setSearchLocation(e.target.value)}
-          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-[#E63946] focus:border-transparent"
-          aria-label="Location search"
-        />
-        {locationLoading && (
-          <span className="text-xs text-[#E63946] animate-pulse" aria-live="polite">Loading...</span>
-        )}
-      </div>
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-semibold text-gray-600">Price Range</label>
-          <div className="flex items-center gap-2 text-xs bg-gray-50 px-2 py-1 rounded border border-gray-200">
-            <span>R{priceRange[0].toLocaleString()} - R{priceRange[1].toLocaleString()}</span>
-            <select
-              value={priceRange[0]}
-              onChange={(e) => setPriceRange([parseInt(e.target.value), priceRange[1]])}
-              className="bg-transparent border-l border-gray-300 pl-2 focus:outline-none"
-              aria-label="Minimum price"
-            >
-              <option value="0">Min</option>
-              <option value="500">R500</option>
-              <option value="1000">R1000</option>
-              <option value="1500">R1500</option>
-            </select>
-            <select
-              value={priceRange[1]}
-              onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
-              className="bg-transparent border-l border-gray-300 pl-2 focus:outline-none"
-              aria-label="Maximum price"
-            >
-              <option value="10000">R10,000</option>
-              <option value="5000">R5,000</option>
-              <option value="3000">R3,000</option>
-              <option value="2000">R2,000</option>
-            </select>
-          </div>
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-semibold text-gray-600">Sort</label>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="text-sm bg-white border border-gray-300 px-2 py-1 rounded focus:ring-2 focus:ring-[#E63946]"
-            aria-label="Sort order"
-          >
-            <option value="newest">Newest</option>
-            <option value="cheapest">Cheapest</option>
-            <option value="expensive">Most Expensive</option>
-          </select>
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-semibold text-gray-600">Payment Method</label>
-          <select
-            value={paymentFilter}
-            onChange={(e) => setPaymentFilter(e.target.value)}
-            className="text-sm bg-white border border-gray-300 px-2 py-1 rounded focus:ring-2 focus:ring-[#E63946]"
-            aria-label="Payment method"
-          >
-            <option value="">Any</option>
-            <option value="Bank and Cash">Bank and Cash</option>
-            <option value="Cash Only">Cash Only</option>
-            <option value="Bank Only">Bank Only</option>
-          </select>
-        </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-gray-600">Saved Searches</label>
-              <div className="flex flex-wrap gap-1">
-                {savedSearches.length === 0 && (
-                  <span className="text-[11px] text-gray-500">None saved</span>
-                )}
-                {savedSearches.map(s => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => loadSearch(s)}
-                    className="px-2 py-1 rounded-md text-[11px] font-medium bg-red-50 text-[#E63946] border border-red-200 hover:bg-red-100"
-                  >{s.location || 'Any'} • {s.priceRange[0]}-{s.priceRange[1]}</button>
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={saveCurrentSearch}
-                className="mt-1 text-xs text-[#E63946] hover:text-[#c5303c] font-medium underline"
-              >Save Current Search</button>
-            </div>
-        <div>
-          <label className="text-xs font-semibold text-gray-600 mb-1 block">Amenities</label>
-          <div className="flex flex-wrap gap-1">
-            {amenityOptions.map(a => (
-              <button
-                key={a}
-                type="button"
-                onClick={() => toggleAmenity(a)}
-                className={`px-2 py-1 rounded-md text-[11px] font-medium border transition ${selectedAmenities.includes(a) ? 'bg-[#E63946] text-white border-[#E63946] shadow-sm' : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'}`}
-                aria-pressed={selectedAmenities.includes(a)}
-              >{a}</button>
-            ))}
-          </div>
-        </div>
-        <button
-          onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-          className="mt-2 text-xs text-[#E63946] hover:text-[#c5303c] font-semibold px-2 py-1 rounded hover:bg-red-50 transition"
-          aria-expanded={showAdvancedFilters}
-        >{showAdvancedFilters ? 'Close Advanced' : 'More Filters'}</button>
-        {showAdvancedFilters && (
-          <div className="mt-2 p-2 bg-gray-50 border border-gray-200 rounded" aria-label="Advanced filters"><p className="text-xs text-gray-600">(Advanced filters placeholder)</p></div>
-        )}
-      </div>
-    </div>
-  );
-
   // Desktop layout
   if (isDesktop) {
     return (
-      <div className="bg-gradient-to-b from-slate-50 to-gray-100 min-h-screen pb-4" aria-labelledby="results-heading">
-        <div className="layout-desktop">
-          <aside className="sidebar-nav" role="navigation" aria-label="Desktop navigation and filters">
-            <div>
-              <h2 className="text-xl font-bold flex items-center gap-2 mb-4"><span className="bg-gradient-to-r from-[#E63946] to-[#c5303c] bg-clip-text text-transparent">Rent</span><span className="text-[#1D3557]">Mzansi</span></h2>
-              <div className="sidebar-section-title mb-2">Navigation</div>
-              <div className="sidebar-menu">
-                {desktopNavItems.filter(i => i.show === undefined || i.show).map(item => {
-                  const Icon = item.icon;
-                  const isActive = item.id === 'browse';
-                  return (
+      <div className="min-h-screen" aria-labelledby="results-heading">
+        {/* Desktop Hero Banner */}
+        {showWelcomeHero && !currentUser && listings.length > 0 && (
+          <div className="bg-gradient-to-r from-[#1D3557] via-[#1D3557] to-[#2d4a6f] text-white relative overflow-hidden">
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0aC0ydi00aDJ2LTJoLTJ2LTJoMnYtMkgyNHYyaDJ2MmgtMnYyaDJ2NGgtMnYyaDEydi0yeiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
+            <div className="absolute -top-40 -right-40 w-96 h-96 bg-[#E63946]/20 rounded-full blur-3xl" />
+            <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
+            
+            <div className="max-w-7xl mx-auto px-8 py-16 relative">
+              <button 
+                onClick={dismissHero}
+                className="absolute top-4 right-4 p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+                aria-label="Dismiss"
+              >
+                <span className="text-2xl">×</span>
+              </button>
+              
+              <div className="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                  <div className="flex items-center gap-2 mb-6">
+                    <span className="bg-[#E63946] text-white text-xs font-bold px-3 py-1 rounded-full">🇿🇦 SOUTH AFRICA</span>
+                    <span className="bg-white/20 text-white text-xs font-medium px-3 py-1 rounded-full">Free to Use</span>
+                  </div>
+                  <h1 className="text-5xl font-extrabold mb-6 leading-tight">
+                    Find Your Perfect<br />
+                    <span className="text-[#E63946]">Room Today</span>
+                  </h1>
+                  <p className="text-xl text-[#F1FAEE]/80 mb-8 max-w-lg">
+                    Browse {listings.length}+ verified rooms across South Africa. Connect directly with landlords — no agent fees, no hidden costs.
+                  </p>
+                  <div className="flex flex-wrap gap-4">
                     <button
-                      key={item.id}
-                      onClick={() => setCurrentView(item.id)}
-                      className={isActive ? 'active' : ''}
-                      aria-label={item.label}
+                      onClick={() => onRequireAuth && onRequireAuth('renter')}
+                      className="inline-flex items-center gap-2 bg-[#E63946] text-white font-bold px-8 py-4 rounded-xl hover:bg-[#c5303c] transition-all shadow-lg hover:shadow-xl hover:scale-105 active:scale-100"
                     >
-                      <Icon className="w-4 h-4" /> {item.label}
+                      Start Searching
+                      <ArrowRight className="w-5 h-5" />
                     </button>
-                  );
-                })}
-              </div>
-            </div>
-            <div>
-              <div className="sidebar-section-title mb-2">Filters</div>
-              {renderFiltersBox()}
-            </div>
-            {/* Sidebar Ad */}
-            <SidebarAd />
-            {!currentUser && (
-              <div className="mt-auto pt-4 border-t border-gray-200">
-                <p className="text-xs text-gray-500 mb-2">Join to list rooms.</p>
-                <div className="flex gap-2">
-                  <button onClick={() => onRequireAuth && onRequireAuth('renter')} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs py-2 rounded">Sign In</button>
-                  <button onClick={() => onRequireAuth && onRequireAuth('landlord')} className="flex-1 bg-red-500 hover:bg-red-600 text-white text-xs py-2 rounded">List Room</button>
+                    <button
+                      onClick={() => onRequireAuth && onRequireAuth('landlord')}
+                      className="inline-flex items-center gap-2 bg-white/10 text-white font-bold px-8 py-4 rounded-xl hover:bg-white/20 transition-all border border-white/30"
+                    >
+                      List Your Room
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="hidden lg:grid grid-cols-2 gap-4">
+                  <div className="space-y-4">
+                    <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                      <Building2 className="w-8 h-8 text-[#E63946] mb-3" />
+                      <div className="text-3xl font-bold">{listings.length}+</div>
+                      <div className="text-sm text-white/70">Active Listings</div>
+                    </div>
+                    <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                      <Zap className="w-8 h-8 text-amber-400 mb-3" />
+                      <div className="text-3xl font-bold">Instant</div>
+                      <div className="text-sm text-white/70">Contact Landlords</div>
+                    </div>
+                  </div>
+                  <div className="space-y-4 mt-8">
+                    <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                      <Shield className="w-8 h-8 text-emerald-400 mb-3" />
+                      <div className="text-3xl font-bold">Verified</div>
+                      <div className="text-sm text-white/70">Trusted Landlords</div>
+                    </div>
+                    <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                      <MapPin className="w-8 h-8 text-blue-400 mb-3" />
+                      <div className="text-3xl font-bold">Nationwide</div>
+                      <div className="text-sm text-white/70">All Provinces</div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            )}
-          </aside>
-          <main className="desktop-split" role="main">
-            <div className="list-pane">
-              <div className="flex items-center justify-between mb-3">
-                <h2 id="results-heading" className="text-lg font-semibold text-gray-800">{listings.length === 0 ? 'No rooms' : `${listings.length} rooms`}</h2>
+            </div>
+          </div>
+        )}
+
+        {/* Main Desktop Content */}
+        <div className="bg-gradient-to-b from-gray-50 to-white">
+          <div className="max-w-7xl mx-auto px-6 py-8">
+            {/* Search Bar - Desktop */}
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-8">
+              <div className="flex flex-wrap lg:flex-nowrap gap-4 items-end">
+                <div className="flex-1 min-w-[200px]">
+                  <label className="text-sm font-semibold text-gray-700 mb-2 block">Location</label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search by area, suburb, or city..."
+                      value={searchLocation}
+                      onChange={e => setSearchLocation(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#E63946] focus:border-[#E63946] text-gray-800"
+                    />
+                  </div>
+                </div>
+                <div className="w-40">
+                  <label className="text-sm font-semibold text-gray-700 mb-2 block">Min Price</label>
+                  <select
+                    value={priceRange[0]}
+                    onChange={(e) => setPriceRange([parseInt(e.target.value), priceRange[1]])}
+                    className="w-full py-3 px-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#E63946] text-gray-800"
+                  >
+                    <option value="0">R0</option>
+                    <option value="500">R500</option>
+                    <option value="1000">R1,000</option>
+                    <option value="1500">R1,500</option>
+                    <option value="2000">R2,000</option>
+                  </select>
+                </div>
+                <div className="w-40">
+                  <label className="text-sm font-semibold text-gray-700 mb-2 block">Max Price</label>
+                  <select
+                    value={priceRange[1]}
+                    onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
+                    className="w-full py-3 px-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#E63946] text-gray-800"
+                  >
+                    <option value="2000">R2,000</option>
+                    <option value="3000">R3,000</option>
+                    <option value="5000">R5,000</option>
+                    <option value="7500">R7,500</option>
+                    <option value="10000">R10,000</option>
+                  </select>
+                </div>
+                <div className="w-44">
+                  <label className="text-sm font-semibold text-gray-700 mb-2 block">Sort By</label>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="w-full py-3 px-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#E63946] text-gray-800"
+                  >
+                    <option value="newest">Newest First</option>
+                    <option value="cheapest">Lowest Price</option>
+                    <option value="expensive">Highest Price</option>
+                  </select>
+                </div>
+                <button
+                  onClick={() => addRecentSearch(searchLocation)}
+                  className="bg-[#E63946] hover:bg-[#c5303c] text-white font-bold px-8 py-3 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+                >
+                  <Search className="w-5 h-5" />
+                  Search
+                </button>
+              </div>
+              
+              {/* Quick Filters */}
+              <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-100">
+                <span className="text-sm text-gray-500 mr-2">Popular:</span>
+                {['Sandton', 'Soweto', 'Pretoria', 'Cape Town', 'Durban', 'Midrand'].map(area => (
+                  <button
+                    key={area}
+                    onClick={() => setSearchLocation(area)}
+                    className={`text-sm px-4 py-1.5 rounded-full transition-all ${
+                      searchLocation.toLowerCase().includes(area.toLowerCase())
+                        ? 'bg-[#E63946] text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {area}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Results Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 id="results-heading" className="text-2xl font-bold text-gray-800">
+                  {listings.length === 0 ? 'No rooms found' : `${listings.length} Rooms Available`}
+                </h2>
+                <p className="text-gray-500 mt-1">
+                  {searchLocation ? `Showing results for "${searchLocation}"` : 'Browse all available rooms in South Africa'}
+                </p>
               </div>
               {renderFilterChips()}
-              {initialLoad ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6" aria-label="Loading listings">
-                  {Array.from({ length: 8 }).map((_, i) => <ListingSkeletonCard key={i} />)}
-                </div>
-              ) : (
-                (paymentFilter ? listings.filter(l => l.paymentMethod === paymentFilter) : listings).length === 0 ? (
-                  <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center shadow-sm">
-                    <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                      <Search className="w-10 h-10 text-gray-300" />
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-800 mb-2">No rooms found</h3>
-                    <p className="text-gray-500 text-sm mb-6 max-w-md mx-auto">
-                      We couldn't find any rooms matching your filters. Try adjusting your search or explore popular areas.
-                    </p>
-                    <div className="flex flex-wrap justify-center gap-2 mb-6">
-                      <span className="text-xs text-gray-500">Try:</span>
-                      {['Sandton', 'Soweto', 'Pretoria', 'Cape Town'].map(area => (
-                        <button
-                          key={area}
-                          onClick={() => setSearchLocation(area)}
-                          className="text-xs px-3 py-1.5 rounded-full bg-red-50 text-[#E63946] hover:bg-red-100 border border-red-200 transition-all"
-                        >
-                          {area}
-                        </button>
-                      ))}
-                    </div>
-                    <button
-                      onClick={() => {
-                        setSearchLocation('');
-                        setPriceRange([0, 10000]);
-                        setSelectedAmenities([]);
-                        setPaymentFilter('');
-                      }}
-                      className="text-sm text-[#E63946] hover:text-[#c5303c] font-semibold"
-                    >
-                      Clear all filters
-                    </button>
+            </div>
+
+            {/* Listings Grid */}
+            {initialLoad ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6" aria-label="Loading listings">
+                {Array.from({ length: 8 }).map((_, i) => <ListingSkeletonCard key={i} />)}
+              </div>
+            ) : (
+              (paymentFilter ? listings.filter(l => l.paymentMethod === paymentFilter) : listings).length === 0 ? (
+                <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center shadow-sm">
+                  <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Search className="w-10 h-10 text-gray-300" />
                   </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
-                    {(paymentFilter ? listings.filter(l => l.paymentMethod === paymentFilter) : listings).map((listing, idx) => (
-                      <React.Fragment key={listing.id}>
-                        <ListingCard listing={listing} onClick={() => onSelectListing(listing)} />
-                        {(idx + 1) % 6 === 0 && idx !== listings.length - 1 && (
-                          <div className="md:col-span-2 xl:col-span-3 2xl:col-span-4">
-                            <InFeedAd />
-                          </div>
-                        )}
-                      </React.Fragment>
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">No rooms found</h3>
+                  <p className="text-gray-500 text-sm mb-6 max-w-md mx-auto">
+                    We couldn't find any rooms matching your filters. Try adjusting your search or explore popular areas.
+                  </p>
+                  <div className="flex flex-wrap justify-center gap-2 mb-6">
+                    <span className="text-xs text-gray-500">Try:</span>
+                    {['Sandton', 'Soweto', 'Pretoria', 'Cape Town'].map(area => (
+                      <button
+                        key={area}
+                        onClick={() => setSearchLocation(area)}
+                        className="text-xs px-3 py-1.5 rounded-full bg-red-50 text-[#E63946] hover:bg-red-100 border border-red-200 transition-all"
+                      >
+                        {area}
+                      </button>
                     ))}
                   </div>
-                )
-              )}
-            </div>
-          </main>
+                  <button
+                    onClick={() => {
+                      setSearchLocation('');
+                      setPriceRange([0, 10000]);
+                      setSelectedAmenities([]);
+                      setPaymentFilter('');
+                    }}
+                    className="text-sm text-[#E63946] hover:text-[#c5303c] font-semibold"
+                  >
+                    Clear all filters
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+                  {(paymentFilter ? listings.filter(l => l.paymentMethod === paymentFilter) : listings).map((listing, idx) => (
+                    <React.Fragment key={listing.id}>
+                      <ListingCard listing={listing} onClick={() => onSelectListing(listing)} />
+                      {(idx + 1) % 6 === 0 && idx !== listings.length - 1 && (
+                        <div className="md:col-span-2 xl:col-span-3 2xl:col-span-4">
+                          <InFeedAd />
+                        </div>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </div>
+              )
+            )}
+          </div>
         </div>
       </div>
     );
