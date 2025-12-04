@@ -115,10 +115,16 @@ export function onAuthStateChange(callback) {
 }
 
 // Send password reset email
-export async function resetPassword(email) {
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+export async function resetPassword(email, captchaToken = '') {
+  const options = {
     redirectTo: `${window.location.origin}/reset-password`,
-  });
+  };
+  
+  if (captchaToken) {
+    options.captchaToken = captchaToken;
+  }
+  
+  const { error } = await supabase.auth.resetPasswordForEmail(email, options);
   
   if (error) {
     console.error('Password reset error:', error);

@@ -164,8 +164,8 @@ export default function RentalPlatform() {
     signInGoogle: async (userTypeParam = 'renter') => {
       await signInWithGoogle(userTypeParam);
     },
-    sendPasswordReset: async (email) => {
-      await resetPassword(email);
+    sendPasswordReset: async (email, captchaToken = '') => {
+      await resetPassword(email, captchaToken);
     }
   };
 
@@ -4064,7 +4064,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
   const [captchaRefresh, setCaptchaRefresh] = useState(0);
   
   const captchaEnabled = Boolean(turnstileSiteKey);
-  const requiresCaptcha = captchaEnabled && (mode === 'signin' || mode === 'signup');
+  const requiresCaptcha = captchaEnabled && (mode === 'signin' || mode === 'signup' || mode === 'reset');
 
   // Reset captcha when mode changes
   useEffect(() => {
@@ -4142,7 +4142,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
         onSuccess?.();
         onClose();
       } else if (mode === 'reset') {
-        await authFunctions.sendPasswordReset(form.email);
+        await authFunctions.sendPasswordReset(form.email, captchaToken);
         setResetSent(true);
       }
     } catch (err) {
