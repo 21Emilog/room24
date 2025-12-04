@@ -4399,7 +4399,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
           )}
 
           {/* Turnstile Captcha Widget */}
-          {captchaEnabled && (mode === 'signin' || mode === 'signup') && (
+          {captchaEnabled && (mode === 'signin' || mode === 'signup' || mode === 'reset') && (
             <div className="flex flex-col items-center">
               <TurnstileWidget
                 siteKey={turnstileSiteKey}
