@@ -421,7 +421,7 @@ export default function BrowseView({
         )}
 
         {/* Main Desktop Content */}
-        <div className="bg-gradient-to-b from-gray-50 to-white">
+        <div className="bg-gradient-to-b from-gray-50 to-white min-h-screen">
           <div className="max-w-7xl mx-auto px-6 py-8">
             {/* Search Bar - Desktop */}
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-8">
@@ -439,12 +439,12 @@ export default function BrowseView({
                     />
                   </div>
                 </div>
-                <div className="w-40">
+                <div className="w-36">
                   <label className="text-sm font-semibold text-gray-700 mb-2 block">Min Price</label>
                   <select
                     value={priceRange[0]}
                     onChange={(e) => setPriceRange([parseInt(e.target.value), priceRange[1]])}
-                    className="w-full py-3 px-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#E63946] text-gray-800"
+                    className="w-full py-3 px-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#E63946] text-gray-800"
                   >
                     <option value="0">R0</option>
                     <option value="500">R500</option>
@@ -453,12 +453,12 @@ export default function BrowseView({
                     <option value="2000">R2,000</option>
                   </select>
                 </div>
-                <div className="w-40">
+                <div className="w-36">
                   <label className="text-sm font-semibold text-gray-700 mb-2 block">Max Price</label>
                   <select
                     value={priceRange[1]}
                     onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
-                    className="w-full py-3 px-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#E63946] text-gray-800"
+                    className="w-full py-3 px-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#E63946] text-gray-800"
                   >
                     <option value="2000">R2,000</option>
                     <option value="3000">R3,000</option>
@@ -467,12 +467,12 @@ export default function BrowseView({
                     <option value="10000">R10,000</option>
                   </select>
                 </div>
-                <div className="w-44">
+                <div className="w-40">
                   <label className="text-sm font-semibold text-gray-700 mb-2 block">Sort By</label>
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
-                    className="w-full py-3 px-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#E63946] text-gray-800"
+                    className="w-full py-3 px-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#E63946] text-gray-800"
                   >
                     <option value="newest">Newest First</option>
                     <option value="cheapest">Lowest Price</option>
@@ -507,73 +507,148 @@ export default function BrowseView({
               </div>
             </div>
 
-            {/* Results Header */}
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 id="results-heading" className="text-2xl font-bold text-gray-800">
-                  {listings.length === 0 ? 'No rooms found' : `${listings.length} Rooms Available`}
-                </h2>
-                <p className="text-gray-500 mt-1">
-                  {searchLocation ? `Showing results for "${searchLocation}"` : 'Browse all available rooms in South Africa'}
-                </p>
-              </div>
-              {renderFilterChips()}
-            </div>
+            {/* Two Column Layout: Listings + Sidebar */}
+            <div className="flex gap-8">
+              {/* Main Listings Area */}
+              <div className="flex-1">
+                {/* Results Header */}
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 id="results-heading" className="text-2xl font-bold text-gray-800">
+                      {listings.length === 0 ? 'No rooms found' : `${listings.length} Room${listings.length !== 1 ? 's' : ''} Available`}
+                    </h2>
+                    <p className="text-gray-500 mt-1">
+                      {searchLocation ? `Showing results for "${searchLocation}"` : 'Browse all available rooms in South Africa'}
+                    </p>
+                  </div>
+                  {renderFilterChips()}
+                </div>
 
-            {/* Listings Grid */}
-            {initialLoad ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6" aria-label="Loading listings">
-                {Array.from({ length: 8 }).map((_, i) => <ListingSkeletonCard key={i} />)}
-              </div>
-            ) : (
-              (paymentFilter ? listings.filter(l => l.paymentMethod === paymentFilter) : listings).length === 0 ? (
-                <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center shadow-sm">
-                  <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Search className="w-10 h-10 text-gray-300" />
+                {/* Listings Grid - Adjusted for better density */}
+                {initialLoad ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6" aria-label="Loading listings">
+                    {Array.from({ length: 6 }).map((_, i) => <ListingSkeletonCard key={i} />)}
                   </div>
-                  <h3 className="text-xl font-bold text-gray-800 mb-2">No rooms found</h3>
-                  <p className="text-gray-500 text-sm mb-6 max-w-md mx-auto">
-                    We couldn't find any rooms matching your filters. Try adjusting your search or explore popular areas.
-                  </p>
-                  <div className="flex flex-wrap justify-center gap-2 mb-6">
-                    <span className="text-xs text-gray-500">Try:</span>
-                    {['Sandton', 'Soweto', 'Pretoria', 'Cape Town'].map(area => (
+                ) : (
+                  (paymentFilter ? listings.filter(l => l.paymentMethod === paymentFilter) : listings).length === 0 ? (
+                    <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center shadow-sm">
+                      <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Search className="w-10 h-10 text-gray-300" />
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-800 mb-2">No rooms found</h3>
+                      <p className="text-gray-500 text-sm mb-6 max-w-md mx-auto">
+                        We couldn't find any rooms matching your filters. Try adjusting your search or explore popular areas.
+                      </p>
+                      <div className="flex flex-wrap justify-center gap-2 mb-6">
+                        <span className="text-xs text-gray-500">Try:</span>
+                        {['Sandton', 'Soweto', 'Pretoria', 'Cape Town'].map(area => (
+                          <button
+                            key={area}
+                            onClick={() => setSearchLocation(area)}
+                            className="text-xs px-3 py-1.5 rounded-full bg-red-50 text-[#E63946] hover:bg-red-100 border border-red-200 transition-all"
+                          >
+                            {area}
+                          </button>
+                        ))}
+                      </div>
                       <button
-                        key={area}
-                        onClick={() => setSearchLocation(area)}
-                        className="text-xs px-3 py-1.5 rounded-full bg-red-50 text-[#E63946] hover:bg-red-100 border border-red-200 transition-all"
+                        onClick={() => {
+                          setSearchLocation('');
+                          setPriceRange([0, 10000]);
+                          setSelectedAmenities([]);
+                          setPaymentFilter('');
+                        }}
+                        className="text-sm text-[#E63946] hover:text-[#c5303c] font-semibold"
                       >
-                        {area}
+                        Clear all filters
                       </button>
-                    ))}
-                  </div>
-                  <button
-                    onClick={() => {
-                      setSearchLocation('');
-                      setPriceRange([0, 10000]);
-                      setSelectedAmenities([]);
-                      setPaymentFilter('');
-                    }}
-                    className="text-sm text-[#E63946] hover:text-[#c5303c] font-semibold"
-                  >
-                    Clear all filters
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
-                  {(paymentFilter ? listings.filter(l => l.paymentMethod === paymentFilter) : listings).map((listing, idx) => (
-                    <React.Fragment key={listing.id}>
-                      <ListingCard listing={listing} onClick={() => onSelectListing(listing)} />
-                      {(idx + 1) % 6 === 0 && idx !== listings.length - 1 && (
-                        <div className="md:col-span-2 xl:col-span-3 2xl:col-span-4">
-                          <InFeedAd />
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                      {(paymentFilter ? listings.filter(l => l.paymentMethod === paymentFilter) : listings).map((listing, idx) => (
+                        <React.Fragment key={listing.id}>
+                          <ListingCard listing={listing} onClick={() => onSelectListing(listing)} />
+                          {(idx + 1) % 6 === 0 && idx !== listings.length - 1 && (
+                            <div className="lg:col-span-2 xl:col-span-3">
+                              <InFeedAd />
+                            </div>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </div>
+                  )
+                )}
+              </div>
+
+              {/* Desktop Sidebar */}
+              <div className="hidden xl:block w-80 flex-shrink-0">
+                <div className="sticky top-24 space-y-6">
+                  {/* Save Search Card */}
+                  <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+                    <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                      <Bell className="w-5 h-5 text-[#E63946]" />
+                      Get Notified
+                    </h3>
+                    <p className="text-sm text-gray-500 mb-4">
+                      Save this search and we'll alert you when new rooms match your criteria.
+                    </p>
+                    <button
+                      onClick={saveCurrentSearch}
+                      className="w-full bg-[#1D3557] hover:bg-[#152a45] text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-2"
+                    >
+                      <Bell className="w-4 h-4" />
+                      Save This Search
+                    </button>
+                    {savedSearches.length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-gray-100">
+                        <p className="text-xs text-gray-500 mb-2">Your saved searches:</p>
+                        <div className="space-y-2">
+                          {savedSearches.slice(0, 3).map(s => (
+                            <button
+                              key={s.id}
+                              onClick={() => loadSearch(s)}
+                              className="w-full text-left text-sm px-3 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-700 truncate"
+                            >
+                              {s.location || 'Any location'} • R{s.priceRange[0]}-R{s.priceRange[1]}
+                            </button>
+                          ))}
                         </div>
-                      )}
-                    </React.Fragment>
-                  ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Quick Stats */}
+                  <div className="bg-gradient-to-br from-[#1D3557] to-[#2d4a6f] rounded-2xl shadow-lg p-6 text-white">
+                    <h3 className="font-bold mb-4">Why RentMzansi?</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                          <Shield className="w-4 h-4" />
+                        </div>
+                        <span className="text-sm">Verified landlords only</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                          <Zap className="w-4 h-4" />
+                        </div>
+                        <span className="text-sm">Instant direct contact</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                          <Building2 className="w-4 h-4" />
+                        </div>
+                        <span className="text-sm">No agent fees</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Ad Space */}
+                  <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+                    <InFeedAd />
+                  </div>
                 </div>
-              )
-            )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
