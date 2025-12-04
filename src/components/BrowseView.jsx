@@ -508,7 +508,7 @@ export default function BrowseView({
             </div>
 
             {/* Two Column Layout: Listings + Sidebar */}
-            <div className="flex gap-8">
+            <div className="flex gap-6 lg:gap-8">
               {/* Main Listings Area */}
               <div className="flex-1">
                 {/* Results Header */}
@@ -564,7 +564,11 @@ export default function BrowseView({
                       </button>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                    <div className={`grid gap-6 ${
+                      (paymentFilter ? listings.filter(l => l.paymentMethod === paymentFilter) : listings).length <= 2 
+                        ? 'grid-cols-1 lg:grid-cols-2' 
+                        : 'grid-cols-1 lg:grid-cols-2 xl:grid-cols-3'
+                    }`}>
                       {(paymentFilter ? listings.filter(l => l.paymentMethod === paymentFilter) : listings).map((listing, idx) => (
                         <React.Fragment key={listing.id}>
                           <ListingCard listing={listing} onClick={() => onSelectListing(listing)} />
@@ -581,23 +585,23 @@ export default function BrowseView({
               </div>
 
               {/* Desktop Sidebar */}
-              <div className="hidden xl:block w-80 flex-shrink-0">
-                <div className="sticky top-24 space-y-6">
+              <div className="hidden lg:block w-72 xl:w-80 flex-shrink-0">
+                <div className="sticky top-24 space-y-5">
                   {/* Save Search Card */}
-                  <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-                    <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                  <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-5">
+                    <h3 className="font-bold text-gray-800 mb-2 flex items-center gap-2">
                       <Bell className="w-5 h-5 text-[#E63946]" />
                       Get Notified
                     </h3>
                     <p className="text-sm text-gray-500 mb-4">
-                      Save this search and we'll alert you when new rooms match your criteria.
+                      Save this search and get alerts when new rooms match.
                     </p>
                     <button
                       onClick={saveCurrentSearch}
-                      className="w-full bg-[#1D3557] hover:bg-[#152a45] text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-2"
+                      className="w-full bg-[#1D3557] hover:bg-[#152a45] text-white font-semibold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2"
                     >
                       <Bell className="w-4 h-4" />
-                      Save This Search
+                      Save Search
                     </button>
                     {savedSearches.length > 0 && (
                       <div className="mt-4 pt-4 border-t border-gray-100">

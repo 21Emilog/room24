@@ -913,7 +913,7 @@ const filteredListings = listings
       />
 
       {currentView === 'browse' && (
-        <div className="px-4 sm:px-6 lg:px-8 mt-4">
+        <div className="px-4 sm:px-6 lg:px-8 mt-4 lg:hidden">
           <div className="max-w-7xl mx-auto space-y-3">
             <button
               type="button"
