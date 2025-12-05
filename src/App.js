@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, Suspense } from 'react';
-import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone, Sparkles, TrendingUp, ShieldCheck, ChevronDown, ArrowLeft, RefreshCw, AlertCircle, Trash2 } from 'lucide-react';
+import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone, Sparkles, TrendingUp, ShieldCheck, ChevronDown, ArrowLeft, RefreshCw, AlertCircle, Trash2, GitCompare, Users, MessageSquare, Copy } from 'lucide-react';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import BrowseView from './components/BrowseView';
@@ -7,7 +7,7 @@ import NotificationBanner from './components/NotificationBanner';
 import OfflineIndicator from './components/OfflineIndicator';
 import BackToTop from './components/BackToTop';
 import TurnstileWidget from './components/TurnstileWidget';
-import { getNotifications, addNotification, checkAreaSubscriptions, subscribeToArea as subscribeToAreaEngine, unsubscribeFromArea, getAreaSubscriptions } from './utils/notificationEngine';
+import { getNotifications, addNotification, checkAreaSubscriptions, subscribeToArea as subscribeToAreaEngine, unsubscribeFromArea, getAreaSubscriptions, getCompareList, clearCompareList, removeFromCompare, saveRoommateProfile, getRoommateProfile, getAllRoommateProfiles, deleteRoommateProfile, getLandlordQuickReplies, saveLandlordQuickReplies, checkViewedListingPriceDrops } from './utils/notificationEngine';
 import { loadListingTemplate, saveListingTemplate, clearListingTemplate } from './utils/listingTemplateStorage';
 import { 
   fetchAllListings, 
@@ -89,6 +89,10 @@ export default function RentalPlatform() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showPulsePanel, setShowPulsePanel] = useState(false);
   const [editingListing, setEditingListing] = useState(null); // Listing being edited
+  const [compareList, setCompareList] = useState(() => getCompareList()); // Room comparison list
+  const [showCompareView, setShowCompareView] = useState(false);
+  const [showRoommateView, setShowRoommateView] = useState(false);
+  const [roommateProfiles, setRoommateProfiles] = useState(() => getAllRoommateProfiles());
 
   const composedProfile = useMemo(() => {
     if (!currentUser) return null;
@@ -1118,6 +1122,7 @@ const filteredListings = listings
             } : null}
             areaSubscriptions={currentUser?.id ? getAreaSubscriptions(currentUser.id) : []}
             onUnsubscribeArea={handleUnsubscribeFromArea}
+            showToast={showToast}
             onUpdatePrefs={async (prefs) => {
               const userId = currentUser?.id;
               if (userId) {
@@ -1231,6 +1236,39 @@ const filteredListings = listings
             onBrowse={() => setCurrentView('browse')}
           />
         )}
+
+        {/* Room Comparison View */}
+        {showCompareView && (
+          <CompareView
+            listings={listings}
+            compareList={compareList}
+            onRemove={(id) => {
+              removeFromCompare(id);
+              setCompareList(getCompareList());
+            }}
+            onClear={() => {
+              clearCompareList();
+              setCompareList([]);
+              setShowCompareView(false);
+            }}
+            onSelectListing={setSelectedListing}
+            onClose={() => setShowCompareView(false)}
+          />
+        )}
+
+        {/* Roommate Matching View */}
+        {showRoommateView && (
+          <RoommateView
+            currentUser={composedProfile}
+            onSaveProfile={(profile) => {
+              saveRoommateProfile(currentUser?.id || 'anonymous', profile);
+              setRoommateProfiles(getAllRoommateProfiles());
+              showToast('Profile saved! Finding matches...', 'success');
+            }}
+            profiles={roommateProfiles}
+            onClose={() => setShowRoommateView(false)}
+          />
+        )}
       </div>
 
       {selectedListing && (
@@ -1238,12 +1276,14 @@ const filteredListings = listings
           <ListingDetailModal 
             listing={selectedListing}
             landlord={{
+              id: selectedListing.landlordId,
               name: selectedListing.landlordName,
               phone: selectedListing.landlordPhone,
               email: selectedListing.landlordEmail,
               photo: selectedListing.landlordPhoto
             }}
             onClose={() => setSelectedListing(null)}
+            currentUserId={currentUser?.id || currentUser?.uid}
             userType={userType}
             currentUser={currentUser}
             onRequireAuth={openAuthModal}
@@ -1266,6 +1306,29 @@ const filteredListings = listings
           authFunctions={authFunctions}
           turnstileSiteKey={TURNSTILE_SITE_KEY}
         />
+      )}
+
+      {/* Floating Compare Button */}
+      {compareList.length > 0 && !showCompareView && (
+        <button
+          onClick={() => setShowCompareView(true)}
+          className="fixed bottom-24 right-4 z-30 flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-3 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105 animate-bounce"
+          style={{ animationDuration: '2s' }}
+        >
+          <GitCompare className="w-5 h-5" />
+          <span className="font-semibold">Compare ({compareList.length})</span>
+        </button>
+      )}
+
+      {/* Floating Roommate Finder Button - for renters */}
+      {userType !== 'landlord' && !showRoommateView && !showCompareView && (
+        <button
+          onClick={() => setShowRoommateView(true)}
+          className="fixed bottom-24 left-4 z-30 flex items-center gap-2 bg-gradient-to-r from-teal-600 to-emerald-600 text-white px-4 py-3 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105"
+        >
+          <Users className="w-5 h-5" />
+          <span className="font-semibold">Find Roommate</span>
+        </button>
       )}
 
       <BottomNav 
@@ -1523,7 +1586,7 @@ function ProfileSetupView({ onSubmit, userType }) {
   );
 }
 
-function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, onLinkGoogle, onLinkPhone, onBecomeLandlord, areaSubscriptions = [], onUnsubscribeArea }) {
+function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, onLinkGoogle, onLinkPhone, onBecomeLandlord, areaSubscriptions = [], onUnsubscribeArea, showToast }) {
   const prefs = user.notificationPrefs || { updates: true, marketing: false };
   const [localPrefs, setLocalPrefs] = React.useState(prefs);
   const [linkingInProgress, setLinkingInProgress] = React.useState(null);
@@ -1941,6 +2004,13 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
 
             <p className="text-[11px] text-gray-500 mt-3 text-center">Link accounts to sign in with any method</p>
           </div>
+
+          {/* Quick Replies Section - Landlords Only */}
+          {user.type === 'landlord' && showToast && (
+            <div className="mt-4">
+              <QuickRepliesSection landlordId={user.id} showToast={showToast} />
+            </div>
+          )}
 
           {/* Sign Out Button */}
           {onSignOut && (
@@ -4342,6 +4412,480 @@ function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus, 
             )}
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+// Room Comparison View
+function CompareView({ listings, compareList, onRemove, onClear, onSelectListing, onClose }) {
+  const compareListings = listings.filter(l => compareList.includes(l.id || `${l.title}-${l.createdAt}`));
+  
+  if (compareListings.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-24">
+        <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-4 py-6">
+          <div className="max-w-7xl mx-auto flex items-center gap-4">
+            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl">
+              <ArrowLeft className="w-6 h-6" />
+            </button>
+            <div>
+              <h2 className="text-2xl font-bold">Compare Rooms</h2>
+              <p className="text-purple-200">Add rooms to compare from listings</p>
+            </div>
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto px-4 py-12 text-center">
+          <GitCompare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-gray-800 mb-2">No Rooms to Compare</h3>
+          <p className="text-gray-500 mb-6">Add up to 3 rooms to compare them side by side</p>
+          <button onClick={onClose} className="bg-purple-600 text-white px-6 py-3 rounded-xl font-semibold">
+            Browse Rooms
+          </button>
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="min-h-screen bg-gray-50 pb-24">
+      <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-4 py-6">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl">
+              <ArrowLeft className="w-6 h-6" />
+            </button>
+            <div>
+              <h2 className="text-2xl font-bold">Compare Rooms</h2>
+              <p className="text-purple-200">{compareListings.length} room{compareListings.length > 1 ? 's' : ''} selected</p>
+            </div>
+          </div>
+          <button onClick={onClear} className="text-sm bg-white/20 hover:bg-white/30 px-4 py-2 rounded-xl">
+            Clear All
+          </button>
+        </div>
+      </div>
+      
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="overflow-x-auto">
+          <table className="w-full bg-white rounded-2xl shadow-sm border border-gray-100">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="p-4 text-left text-gray-500 font-medium w-32">Feature</th>
+                {compareListings.map(listing => (
+                  <th key={listing.id} className="p-4 text-center min-w-[200px]">
+                    <div className="relative">
+                      <button
+                        onClick={() => onRemove(listing.id || `${listing.title}-${listing.createdAt}`)}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600"
+                      >
+                        ×
+                      </button>
+                      {listing.photos?.[0] && (
+                        <img src={listing.photos[0]} alt="" className="w-full h-32 object-cover rounded-xl mb-2" />
+                      )}
+                      <p className="font-bold text-gray-800 text-sm line-clamp-1">{listing.title}</p>
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-gray-50">
+                <td className="p-4 text-gray-600 font-medium">Price</td>
+                {compareListings.map(listing => (
+                  <td key={listing.id} className="p-4 text-center">
+                    <span className="text-xl font-bold text-[#E63946]">R{parseFloat(listing.price).toLocaleString()}</span>
+                    <span className="text-gray-500 text-sm">/mo</span>
+                  </td>
+                ))}
+              </tr>
+              <tr className="border-b border-gray-50 bg-gray-50/50">
+                <td className="p-4 text-gray-600 font-medium">Location</td>
+                {compareListings.map(listing => (
+                  <td key={listing.id} className="p-4 text-center text-gray-800">{listing.location}</td>
+                ))}
+              </tr>
+              <tr className="border-b border-gray-50">
+                <td className="p-4 text-gray-600 font-medium">Status</td>
+                {compareListings.map(listing => (
+                  <td key={listing.id} className="p-4 text-center">
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${listing.status === 'available' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>
+                      {listing.status === 'available' ? 'Available' : 'Rented'}
+                    </span>
+                  </td>
+                ))}
+              </tr>
+              <tr className="border-b border-gray-50 bg-gray-50/50">
+                <td className="p-4 text-gray-600 font-medium">Amenities</td>
+                {compareListings.map(listing => (
+                  <td key={listing.id} className="p-4 text-center">
+                    <div className="flex flex-wrap gap-1 justify-center">
+                      {(listing.amenities || []).slice(0, 4).map(a => (
+                        <span key={a} className="bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded">{a}</span>
+                      ))}
+                      {(listing.amenities?.length || 0) > 4 && (
+                        <span className="text-gray-400 text-xs">+{listing.amenities.length - 4}</span>
+                      )}
+                    </div>
+                  </td>
+                ))}
+              </tr>
+              <tr className="border-b border-gray-50">
+                <td className="p-4 text-gray-600 font-medium">Additional Costs</td>
+                {compareListings.map(listing => (
+                  <td key={listing.id} className="p-4 text-center text-sm">
+                    {listing.additionalCosts?.filter(c => c.name && c.amount).length > 0 
+                      ? listing.additionalCosts.filter(c => c.name && c.amount).map(c => `${c.name}: R${c.amount}`).join(', ')
+                      : <span className="text-gray-400">None listed</span>
+                    }
+                  </td>
+                ))}
+              </tr>
+              <tr>
+                <td className="p-4 text-gray-600 font-medium">Action</td>
+                {compareListings.map(listing => (
+                  <td key={listing.id} className="p-4 text-center">
+                    <button
+                      onClick={() => onSelectListing(listing)}
+                      className="bg-[#E63946] text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#c5303c]"
+                    >
+                      View Details
+                    </button>
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Roommate Matching View
+function RoommateView({ currentUser, onClose, showToast }) {
+  const [activeTab, setActiveTab] = useState('browse'); // 'browse' | 'profile'
+  const [profiles, setProfiles] = useState([]);
+  const [myProfile, setMyProfile] = useState(null);
+  const [filters, setFilters] = useState({ location: '', maxBudget: '' });
+  const [profileForm, setProfileForm] = useState({
+    name: '',
+    age: '',
+    gender: 'any',
+    budget: '',
+    preferredAreas: '',
+    moveInDate: '',
+    about: '',
+    contact: '',
+  });
+  
+  useEffect(() => {
+    setProfiles(getAllRoommateProfiles().filter(p => p.userId !== currentUser?.id));
+    if (currentUser?.id) {
+      const existing = getRoommateProfile(currentUser.id);
+      if (existing) {
+        setMyProfile(existing);
+        setProfileForm({
+          name: existing.name || '',
+          age: existing.age || '',
+          gender: existing.gender || 'any',
+          budget: existing.budget || '',
+          preferredAreas: (existing.preferredAreas || []).join(', '),
+          moveInDate: existing.moveInDate || '',
+          about: existing.about || '',
+          contact: existing.contact || '',
+        });
+      }
+    }
+  }, [currentUser?.id]);
+  
+  const handleSaveProfile = () => {
+    if (!currentUser?.id) {
+      showToast('Please sign in to create a profile', 'error');
+      return;
+    }
+    const profile = {
+      ...profileForm,
+      preferredAreas: profileForm.preferredAreas.split(',').map(a => a.trim()).filter(Boolean),
+      budget: parseFloat(profileForm.budget) || 0,
+    };
+    saveRoommateProfile(currentUser.id, profile);
+    setMyProfile(profile);
+    showToast('Roommate profile saved!', 'success');
+    setActiveTab('browse');
+    setProfiles(getAllRoommateProfiles().filter(p => p.userId !== currentUser?.id));
+  };
+  
+  const handleDeleteProfile = () => {
+    if (window.confirm('Delete your roommate profile?')) {
+      deleteRoommateProfile(currentUser?.id);
+      setMyProfile(null);
+      showToast('Profile deleted', 'success');
+    }
+  };
+  
+  const filteredProfiles = profiles.filter(p => {
+    if (filters.location && !p.preferredAreas?.some(a => a.toLowerCase().includes(filters.location.toLowerCase()))) return false;
+    if (filters.maxBudget && p.budget > parseFloat(filters.maxBudget)) return false;
+    return true;
+  });
+  
+  return (
+    <div className="min-h-screen bg-gray-50 pb-24">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-6">
+        <div className="max-w-7xl mx-auto flex items-center gap-4">
+          <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl">
+            <ArrowLeft className="w-6 h-6" />
+          </button>
+          <div className="flex-1">
+            <h2 className="text-2xl font-bold">Find a Roommate</h2>
+            <p className="text-blue-200">Connect with people looking to share</p>
+          </div>
+        </div>
+      </div>
+      
+      {/* Tabs */}
+      <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setActiveTab('browse')}
+            className={`flex-1 py-3 rounded-xl font-semibold transition-all ${activeTab === 'browse' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600'}`}
+          >
+            Browse Roommates
+          </button>
+          <button
+            onClick={() => setActiveTab('profile')}
+            className={`flex-1 py-3 rounded-xl font-semibold transition-all ${activeTab === 'profile' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600'}`}
+          >
+            {myProfile ? 'My Profile' : 'Create Profile'}
+          </button>
+        </div>
+        
+        {activeTab === 'browse' && (
+          <>
+            {/* Filters */}
+            <div className="bg-white rounded-xl p-4 mb-6 flex flex-wrap gap-3">
+              <input
+                type="text"
+                placeholder="Search by area..."
+                value={filters.location}
+                onChange={e => setFilters({ ...filters, location: e.target.value })}
+                className="flex-1 min-w-[150px] px-4 py-2 border border-gray-200 rounded-lg"
+              />
+              <input
+                type="number"
+                placeholder="Max budget"
+                value={filters.maxBudget}
+                onChange={e => setFilters({ ...filters, maxBudget: e.target.value })}
+                className="w-32 px-4 py-2 border border-gray-200 rounded-lg"
+              />
+            </div>
+            
+            {/* Profiles Grid */}
+            {filteredProfiles.length === 0 ? (
+              <div className="text-center py-12">
+                <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-gray-800 mb-2">No Roommates Found</h3>
+                <p className="text-gray-500 mb-6">Be the first to create a profile!</p>
+                <button onClick={() => setActiveTab('profile')} className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold">
+                  Create Profile
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredProfiles.map((profile, idx) => (
+                  <div key={idx} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+                        <User className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-800">{profile.name || 'Anonymous'}</h4>
+                        <p className="text-sm text-gray-500">{profile.age ? `${profile.age} years` : ''} {profile.gender !== 'any' ? `• ${profile.gender}` : ''}</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2 mb-4">
+                      <p className="text-sm"><span className="text-gray-500">Budget:</span> <span className="font-semibold text-[#E63946]">R{profile.budget?.toLocaleString()}/mo</span></p>
+                      <p className="text-sm"><span className="text-gray-500">Areas:</span> {profile.preferredAreas?.join(', ') || 'Any'}</p>
+                      {profile.moveInDate && <p className="text-sm"><span className="text-gray-500">Move in:</span> {new Date(profile.moveInDate).toLocaleDateString()}</p>}
+                    </div>
+                    {profile.about && <p className="text-sm text-gray-600 mb-4 line-clamp-2">{profile.about}</p>}
+                    {profile.contact && (
+                      <a
+                        href={`https://wa.me/${profile.contact.replace(/[^0-9]/g,'').replace(/^0/, '27')}?text=${encodeURIComponent(`Hi ${profile.name}, I saw your roommate profile on RentMzansi!`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block w-full text-center bg-green-500 text-white py-2.5 rounded-xl font-semibold hover:bg-green-600"
+                      >
+                        Contact via WhatsApp
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+        
+        {activeTab === 'profile' && (
+          <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <h3 className="text-lg font-bold text-gray-800 mb-4">{myProfile ? 'Edit Your Profile' : 'Create Roommate Profile'}</h3>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                  <input type="text" value={profileForm.name} onChange={e => setProfileForm({...profileForm, name: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg" placeholder="Your name" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Age</label>
+                  <input type="number" value={profileForm.age} onChange={e => setProfileForm({...profileForm, age: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg" placeholder="25" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                  <select value={profileForm.gender} onChange={e => setProfileForm({...profileForm, gender: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg">
+                    <option value="any">Any / Prefer not to say</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Budget (R/month)</label>
+                  <input type="number" value={profileForm.budget} onChange={e => setProfileForm({...profileForm, budget: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg" placeholder="3500" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Areas (comma separated)</label>
+                <input type="text" value={profileForm.preferredAreas} onChange={e => setProfileForm({...profileForm, preferredAreas: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg" placeholder="Sandton, Rosebank, Midrand" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Move-in Date</label>
+                <input type="date" value={profileForm.moveInDate} onChange={e => setProfileForm({...profileForm, moveInDate: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">About You</label>
+                <textarea value={profileForm.about} onChange={e => setProfileForm({...profileForm, about: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg" rows={3} placeholder="Tell potential roommates about yourself..." />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp Number</label>
+                <input type="tel" value={profileForm.contact} onChange={e => setProfileForm({...profileForm, contact: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg" placeholder="0812345678" />
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button onClick={handleSaveProfile} className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700">
+                  {myProfile ? 'Update Profile' : 'Create Profile'}
+                </button>
+                {myProfile && (
+                  <button onClick={handleDeleteProfile} className="px-6 bg-red-100 text-red-600 py-3 rounded-xl font-semibold hover:bg-red-200">
+                    Delete
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Landlord Quick Replies Component
+function QuickRepliesSection({ landlordId, showToast }) {
+  const [replies, setReplies] = useState([]);
+  const [editingId, setEditingId] = useState(null);
+  const [editText, setEditText] = useState('');
+  const [newReply, setNewReply] = useState('');
+  
+  useEffect(() => {
+    setReplies(getLandlordQuickReplies(landlordId));
+  }, [landlordId]);
+  
+  const handleCopy = (text) => {
+    navigator.clipboard.writeText(text);
+    showToast('Copied to clipboard!', 'success');
+  };
+  
+  const handleSave = (id) => {
+    const updated = replies.map(r => r.id === id ? { ...r, text: editText } : r);
+    setReplies(updated);
+    saveLandlordQuickReplies(landlordId, updated);
+    setEditingId(null);
+    showToast('Reply updated!', 'success');
+  };
+  
+  const handleAdd = () => {
+    if (!newReply.trim()) return;
+    const updated = [...replies, { id: Date.now(), text: newReply }];
+    setReplies(updated);
+    saveLandlordQuickReplies(landlordId, updated);
+    setNewReply('');
+    showToast('Reply added!', 'success');
+  };
+  
+  const handleDelete = (id) => {
+    const updated = replies.filter(r => r.id !== id);
+    setReplies(updated);
+    saveLandlordQuickReplies(landlordId, updated);
+  };
+  
+  return (
+    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+          <MessageSquare className="w-5 h-5 text-white" />
+        </div>
+        <div>
+          <h3 className="font-bold text-gray-800">Quick Replies</h3>
+          <p className="text-xs text-gray-500">Copy and paste common responses</p>
+        </div>
+      </div>
+      
+      <div className="space-y-2 mb-4">
+        {replies.map(reply => (
+          <div key={reply.id} className="bg-gray-50 rounded-xl p-3 group">
+            {editingId === reply.id ? (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={editText}
+                  onChange={e => setEditText(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                />
+                <button onClick={() => handleSave(reply.id)} className="px-3 py-2 bg-blue-500 text-white rounded-lg text-sm">Save</button>
+                <button onClick={() => setEditingId(null)} className="px-3 py-2 bg-gray-200 rounded-lg text-sm">Cancel</button>
+              </div>
+            ) : (
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-sm text-gray-700 flex-1">{reply.text}</p>
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => handleCopy(reply.text)} className="p-1.5 hover:bg-gray-200 rounded-lg" title="Copy">
+                    <Copy className="w-4 h-4 text-gray-500" />
+                  </button>
+                  <button onClick={() => { setEditingId(reply.id); setEditText(reply.text); }} className="p-1.5 hover:bg-gray-200 rounded-lg" title="Edit">
+                    <Edit className="w-4 h-4 text-gray-500" />
+                  </button>
+                  <button onClick={() => handleDelete(reply.id)} className="p-1.5 hover:bg-red-100 rounded-lg" title="Delete">
+                    <X className="w-4 h-4 text-red-500" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={newReply}
+          onChange={e => setNewReply(e.target.value)}
+          placeholder="Add a new quick reply..."
+          className="flex-1 px-4 py-2 border border-gray-200 rounded-xl text-sm"
+        />
+        <button onClick={handleAdd} className="px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-semibold hover:bg-purple-700">
+          Add
+        </button>
       </div>
     </div>
   );

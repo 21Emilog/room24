@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Search, MapPin, User, Phone, Mail, ArrowLeft, ShieldCheck, Star, Maximize, ExternalLink, Share2, Copy, MessageCircle } from 'lucide-react';
+import { X, Search, MapPin, User, Phone, Mail, ArrowLeft, ShieldCheck, Star, Maximize, ExternalLink, Share2, Copy, MessageCircle, Eye, GitCompare, Zap } from 'lucide-react';
 import VirtualTourViewer from './VirtualTourViewer';
+import { trackListingView, getListingViewCount, trackUserViewedListing, addToCompare, getCompareList, removeFromCompare, trackLandlordContactClick, getResponseTimeBadge } from '../utils/notificationEngine';
 
 function PhotoGallery({ photos, currentIndex, onClose, onNavigate }) {
   const [touchStart, setTouchStart] = useState(null);
@@ -131,7 +132,7 @@ function PhotoGallery({ photos, currentIndex, onClose, onNavigate }) {
   );
 }
 
-export default function ListingDetailModal({ listing, landlord, onClose }) {
+export default function ListingDetailModal({ listing, landlord, onClose, currentUserId }) {
   const [showContact, setShowContact] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
@@ -141,6 +142,9 @@ export default function ListingDetailModal({ listing, landlord, onClose }) {
   const [reportComment, setReportComment] = useState('');
   const [reportStatus, setReportStatus] = useState('idle');
   const [showVirtualTour, setShowVirtualTour] = useState(false);
+  const [viewCount, setViewCount] = useState(0);
+  const [isInCompare, setIsInCompare] = useState(false);
+  
   // Reviews state
   const listingKey = listing?.id || `${listing.title}-${listing.createdAt || 'na'}`;
   const reviewsStorageKey = `reviews-${listingKey}`;
@@ -156,6 +160,46 @@ export default function ListingDetailModal({ listing, landlord, onClose }) {
   const [hoverRating, setHoverRating] = useState(0);
   const [newComment, setNewComment] = useState('');
   const [submitStatus, setSubmitStatus] = useState('idle');
+  
+  // Track view and get view count on mount
+  useEffect(() => {
+    if (listingKey) {
+      const count = trackListingView(listingKey, currentUserId);
+      setViewCount(count);
+      // Track for price drop alerts
+      if (currentUserId && listing?.price) {
+        trackUserViewedListing(currentUserId, listingKey, listing.price);
+      }
+      // Check if in compare list
+      const compareList = getCompareList();
+      setIsInCompare(compareList.includes(listingKey));
+    }
+  }, [listingKey, currentUserId, listing?.price]);
+  
+  // Get landlord response badge
+  const responseBadge = landlord?.id ? getResponseTimeBadge(landlord.id) : null;
+  
+  // Handle compare toggle
+  const handleCompareToggle = () => {
+    if (isInCompare) {
+      removeFromCompare(listingKey);
+      setIsInCompare(false);
+    } else {
+      const result = addToCompare(listingKey);
+      if (result.success) {
+        setIsInCompare(true);
+      } else {
+        alert(result.message);
+      }
+    }
+  };
+  
+  // Track when landlord contact is clicked
+  const handleContactClick = () => {
+    if (landlord?.id) {
+      trackLandlordContactClick(landlord.id);
+    }
+  };
 
   // Build complete address for Google Maps
   const completeAddress = listing?.fullAddress 
@@ -309,6 +353,33 @@ export default function ListingDetailModal({ listing, landlord, onClose }) {
           <h3 className="text-2xl font-extrabold mb-2 text-gray-900">{listing.title}</h3>
           <div className="text-transparent bg-gradient-to-r from-[#E63946] to-[#c5303c] bg-clip-text font-bold text-3xl mb-2">
             R{typeof listing.price === 'number' ? listing.price.toLocaleString('en-ZA') : listing.price}<span className="text-lg text-gray-500 font-normal">/month</span>
+          </div>
+          
+          {/* View Count & Compare Button */}
+          <div className="flex items-center gap-3 mb-4">
+            {viewCount > 0 && (
+              <div className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-sm font-medium">
+                <Eye className="w-4 h-4" />
+                {viewCount} {viewCount === 1 ? 'person' : 'people'} viewed
+              </div>
+            )}
+            <button
+              onClick={handleCompareToggle}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                isInCompare 
+                  ? 'bg-purple-500 text-white' 
+                  : 'bg-gray-100 text-gray-600 hover:bg-purple-100 hover:text-purple-700'
+              }`}
+            >
+              <GitCompare className="w-4 h-4" />
+              {isInCompare ? 'In Compare' : 'Compare'}
+            </button>
+            {responseBadge && (
+              <div className={`flex items-center gap-1.5 bg-${responseBadge.color}-50 text-${responseBadge.color}-700 px-3 py-1.5 rounded-full text-sm font-medium`}>
+                <Zap className="w-4 h-4" />
+                {responseBadge.text}
+              </div>
+            )}
           </div>
           
           {/* Additional Costs */}
@@ -567,6 +638,7 @@ export default function ListingDetailModal({ listing, landlord, onClose }) {
                     {landlord.phone && (
                       <a
                         href={`tel:${landlord.phone}`}
+                        onClick={handleContactClick}
                         className="flex items-center justify-center gap-2 bg-gradient-to-r from-[#E63946] to-[#c5303c] hover:from-[#c5303c] hover:to-[#a52833] text-white py-3.5 rounded-xl font-bold text-sm transition-all shadow-lg hover:shadow-xl active:scale-95"
                       >
                         <Phone className="w-4 h-4" />
@@ -578,6 +650,7 @@ export default function ListingDetailModal({ listing, landlord, onClose }) {
                         href={`https://wa.me/${landlord.phone.replace(/[^0-9]/g,'').replace(/^0/, '27')}?text=${encodeURIComponent(`Hi, I'm interested in your room listing: ${listing.title} - R${listing.price}/month`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={handleContactClick}
                         className="flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white py-3.5 rounded-xl font-bold text-sm transition-all shadow-lg hover:shadow-xl active:scale-95"
                       >
                         <MessageCircle className="w-4 h-4" />

@@ -5,6 +5,289 @@ const STORAGE_KEY_NOTIFICATIONS = 'notifications';
 const STORAGE_KEY_LISTING_SNAPSHOTS = 'listing-snapshots';
 const STORAGE_KEY_AREA_SUBSCRIPTIONS = 'area-subscriptions';
 const STORAGE_KEY_SEEN_LISTINGS = 'seen-listing-ids';
+const STORAGE_KEY_LISTING_VIEWS = 'listing-views';
+const STORAGE_KEY_VIEWED_LISTINGS = 'user-viewed-listings';
+const STORAGE_KEY_LANDLORD_RESPONSE_TIMES = 'landlord-response-times';
+const STORAGE_KEY_COMPARE_LIST = 'compare-listings';
+const STORAGE_KEY_ROOMMATE_PROFILES = 'roommate-profiles';
+const STORAGE_KEY_QUICK_REPLIES = 'landlord-quick-replies';
+
+// ===== LISTING VIEWS TRACKING =====
+
+export function trackListingView(listingId, userId = null) {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_LISTING_VIEWS);
+    const views = raw ? JSON.parse(raw) : {};
+    
+    if (!views[listingId]) {
+      views[listingId] = { count: 0, viewers: [] };
+    }
+    
+    // Count unique views (by session if no user)
+    const viewerId = userId || `session-${Date.now()}`;
+    if (!views[listingId].viewers.includes(viewerId)) {
+      views[listingId].count += 1;
+      views[listingId].viewers.push(viewerId);
+      // Keep only last 100 viewers
+      if (views[listingId].viewers.length > 100) {
+        views[listingId].viewers = views[listingId].viewers.slice(-100);
+      }
+    }
+    
+    localStorage.setItem(STORAGE_KEY_LISTING_VIEWS, JSON.stringify(views));
+    return views[listingId].count;
+  } catch (e) {
+    console.error('Failed to track listing view', e);
+    return 0;
+  }
+}
+
+export function getListingViewCount(listingId) {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_LISTING_VIEWS);
+    const views = raw ? JSON.parse(raw) : {};
+    return views[listingId]?.count || 0;
+  } catch {
+    return 0;
+  }
+}
+
+// Track listings user has viewed (for price drop alerts)
+export function trackUserViewedListing(userId, listingId, price) {
+  if (!userId) return;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_VIEWED_LISTINGS);
+    const viewed = raw ? JSON.parse(raw) : {};
+    if (!viewed[userId]) viewed[userId] = {};
+    viewed[userId][listingId] = { price, timestamp: Date.now() };
+    localStorage.setItem(STORAGE_KEY_VIEWED_LISTINGS, JSON.stringify(viewed));
+  } catch (e) {
+    console.error('Failed to track viewed listing', e);
+  }
+}
+
+export function getUserViewedListings(userId) {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_VIEWED_LISTINGS);
+    const viewed = raw ? JSON.parse(raw) : {};
+    return viewed[userId] || {};
+  } catch {
+    return {};
+  }
+}
+
+// Check for price drops on viewed listings
+export function checkViewedListingPriceDrops(userId, currentListings) {
+  if (!userId) return [];
+  
+  const viewed = getUserViewedListings(userId);
+  const notifications = [];
+  
+  currentListings.forEach(listing => {
+    const listingId = listing.id || `${listing.title}-${listing.createdAt}`;
+    const viewedData = viewed[listingId];
+    
+    if (viewedData && parseFloat(viewedData.price) > parseFloat(listing.price)) {
+      const drop = parseFloat(viewedData.price) - parseFloat(listing.price);
+      notifications.push({
+        type: 'price-drop',
+        title: '💰 Price Drop!',
+        body: `"${listing.title}" dropped by R${drop.toLocaleString()} to R${parseFloat(listing.price).toLocaleString()}/month`,
+        listingId,
+        oldPrice: viewedData.price,
+        newPrice: listing.price,
+      });
+      // Update the stored price
+      trackUserViewedListing(userId, listingId, listing.price);
+    }
+  });
+  
+  return notifications;
+}
+
+// ===== LANDLORD RESPONSE TIME TRACKING =====
+
+export function trackLandlordContactClick(landlordId) {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_LANDLORD_RESPONSE_TIMES);
+    const data = raw ? JSON.parse(raw) : {};
+    
+    if (!data[landlordId]) {
+      data[landlordId] = { contacts: 0, avgResponseHours: null };
+    }
+    data[landlordId].contacts += 1;
+    data[landlordId].lastContact = Date.now();
+    
+    localStorage.setItem(STORAGE_KEY_LANDLORD_RESPONSE_TIMES, JSON.stringify(data));
+  } catch (e) {
+    console.error('Failed to track contact', e);
+  }
+}
+
+export function getLandlordResponseStats(landlordId) {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_LANDLORD_RESPONSE_TIMES);
+    const data = raw ? JSON.parse(raw) : {};
+    return data[landlordId] || { contacts: 0, avgResponseHours: null };
+  } catch {
+    return { contacts: 0, avgResponseHours: null };
+  }
+}
+
+// Simulate response time based on contacts (in production, track actual responses)
+export function getResponseTimeBadge(landlordId) {
+  const stats = getLandlordResponseStats(landlordId);
+  // For MVP: show "Active" if they've had contacts recently
+  if (stats.contacts >= 5) return { text: 'Very Active', color: 'emerald' };
+  if (stats.contacts >= 2) return { text: 'Active', color: 'blue' };
+  return null;
+}
+
+// ===== ROOM COMPARISON =====
+
+export function getCompareList() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_COMPARE_LIST);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function addToCompare(listingId) {
+  try {
+    const list = getCompareList();
+    if (list.length >= 3) {
+      return { success: false, message: 'You can only compare up to 3 rooms' };
+    }
+    if (list.includes(listingId)) {
+      return { success: false, message: 'Already in compare list' };
+    }
+    list.push(listingId);
+    localStorage.setItem(STORAGE_KEY_COMPARE_LIST, JSON.stringify(list));
+    return { success: true, message: 'Added to compare' };
+  } catch {
+    return { success: false, message: 'Failed to add' };
+  }
+}
+
+export function removeFromCompare(listingId) {
+  try {
+    let list = getCompareList();
+    list = list.filter(id => id !== listingId);
+    localStorage.setItem(STORAGE_KEY_COMPARE_LIST, JSON.stringify(list));
+    return { success: true };
+  } catch {
+    return { success: false };
+  }
+}
+
+export function clearCompareList() {
+  try {
+    localStorage.setItem(STORAGE_KEY_COMPARE_LIST, JSON.stringify([]));
+  } catch {}
+}
+
+// ===== ROOMMATE MATCHING =====
+
+export function saveRoommateProfile(userId, profile) {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_ROOMMATE_PROFILES);
+    const profiles = raw ? JSON.parse(raw) : {};
+    profiles[userId] = {
+      ...profile,
+      userId,
+      createdAt: profiles[userId]?.createdAt || Date.now(),
+      updatedAt: Date.now(),
+    };
+    localStorage.setItem(STORAGE_KEY_ROOMMATE_PROFILES, JSON.stringify(profiles));
+    return { success: true };
+  } catch (e) {
+    console.error('Failed to save roommate profile', e);
+    return { success: false };
+  }
+}
+
+export function getRoommateProfile(userId) {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_ROOMMATE_PROFILES);
+    const profiles = raw ? JSON.parse(raw) : {};
+    return profiles[userId] || null;
+  } catch {
+    return null;
+  }
+}
+
+export function getAllRoommateProfiles() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_ROOMMATE_PROFILES);
+    const profiles = raw ? JSON.parse(raw) : {};
+    return Object.values(profiles);
+  } catch {
+    return [];
+  }
+}
+
+export function searchRoommates(filters) {
+  const profiles = getAllRoommateProfiles();
+  return profiles.filter(profile => {
+    if (filters.location && !profile.preferredAreas?.some(area => 
+      area.toLowerCase().includes(filters.location.toLowerCase())
+    )) return false;
+    if (filters.maxBudget && profile.budget > filters.maxBudget) return false;
+    if (filters.minBudget && profile.budget < filters.minBudget) return false;
+    if (filters.gender && profile.gender !== filters.gender && profile.gender !== 'any') return false;
+    return true;
+  });
+}
+
+export function deleteRoommateProfile(userId) {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_ROOMMATE_PROFILES);
+    const profiles = raw ? JSON.parse(raw) : {};
+    delete profiles[userId];
+    localStorage.setItem(STORAGE_KEY_ROOMMATE_PROFILES, JSON.stringify(profiles));
+    return { success: true };
+  } catch {
+    return { success: false };
+  }
+}
+
+// ===== LANDLORD QUICK REPLIES =====
+
+const DEFAULT_QUICK_REPLIES = [
+  { id: 1, text: "Hi! Yes, the room is still available. When would you like to view it?" },
+  { id: 2, text: "Thanks for your interest! The room is available from the date listed. Would you like to schedule a viewing?" },
+  { id: 3, text: "Hi! I can show you the room this week. What day works for you?" },
+  { id: 4, text: "The room has been taken. I'll update the listing soon." },
+  { id: 5, text: "Please call me to discuss details and arrange a viewing." },
+];
+
+export function getLandlordQuickReplies(landlordId) {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_QUICK_REPLIES);
+    const replies = raw ? JSON.parse(raw) : {};
+    return replies[landlordId] || DEFAULT_QUICK_REPLIES;
+  } catch {
+    return DEFAULT_QUICK_REPLIES;
+  }
+}
+
+export function saveLandlordQuickReplies(landlordId, replies) {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_QUICK_REPLIES);
+    const allReplies = raw ? JSON.parse(raw) : {};
+    allReplies[landlordId] = replies;
+    localStorage.setItem(STORAGE_KEY_QUICK_REPLIES, JSON.stringify(allReplies));
+    return { success: true };
+  } catch {
+    return { success: false };
+  }
+}
+
+export function getDefaultQuickReplies() {
+  return DEFAULT_QUICK_REPLIES;
+}
 
 // ===== AREA SUBSCRIPTIONS =====
 
