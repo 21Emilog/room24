@@ -1569,6 +1569,7 @@ function ProfileSetupView({ onSubmit, userType }) {
 }
 
 function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, onLinkGoogle, onLinkPhone, onBecomeLandlord, areaSubscriptions = [], onUnsubscribeArea, showToast }) {
+  const { t } = useLanguage();
   const prefs = user.notificationPrefs || { updates: true, marketing: false };
   const [localPrefs, setLocalPrefs] = React.useState(prefs);
   const [linkingInProgress, setLinkingInProgress] = React.useState(null);
@@ -1631,15 +1632,15 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
         
         <div className="max-w-xl mx-auto flex justify-between items-start relative z-10">
           <div>
-            <p className="text-[#F1FAEE]/80 text-sm font-medium mb-1">Welcome back</p>
-            <h2 className="text-2xl font-bold text-white">My Profile</h2>
+            <p className="text-[#F1FAEE]/80 text-sm font-medium mb-1">{t('welcomeBack') || 'Welcome back'}</p>
+            <h2 className="text-2xl font-bold text-white">{t('myProfile')}</h2>
           </div>
           <button
             onClick={onEdit}
             className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2 border border-white/30 hover:scale-105 active:scale-95 shadow-lg"
           >
             <Edit className="w-4 h-4" />
-            Edit
+            {t('edit')}
           </button>
         </div>
         
@@ -4700,8 +4701,8 @@ function AppSettingsSection() {
           <Sparkles className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h4 className="font-bold text-gray-800 dark:text-white">{t('nav.settings') || 'App Settings'}</h4>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Customize your experience</p>
+          <h4 className="font-bold text-gray-800 dark:text-white">{t('appSettings')}</h4>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{t('customizeExperience')}</p>
         </div>
       </div>
 
@@ -4716,10 +4717,10 @@ function AppSettingsSection() {
             )}
             <div>
               <p className="text-sm font-medium text-gray-800 dark:text-white">
-                {isDark ? 'Dark Mode' : 'Light Mode'}
+                {isDark ? t('darkMode') : t('lightMode')}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                {isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+                {isDark ? t('switchToLight') : t('switchToDark')}
               </p>
             </div>
           </div>
@@ -4749,8 +4750,8 @@ function AppSettingsSection() {
         <div className="flex items-center gap-3 mb-3">
           <Globe className="w-5 h-5 text-purple-500" />
           <div>
-            <p className="text-sm font-medium text-gray-800 dark:text-white">{t('profile.language') || 'Language'}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Choose your preferred language</p>
+            <p className="text-sm font-medium text-gray-800 dark:text-white">{t('profile') || 'Language'}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{t('chooseLanguage')}</p>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -4771,7 +4772,7 @@ function AppSettingsSection() {
       </div>
 
       <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-3 text-center">
-        Settings are saved automatically
+        {t('settingsSaved')}
       </p>
     </div>
   );
