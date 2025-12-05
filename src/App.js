@@ -659,6 +659,11 @@ const handleAddListing = async (listingData) => {
     .filter(Boolean)
     .join(', ');
   
+  // Calculate expiry date based on expiryDays (default 10 days)
+  const expiryDays = listingData.expiryDays || 10;
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + expiryDays);
+  
   const newListingData = {
     title: listingData.title,
     price: listingData.price,
@@ -679,6 +684,8 @@ const handleAddListing = async (listingData) => {
     landlordPhone: userProfile?.phone || '',
     landlordEmail: currentUser?.email || '',
     landlordPhoto: userProfile?.photoURL || currentUser?.photoURL || '',
+    expiryDays: expiryDays,
+    expiresAt: expiresAt.toISOString(),
   };
 
   try {
@@ -780,12 +787,43 @@ const handleToggleListingStatus = async (listingId) => {
   }
 };
 
+// Handle relisting an expired listing (renews for another 10 days)
+const handleRelistListing = async (listingId) => {
+  const listing = listings.find(l => l.id === listingId);
+  if (!listing) return;
+  
+  const expiryDays = listing.expiryDays || 10;
+  const newExpiresAt = new Date();
+  newExpiresAt.setDate(newExpiresAt.getDate() + expiryDays);
+  
+  try {
+    await supabaseUpdateListing(listingId, { 
+      expiresAt: newExpiresAt.toISOString(),
+      status: 'available' 
+    });
+    
+    const updatedListings = listings.map(l => 
+      l.id === listingId ? { ...l, expiresAt: newExpiresAt.toISOString(), status: 'available' } : l
+    );
+    setListings(updatedListings);
+    localStorage.setItem('listings', JSON.stringify(updatedListings));
+    
+    showToast(`Listing relisted for ${expiryDays} days!`, 'success', '🎉 Relisted!');
+  } catch (err) {
+    console.error('Failed to relist:', err);
+    showToast('Failed to relist. Please try again.', 'error');
+  }
+};
+
   // Messaging removed
 
 const filteredListings = listings
   .filter(listing => {
     // Hide rented listings from browse view
     if (listing.status === 'rented') return false;
+    
+    // Hide expired listings from browse view
+    if (listing.expiresAt && new Date(listing.expiresAt) < new Date()) return false;
     
     const matchesLocation = !searchLocation || 
       (listing.location || '').toLowerCase().includes(searchLocation.toLowerCase());
@@ -1150,6 +1188,7 @@ const filteredListings = listings
               setCurrentView('edit-listing');
             }}
             onToggleStatus={handleToggleListingStatus}
+            onRelist={handleRelistListing}
             onDelete={async (id) => {
               try {
                 // Delete from Supabase
@@ -3546,6 +3585,7 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
     contactPhone: listing?.contactPhone || '',
     contactWhatsapp: listing?.contactWhatsapp || '',
     additionalCosts: listing?.additionalCosts || [],
+    expiryDays: listing?.expiryDays || 10,
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -3795,6 +3835,36 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
             />
           </div>
 
+          {/* Listing Duration / Expiry */}
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <label className="block text-sm font-semibold text-gray-800 mb-2">⏰ Listing Duration</label>
+            <p className="text-xs text-gray-600 mb-3">How long should this listing stay active? After expiry, it will be moved to your "My Rooms" for relisting.</p>
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { days: 7, label: '7 days' },
+                { days: 10, label: '10 days' },
+                { days: 14, label: '2 weeks' },
+                { days: 30, label: '30 days' },
+              ].map(option => (
+                <button
+                  key={option.days}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, expiryDays: option.days })}
+                  className={`py-2.5 px-3 rounded-lg text-sm font-medium transition-all ${
+                    formData.expiryDays === option.days
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'bg-white text-gray-600 border border-gray-200 hover:border-blue-300'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-blue-600 mt-3">
+              💡 This helps keep the platform fresh and avoids stale listings. You can easily relist anytime.
+            </p>
+          </div>
+
           {/* Status */}
           <div>
             <label className="block text-sm font-semibold text-gray-800 mb-2">Listing Status</label>
@@ -3990,7 +4060,19 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
 
 // MessagesView removed - using direct contact instead
 
-function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus }) {
+function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus, onRelist }) {
+  // Separate active and expired listings
+  const now = new Date();
+  const activeListings = listings.filter(l => !l.expiresAt || new Date(l.expiresAt) >= now);
+  const expiredListings = listings.filter(l => l.expiresAt && new Date(l.expiresAt) < now);
+  
+  // Helper to calculate days remaining
+  const getDaysRemaining = (expiresAt) => {
+    if (!expiresAt) return null;
+    const diff = new Date(expiresAt) - now;
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  };
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-red-50 to-red-50 pb-24">
       {/* Header */}
@@ -4006,7 +4088,7 @@ function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus }
                 <p className="text-white/80">
                   {listings.length === 0
                     ? 'Your properties will appear here'
-                    : `${listings.length} ${listings.length === 1 ? 'room' : 'rooms'} listed`}
+                    : `${activeListings.length} active, ${expiredListings.length} expired`}
                 </p>
               </div>
             </div>
@@ -4026,14 +4108,18 @@ function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus }
       <div className="max-w-7xl mx-auto px-4 -mt-4">
         {/* Stats Cards */}
         {listings.length > 0 && (
-          <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="grid grid-cols-4 gap-3 mb-6">
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-              <p className="text-2xl font-bold text-[#E63946]">{listings.filter(l => l.status === 'available').length}</p>
-              <p className="text-xs text-gray-500">Available</p>
+              <p className="text-2xl font-bold text-[#E63946]">{activeListings.filter(l => l.status === 'available').length}</p>
+              <p className="text-xs text-gray-500">Active</p>
             </div>
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
               <p className="text-2xl font-bold text-gray-600">{listings.filter(l => l.status === 'rented').length}</p>
               <p className="text-xs text-gray-500">Rented</p>
+            </div>
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-amber-200 border-2">
+              <p className="text-2xl font-bold text-amber-600">{expiredListings.length}</p>
+              <p className="text-xs text-amber-600 font-medium">Expired</p>
             </div>
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
               <p className="text-2xl font-bold text-emerald-600">{listings.length}</p>
@@ -4052,7 +4138,7 @@ function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus }
               <div>
                 <h3 className="font-semibold text-gray-800 mb-1">Quick Tips</h3>
                 <p className="text-gray-600 text-sm leading-relaxed">
-                  Click the <span className="font-semibold text-emerald-600">status badge</span> to toggle availability. Rented rooms won't appear in search.
+                  Listings auto-expire to keep the platform fresh. Click <span className="font-semibold text-blue-600">Relist</span> on expired listings to make them active again.
                 </p>
               </div>
             </div>
@@ -4077,85 +4163,177 @@ function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus }
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {listings.map(listing => (
-              <div key={listing.id} className={`bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-lg transition-all duration-300 group ${
-                listing.status === 'rented' ? 'border-gray-200' : 'border-gray-100 hover:border-red-200'
-              }`}>
-                {listing.photos && listing.photos.length > 0 ? (
-                  <div className="relative overflow-hidden">
-                    <img 
-                      src={listing.photos[0]} 
-                      alt="Room" 
-                      className={`w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500 ${listing.status === 'rented' ? 'grayscale' : ''}`} 
-                    />
-                    {listing.photos.length > 1 && (
-                      <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-xs font-medium">
-                        📷 {listing.photos.length}
+          <>
+            {/* Active Listings */}
+            {activeListings.length > 0 && (
+              <>
+                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
+                  Active Listings
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
+                  {activeListings.map(listing => {
+                    const daysLeft = getDaysRemaining(listing.expiresAt);
+                    return (
+                      <div key={listing.id} className={`bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-lg transition-all duration-300 group ${
+                        listing.status === 'rented' ? 'border-gray-200' : 'border-gray-100 hover:border-red-200'
+                      }`}>
+                        {listing.photos && listing.photos.length > 0 ? (
+                          <div className="relative overflow-hidden">
+                            <img 
+                              src={listing.photos[0]} 
+                              alt="Room" 
+                              className={`w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500 ${listing.status === 'rented' ? 'grayscale' : ''}`} 
+                            />
+                            {listing.photos.length > 1 && (
+                              <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-xs font-medium">
+                                📷 {listing.photos.length}
+                              </div>
+                            )}
+                            <button
+                              onClick={() => onToggleStatus?.(listing.id)}
+                              className={`absolute top-3 left-3 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer hover:scale-105 shadow-lg ${
+                                listing.status === 'available' 
+                                  ? 'bg-emerald-500 hover:bg-emerald-600 text-white' 
+                                  : 'bg-gray-500 hover:bg-gray-600 text-white'
+                              }`}
+                              title="Click to toggle status"
+                            >
+                              {listing.status === 'available' ? '● Available' : '○ Rented'}
+                            </button>
+                            {/* Expiry countdown badge */}
+                            {daysLeft !== null && daysLeft <= 3 && (
+                              <div className="absolute bottom-3 left-3 bg-amber-500 text-white px-2.5 py-1 rounded-full text-xs font-bold shadow-lg animate-pulse">
+                                ⏰ {daysLeft <= 0 ? 'Expiring today' : `${daysLeft}d left`}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="relative h-48 bg-gradient-to-br from-red-100 to-red-100 flex items-center justify-center">
+                            <Home className="w-16 h-16 text-red-300" />
+                            <button
+                              onClick={() => onToggleStatus?.(listing.id)}
+                              className={`absolute top-3 left-3 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer hover:scale-105 shadow-lg ${
+                                listing.status === 'available' 
+                                  ? 'bg-emerald-500 hover:bg-emerald-600 text-white' 
+                                  : 'bg-gray-500 hover:bg-gray-600 text-white'
+                              }`}
+                              title="Click to toggle status"
+                            >
+                              {listing.status === 'available' ? '● Available' : '○ Rented'}
+                            </button>
+                          </div>
+                        )}
+                        <div className="p-5">
+                          <h3 className="font-bold text-lg text-gray-800 mb-1 line-clamp-1 uppercase tracking-wide">{listing.title}</h3>
+                          <div className="text-[#E63946] font-bold text-xl mb-1">R{listing.price?.toLocaleString()}<span className="text-sm font-normal text-gray-500">/month</span></div>
+                          {listing.additionalCosts && listing.additionalCosts.filter(c => c.name && c.amount).length > 0 && (
+                            <p className="text-xs text-amber-600 mb-1">💰 +{listing.additionalCosts.filter(c => c.name && c.amount).length} additional cost{listing.additionalCosts.filter(c => c.name && c.amount).length > 1 ? 's' : ''}</p>
+                          )}
+                          {daysLeft !== null && (
+                            <p className={`text-xs mb-2 ${daysLeft <= 3 ? 'text-amber-600 font-medium' : 'text-gray-500'}`}>
+                              ⏰ Expires in {daysLeft} day{daysLeft !== 1 ? 's' : ''}
+                            </p>
+                          )}
+                          <div className="flex items-center text-sm mb-4">
+                            <MapPin className="w-4 h-4 mr-1.5 text-red-500" />
+                            <span className="line-clamp-1 uppercase tracking-wide font-semibold text-[#c5303c]">{listing.location}</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => onEdit?.(listing)}
+                              className="flex-1 flex items-center justify-center gap-1.5 bg-red-50 hover:bg-red-100 text-[#c5303c] font-semibold py-2.5 rounded-xl transition-colors text-sm"
+                            >
+                              <Edit className="w-4 h-4" />
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (window.confirm('Are you sure you want to delete this listing? This cannot be undone.')) {
+                                  onDelete(listing.id);
+                                }
+                              }}
+                              className="flex-1 flex items-center justify-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 font-medium py-2.5 rounded-xl transition-colors text-sm"
+                            >
+                              <X className="w-4 h-4" />
+                              Delete
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                    )}
-                    <button
-                      onClick={() => onToggleStatus?.(listing.id)}
-                      className={`absolute top-3 left-3 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer hover:scale-105 shadow-lg ${
-                        listing.status === 'available' 
-                          ? 'bg-emerald-500 hover:bg-emerald-600 text-white' 
-                          : 'bg-gray-500 hover:bg-gray-600 text-white'
-                      }`}
-                      title="Click to toggle status"
-                    >
-                      {listing.status === 'available' ? '● Available' : '○ Rented'}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="relative h-48 bg-gradient-to-br from-red-100 to-red-100 flex items-center justify-center">
-                    <Home className="w-16 h-16 text-red-300" />
-                    <button
-                      onClick={() => onToggleStatus?.(listing.id)}
-                      className={`absolute top-3 left-3 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer hover:scale-105 shadow-lg ${
-                        listing.status === 'available' 
-                          ? 'bg-emerald-500 hover:bg-emerald-600 text-white' 
-                          : 'bg-gray-500 hover:bg-gray-600 text-white'
-                      }`}
-                      title="Click to toggle status"
-                    >
-                      {listing.status === 'available' ? '● Available' : '○ Rented'}
-                    </button>
-                  </div>
-                )}
-                <div className="p-5">
-                  <h3 className="font-bold text-lg text-gray-800 mb-1 line-clamp-1 uppercase tracking-wide">{listing.title}</h3>
-                  <div className="text-[#E63946] font-bold text-xl mb-1">R{listing.price?.toLocaleString()}<span className="text-sm font-normal text-gray-500">/month</span></div>
-                  {listing.additionalCosts && listing.additionalCosts.filter(c => c.name && c.amount).length > 0 && (
-                    <p className="text-xs text-amber-600 mb-2">💰 +{listing.additionalCosts.filter(c => c.name && c.amount).length} additional cost{listing.additionalCosts.filter(c => c.name && c.amount).length > 1 ? 's' : ''}</p>
-                  )}
-                  <div className="flex items-center text-sm mb-4">
-                    <MapPin className="w-4 h-4 mr-1.5 text-red-500" />
-                    <span className="line-clamp-1 uppercase tracking-wide font-semibold text-[#c5303c]">{listing.location}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => onEdit?.(listing)}
-                      className="flex-1 flex items-center justify-center gap-1.5 bg-red-50 hover:bg-red-100 text-[#c5303c] font-semibold py-2.5 rounded-xl transition-colors text-sm"
-                    >
-                      <Edit className="w-4 h-4" />
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (window.confirm('Are you sure you want to delete this listing? This cannot be undone.')) {
-                          onDelete(listing.id);
-                        }
-                      }}
-                      className="flex-1 flex items-center justify-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 font-medium py-2.5 rounded-xl transition-colors text-sm"
-                    >
-                      <X className="w-4 h-4" />
-                      Delete
-                    </button>
-                  </div>
+                    );
+                  })}
                 </div>
-              </div>
-            ))}
-          </div>
+              </>
+            )}
+            
+            {/* Expired Listings Section */}
+            {expiredListings.length > 0 && (
+              <>
+                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
+                  Expired Listings
+                  <span className="text-xs font-normal text-gray-500 ml-2">Relist to make them active again</span>
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {expiredListings.map(listing => (
+                    <div key={listing.id} className="bg-white rounded-2xl shadow-sm border-2 border-amber-200 overflow-hidden opacity-75 hover:opacity-100 transition-all duration-300 group">
+                      {listing.photos && listing.photos.length > 0 ? (
+                        <div className="relative overflow-hidden">
+                          <img 
+                            src={listing.photos[0]} 
+                            alt="Room" 
+                            className="w-full h-48 object-cover grayscale group-hover:grayscale-0 transition-all duration-500" 
+                          />
+                          <div className="absolute top-3 left-3 bg-amber-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">
+                            ⏰ Expired
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="relative h-48 bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center">
+                          <Home className="w-16 h-16 text-amber-300" />
+                          <div className="absolute top-3 left-3 bg-amber-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">
+                            ⏰ Expired
+                          </div>
+                        </div>
+                      )}
+                      <div className="p-5">
+                        <h3 className="font-bold text-lg text-gray-800 mb-1 line-clamp-1 uppercase tracking-wide">{listing.title}</h3>
+                        <div className="text-gray-500 font-bold text-xl mb-1">R{listing.price?.toLocaleString()}<span className="text-sm font-normal">/month</span></div>
+                        <p className="text-xs text-amber-600 mb-2">
+                          Expired {new Date(listing.expiresAt).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' })}
+                        </p>
+                        <div className="flex items-center text-sm mb-4">
+                          <MapPin className="w-4 h-4 mr-1.5 text-gray-400" />
+                          <span className="line-clamp-1 uppercase tracking-wide font-semibold text-gray-500">{listing.location}</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => onRelist?.(listing.id)}
+                            className="flex-1 flex items-center justify-center gap-1.5 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm shadow-md"
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                            Relist
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (window.confirm('Are you sure you want to delete this listing? This cannot be undone.')) {
+                                onDelete(listing.id);
+                              }
+                            }}
+                            className="flex-1 flex items-center justify-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium py-2.5 rounded-xl transition-colors text-sm"
+                          >
+                            <X className="w-4 h-4" />
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </>
         )}
       </div>
     </div>
