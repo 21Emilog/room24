@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Search, MapPin, User, Phone, Mail, ArrowLeft, ShieldCheck, Star, Maximize, ExternalLink, Share2, Copy, MessageCircle, Eye, GitCompare, Zap } from 'lucide-react';
+import { X, Search, MapPin, User, Phone, Mail, ArrowLeft, ShieldCheck, Star, Maximize, ExternalLink, Share2, Copy, MessageCircle, Eye, GitCompare, Zap, Calendar, Clock } from 'lucide-react';
 import VirtualTourViewer from './VirtualTourViewer';
 import { trackListingView, getListingViewCount, trackUserViewedListing, addToCompare, getCompareList, removeFromCompare, trackLandlordContactClick, getResponseTimeBadge } from '../utils/notificationEngine';
 
@@ -144,6 +144,11 @@ export default function ListingDetailModal({ listing, landlord, onClose, current
   const [showVirtualTour, setShowVirtualTour] = useState(false);
   const [viewCount, setViewCount] = useState(0);
   const [isInCompare, setIsInCompare] = useState(false);
+  const [showViewingRequest, setShowViewingRequest] = useState(false);
+  const [viewingDate, setViewingDate] = useState('');
+  const [viewingTime, setViewingTime] = useState('');
+  const [viewingMessage, setViewingMessage] = useState('');
+  const [viewingStatus, setViewingStatus] = useState('idle'); // idle, sending, sent
   
   // Reviews state
   const listingKey = listing?.id || `${listing.title}-${listing.createdAt || 'na'}`;
@@ -350,6 +355,28 @@ export default function ListingDetailModal({ listing, landlord, onClose, current
               onClose={() => setShowVirtualTour(false)}
             />
           )}
+          
+          {/* Video Tour */}
+          {listing.videoTour && (
+            <div className="mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-lg">🎥</span>
+                <h4 className="font-bold text-gray-800">Video Tour</h4>
+                <span className="bg-purple-100 text-purple-700 text-xs font-semibold px-2 py-0.5 rounded-full">NEW</span>
+              </div>
+              <div className="rounded-xl overflow-hidden bg-gray-900 shadow-lg">
+                <video 
+                  src={listing.videoTour}
+                  controls
+                  poster={listing.photos?.[0]}
+                  className="w-full max-h-64 object-contain"
+                  preload="metadata"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1 text-center">Take a virtual walkthrough of this room</p>
+            </div>
+          )}
+          
           <h3 className="text-2xl font-extrabold mb-2 text-gray-900">{listing.title}</h3>
           <div className="text-transparent bg-gradient-to-r from-[#E63946] to-[#c5303c] bg-clip-text font-bold text-3xl mb-2">
             R{typeof listing.price === 'number' ? listing.price.toLocaleString('en-ZA') : listing.price}<span className="text-lg text-gray-500 font-normal">/month</span>
@@ -659,6 +686,15 @@ export default function ListingDetailModal({ listing, landlord, onClose, current
                     )}
                   </div>
                   
+                  {/* Request to View Button */}
+                  <button
+                    onClick={() => setShowViewingRequest(true)}
+                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white py-3.5 rounded-xl font-bold text-sm transition-all shadow-lg hover:shadow-xl active:scale-95 mb-3"
+                  >
+                    <Calendar className="w-4 h-4" />
+                    Request to View Room
+                  </button>
+                  
                   {/* Contact Details */}
                   <div className="bg-white rounded-xl p-4 space-y-3 shadow-sm">
                     <div className="flex items-center text-sm">
@@ -741,6 +777,182 @@ export default function ListingDetailModal({ listing, landlord, onClose, current
                     <p className="text-xs text-green-600">Report received. Thank you.</p>
                   )}
                 </form>
+              </div>
+            </div>
+          )}
+          
+          {/* Viewing Request Modal */}
+          {showViewingRequest && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-5 h-5" />
+                      <h4 className="text-lg font-bold">Request to View</h4>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setShowViewingRequest(false);
+                        setViewingStatus('idle');
+                      }}
+                      className="p-1 rounded-full hover:bg-white/20 transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <p className="text-purple-100 text-sm mt-1">Schedule a viewing with the landlord</p>
+                </div>
+                
+                {viewingStatus === 'sent' ? (
+                  <div className="p-6 text-center">
+                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="text-3xl">✅</span>
+                    </div>
+                    <h5 className="font-bold text-gray-900 text-lg mb-2">Request Sent!</h5>
+                    <p className="text-gray-600 text-sm mb-4">
+                      Your viewing request has been sent to the landlord via WhatsApp. They'll respond to confirm the appointment.
+                    </p>
+                    <button
+                      onClick={() => {
+                        setShowViewingRequest(false);
+                        setViewingStatus('idle');
+                        setViewingDate('');
+                        setViewingTime('');
+                        setViewingMessage('');
+                      }}
+                      className="px-6 py-2.5 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 transition-colors"
+                    >
+                      Done
+                    </button>
+                  </div>
+                ) : (
+                  <div className="p-4 space-y-4">
+                    {/* Date Selection */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-800 mb-2">
+                        <Calendar className="w-4 h-4 inline mr-1" />
+                        Preferred Date *
+                      </label>
+                      <input
+                        type="date"
+                        value={viewingDate}
+                        min={new Date().toISOString().split('T')[0]}
+                        onChange={(e) => setViewingDate(e.target.value)}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-100 transition-all"
+                      />
+                    </div>
+                    
+                    {/* Time Selection */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-800 mb-2">
+                        <Clock className="w-4 h-4 inline mr-1" />
+                        Preferred Time *
+                      </label>
+                      <select
+                        value={viewingTime}
+                        onChange={(e) => setViewingTime(e.target.value)}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-100 transition-all"
+                      >
+                        <option value="">Select a time</option>
+                        <option value="08:00">08:00 AM</option>
+                        <option value="09:00">09:00 AM</option>
+                        <option value="10:00">10:00 AM</option>
+                        <option value="11:00">11:00 AM</option>
+                        <option value="12:00">12:00 PM</option>
+                        <option value="13:00">01:00 PM</option>
+                        <option value="14:00">02:00 PM</option>
+                        <option value="15:00">03:00 PM</option>
+                        <option value="16:00">04:00 PM</option>
+                        <option value="17:00">05:00 PM</option>
+                        <option value="18:00">06:00 PM</option>
+                      </select>
+                    </div>
+                    
+                    {/* Message */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-800 mb-2">
+                        Additional Message (Optional)
+                      </label>
+                      <textarea
+                        value={viewingMessage}
+                        onChange={(e) => setViewingMessage(e.target.value)}
+                        placeholder="Any questions or notes for the landlord..."
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-100 transition-all resize-none"
+                        rows={2}
+                      />
+                    </div>
+                    
+                    {/* Submit Button */}
+                    <button
+                      onClick={() => {
+                        if (!viewingDate || !viewingTime) {
+                          alert('Please select a date and time');
+                          return;
+                        }
+                        
+                        // Format the viewing request message
+                        const formattedDate = new Date(viewingDate).toLocaleDateString('en-ZA', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        });
+                        const timeLabel = new Date(`2000-01-01T${viewingTime}`).toLocaleTimeString('en-ZA', {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true
+                        });
+                        
+                        let message = `🏠 *VIEWING REQUEST*\n\n`;
+                        message += `Hi! I would like to schedule a viewing for:\n\n`;
+                        message += `📍 *${listing.title}*\n`;
+                        message += `💰 R${listing.price}/month\n`;
+                        message += `📍 ${listing.location || listing.streetAddress || ''}\n\n`;
+                        message += `📅 *Preferred Date:* ${formattedDate}\n`;
+                        message += `🕐 *Preferred Time:* ${timeLabel}\n`;
+                        if (viewingMessage.trim()) {
+                          message += `\n💬 *Note:* ${viewingMessage.trim()}\n`;
+                        }
+                        message += `\nPlease confirm if this works for you. Thank you!`;
+                        
+                        // Open WhatsApp with the message
+                        const phone = landlord.phone.replace(/[^0-9]/g,'').replace(/^0/, '27');
+                        const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+                        
+                        // Save viewing request locally
+                        const requests = JSON.parse(localStorage.getItem('viewingRequests') || '[]');
+                        requests.push({
+                          listingId: listing.id || listingKey,
+                          listingTitle: listing.title,
+                          landlordPhone: landlord.phone,
+                          date: viewingDate,
+                          time: viewingTime,
+                          message: viewingMessage,
+                          createdAt: new Date().toISOString()
+                        });
+                        localStorage.setItem('viewingRequests', JSON.stringify(requests));
+                        
+                        // Track contact
+                        handleContactClick();
+                        
+                        // Open WhatsApp
+                        window.open(whatsappUrl, '_blank');
+                        setViewingStatus('sent');
+                      }}
+                      disabled={!viewingDate || !viewingTime || viewingStatus === 'sending'}
+                      className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white py-3.5 rounded-xl font-bold transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <MessageCircle className="w-5 h-5" />
+                      Send Request via WhatsApp
+                    </button>
+                    
+                    <p className="text-xs text-gray-500 text-center">
+                      This will open WhatsApp with a pre-filled viewing request message
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}

@@ -2514,6 +2514,7 @@ const createDefaultListingForm = () => ({
   streetAddress: '',
   description: '',
   photos: [],
+  videoTour: null, // Video tour URL (base64 or uploaded URL)
   status: 'available',
   availableDate: new Date().toISOString().split('T')[0],
   amenities: [],
@@ -3597,6 +3598,85 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
               )}
             </div>
 
+            {/* Video Tour */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
+                🎥 Video Tour <span className="text-gray-400 font-normal">(Optional)</span>
+              </label>
+              <p className="text-xs text-gray-500 mb-3">Upload a short walkthrough video (max 60 seconds, 50MB)</p>
+              
+              {formData.videoTour ? (
+                <div className="relative rounded-2xl overflow-hidden bg-gray-900">
+                  <video 
+                    src={formData.videoTour}
+                    controls
+                    className="w-full max-h-64 object-contain"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, videoTour: null })}
+                    className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow-lg"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                  <div className="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-3 py-1 rounded-full flex items-center gap-1">
+                    <span>🎬</span> Video Tour
+                  </div>
+                </div>
+              ) : (
+                <label className="block cursor-pointer">
+                  <div className="border-2 border-dashed border-purple-300 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-6 hover:border-purple-500 hover:shadow-lg transition-all duration-300 group">
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                        <span className="text-3xl">🎥</span>
+                      </div>
+                      <p className="text-gray-800 font-bold mb-1">Add Video Tour</p>
+                      <p className="text-gray-500 text-sm">MP4, MOV up to 50MB • Max 60 sec</p>
+                      <div className="mt-3 bg-white rounded-xl px-4 py-2 inline-block">
+                        <p className="text-sm text-purple-600 font-semibold">
+                          ⭐ Listings with video get 5x more enquiries!
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <input
+                    type="file"
+                    accept="video/mp4,video/mov,video/quicktime,video/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      
+                      // Check file size (50MB max)
+                      if (file.size > 50 * 1024 * 1024) {
+                        alert('Video must be under 50MB');
+                        return;
+                      }
+                      
+                      // Check video duration
+                      const video = document.createElement('video');
+                      video.preload = 'metadata';
+                      video.onloadedmetadata = () => {
+                        URL.revokeObjectURL(video.src);
+                        if (video.duration > 65) { // 60 sec + 5 sec buffer
+                          alert('Video must be 60 seconds or less');
+                          return;
+                        }
+                        
+                        // Convert to base64
+                        const reader = new FileReader();
+                        reader.onload = (evt) => {
+                          setFormData(prev => ({ ...prev, videoTour: evt.target.result }));
+                        };
+                        reader.readAsDataURL(file);
+                      };
+                      video.src = URL.createObjectURL(file);
+                    }}
+                    className="hidden"
+                  />
+                </label>
+              )}
+            </div>
+
             {showPhotoEditor && (
               <LazyModalBoundary label="Loading editor...">
                 <PhotoEditor
@@ -4086,6 +4166,66 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
               >
                 ✏️ Edit Photos
               </button>
+            )}
+          </div>
+
+          {/* Video Tour */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-800 mb-2">
+              🎥 Video Tour <span className="text-gray-400 font-normal">(Optional)</span>
+            </label>
+            
+            {formData.videoTour ? (
+              <div className="relative rounded-xl overflow-hidden bg-gray-900">
+                <video 
+                  src={formData.videoTour}
+                  controls
+                  className="w-full max-h-48 object-contain"
+                />
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, videoTour: null })}
+                  className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <label className="block cursor-pointer">
+                <div className="border-2 border-dashed border-purple-300 rounded-xl p-4 text-center hover:border-purple-500 hover:bg-purple-50/50 transition-all">
+                  <div className="text-2xl mb-1">🎥</div>
+                  <p className="text-gray-600 text-sm font-medium">Add Video Tour</p>
+                  <p className="text-gray-400 text-xs">Max 60 sec, 50MB</p>
+                </div>
+                <input
+                  type="file"
+                  accept="video/mp4,video/mov,video/quicktime,video/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (file.size > 50 * 1024 * 1024) {
+                      alert('Video must be under 50MB');
+                      return;
+                    }
+                    const video = document.createElement('video');
+                    video.preload = 'metadata';
+                    video.onloadedmetadata = () => {
+                      URL.revokeObjectURL(video.src);
+                      if (video.duration > 65) {
+                        alert('Video must be 60 seconds or less');
+                        return;
+                      }
+                      const reader = new FileReader();
+                      reader.onload = (evt) => {
+                        setFormData(prev => ({ ...prev, videoTour: evt.target.result }));
+                      };
+                      reader.readAsDataURL(file);
+                    };
+                    video.src = URL.createObjectURL(file);
+                  }}
+                  className="hidden"
+                />
+              </label>
             )}
           </div>
 
