@@ -132,10 +132,19 @@ export default function Footer({ onOpenPrivacy, onOpenAbout, onInstallApp }) {
       <div className="bg-gray-950 border-t border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
-            <p className="text-gray-500 text-xs">
-              © {currentYear} RentMzansi. All rights reserved.
-            </p>
+            <div className="flex items-center gap-3">
+              <p className="text-gray-500 text-xs">
+                © {currentYear} RentMzansi. All rights reserved.
+              </p>
+              <span className="hidden sm:inline-flex items-center gap-1 text-[10px] text-gray-600 bg-gray-800 px-2 py-0.5 rounded-full">
+                <span className="text-emerald-400">•</span> v1.0.0
+              </span>
+            </div>
             <div className="flex items-center gap-4 text-xs">
+              <span className="text-gray-600 flex items-center gap-1">
+                Made with <Heart className="w-3 h-3 text-[#E63946] fill-[#E63946]" /> in SA
+              </span>
+              <span className="text-gray-700">•</span>
               <button 
                 onClick={onOpenPrivacy}
                 className="text-gray-500 hover:text-[#E63946] transition-colors"
@@ -149,19 +158,10 @@ export default function Footer({ onOpenPrivacy, onOpenAbout, onInstallApp }) {
               >
                 About
               </button>
-              <span className="text-gray-700">•</span>
-              <button className="text-gray-500 hover:text-[#E63946] transition-colors">
-                Terms
-              </button>
-              <span className="text-gray-700">•</span>
-              <button className="text-gray-500 hover:text-[#E63946] transition-colors">
-                Cookies
-              </button>
             </div>
           </div>
           <p className="text-center text-gray-600 text-[10px] mt-3">
-            By using RentMzansi, you agree to our use of cookies for improved user experience. 
-            We display ads to keep RentMzansi free for everyone.
+            RentMzansi is free for renters. We display non-intrusive ads to keep it that way.
           </p>
         </div>
       </div>

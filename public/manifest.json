@@ -1,6 +1,7 @@
 {
   "short_name": "RentMzansi",
   "name": "RentMzansi – South Africa Room Rentals",
+  "description": "Find affordable rooms to rent in South Africa. Connect with verified landlords in Johannesburg, Cape Town, Durban, Pretoria and more. Safe, easy, free.",
   "icons": [
     {
       "src": "favicon.ico",
@@ -35,7 +36,13 @@
     }
   ],
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "theme_color": "#E63946",
-  "background_color": "#F1FAEE"
+  "background_color": "#F1FAEE",
+  "categories": ["lifestyle", "business"],
+  "lang": "en-ZA",
+  "dir": "ltr",
+  "prefer_related_applications": false
 }
