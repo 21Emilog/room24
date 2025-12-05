@@ -1729,14 +1729,14 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
 
           {/* Contact Info Cards */}
           <div className="space-y-3 mb-6">
-            <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-4 border border-gray-100 hover:border-red-200 hover:shadow-md transition-all duration-300 group cursor-default">
+            <div className="bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-800 dark:to-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 hover:border-red-200 dark:hover:border-red-800 hover:shadow-md transition-all duration-300 group cursor-default">
               <div className="flex items-center">
-                <div className="w-11 h-11 bg-gradient-to-br from-red-100 to-red-100 rounded-xl flex items-center justify-center mr-4 shadow-sm group-hover:scale-110 transition-transform duration-300">
+                <div className="w-11 h-11 bg-gradient-to-br from-red-100 to-red-100 dark:from-red-900/40 dark:to-red-900/40 rounded-xl flex items-center justify-center mr-4 shadow-sm group-hover:scale-110 transition-transform duration-300">
                   <Phone className="w-5 h-5 text-[#E63946]" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-xs font-medium text-gray-500 mb-0.5">Phone Number</p>
-                  <p className="font-semibold text-gray-800">{user.phone || 'Not set'}</p>
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Phone Number</p>
+                  <p className="font-semibold text-gray-800 dark:text-white">{user.phone || 'Not set'}</p>
                 </div>
                 {user.phone && (
                   <a 
@@ -1750,14 +1750,14 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-4 border border-gray-100 hover:border-red-200 hover:shadow-md transition-all duration-300 group cursor-default">
+            <div className="bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-800 dark:to-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 hover:border-red-200 dark:hover:border-red-800 hover:shadow-md transition-all duration-300 group cursor-default">
               <div className="flex items-center">
-                <div className="w-11 h-11 bg-gradient-to-br from-red-100 to-blue-100 rounded-xl flex items-center justify-center mr-4 shadow-sm group-hover:scale-110 transition-transform duration-300">
+                <div className="w-11 h-11 bg-gradient-to-br from-red-100 to-blue-100 dark:from-red-900/40 dark:to-blue-900/40 rounded-xl flex items-center justify-center mr-4 shadow-sm group-hover:scale-110 transition-transform duration-300">
                   <Mail className="w-5 h-5 text-[#c5303c]" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-gray-500 mb-0.5">Email Address</p>
-                  <p className="font-semibold text-gray-800 truncate">{user.email}</p>
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Email Address</p>
+                  <p className="font-semibold text-gray-800 dark:text-white truncate">{user.email}</p>
                 </div>
                 <a 
                   href={`mailto:${user.email}`}
@@ -1770,14 +1770,14 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
             </div>
 
             {user.whatsapp && (
-              <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-4 border border-gray-100 hover:border-green-200 hover:shadow-md transition-all duration-300 group cursor-default">
+              <div className="bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-800 dark:to-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 hover:border-green-200 dark:hover:border-green-800 hover:shadow-md transition-all duration-300 group cursor-default">
                 <div className="flex items-center">
-                  <div className="w-11 h-11 bg-gradient-to-br from-green-100 to-emerald-100 rounded-xl flex items-center justify-center mr-4 shadow-sm group-hover:scale-110 transition-transform duration-300">
+                  <div className="w-11 h-11 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/40 dark:to-emerald-900/40 rounded-xl flex items-center justify-center mr-4 shadow-sm group-hover:scale-110 transition-transform duration-300">
                     <span className="text-lg">💬</span>
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs font-medium text-gray-500 mb-0.5">WhatsApp</p>
-                    <p className="font-semibold text-gray-800">{user.whatsapp}</p>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">WhatsApp</p>
+                    <p className="font-semibold text-gray-800 dark:text-white">{user.whatsapp}</p>
                   </div>
                   <a 
                     href={`https://wa.me/${user.whatsapp.replace(/[^0-9]/g, '')}`}
@@ -1791,14 +1791,14 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
               </div>
             )}
 
-            <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-4 border border-gray-100 hover:border-violet-200 hover:shadow-md transition-all duration-300 group cursor-default">
+            <div className="bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-800 dark:to-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 hover:border-violet-200 dark:hover:border-violet-800 hover:shadow-md transition-all duration-300 group cursor-default">
               <div className="flex items-center">
-                <div className="w-11 h-11 bg-gradient-to-br from-violet-100 to-purple-100 rounded-xl flex items-center justify-center mr-4 shadow-sm group-hover:scale-110 transition-transform duration-300">
-                  <Calendar className="w-5 h-5 text-violet-600" />
+                <div className="w-11 h-11 bg-gradient-to-br from-violet-100 to-purple-100 dark:from-violet-900/40 dark:to-purple-900/40 rounded-xl flex items-center justify-center mr-4 shadow-sm group-hover:scale-110 transition-transform duration-300">
+                  <Calendar className="w-5 h-5 text-violet-600 dark:text-violet-400" />
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-0.5">Member Since</p>
-                  <p className="font-semibold text-gray-800">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Member Since</p>
+                  <p className="font-semibold text-gray-800 dark:text-white">
                     {user.createdAt && !isNaN(new Date(user.createdAt).getTime())
                       ? new Date(user.createdAt).toLocaleDateString('en-ZA', { 
                           year: 'numeric', 
@@ -1814,65 +1814,65 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
           </div>
 
           {/* Notification Preferences */}
-          <div className="bg-gradient-to-br from-red-50 via-red-50 to-sky-50 rounded-xl p-5 border border-red-100">
+          <div className="bg-gradient-to-br from-red-50 via-red-50 to-sky-50 dark:from-gray-800 dark:via-gray-800 dark:to-gray-800 rounded-xl p-5 border border-red-100 dark:border-gray-700">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-500 rounded-xl flex items-center justify-center shadow-sm">
                 <Bell className="w-5 h-5 text-white" />
               </div>
-              <h4 className="font-bold text-gray-800">Notification Preferences</h4>
+              <h4 className="font-bold text-gray-800 dark:text-white">Notification Preferences</h4>
             </div>
             <div className="space-y-3">
-              <label className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100 cursor-pointer hover:border-red-200 transition-colors">
+              <label className="flex items-center gap-3 p-3 bg-white dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-700 cursor-pointer hover:border-red-200 dark:hover:border-red-800 transition-colors">
                 <input
                   type="checkbox"
                   checked={localPrefs.updates}
                   onChange={() => togglePref('updates')}
-                  className="w-5 h-5 rounded border-gray-300 text-[#E63946] focus:ring-red-500"
+                  className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-[#E63946] focus:ring-red-500"
                 />
                 <div>
-                  <p className="text-sm font-medium text-gray-800">Room Alerts</p>
-                  <p className="text-xs text-gray-500">Get notified about new rooms in your saved areas</p>
+                  <p className="text-sm font-medium text-gray-800 dark:text-white">Room Alerts</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Get notified about new rooms in your saved areas</p>
                 </div>
               </label>
-              <label className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100 cursor-pointer hover:border-red-200 transition-colors">
+              <label className="flex items-center gap-3 p-3 bg-white dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-700 cursor-pointer hover:border-red-200 dark:hover:border-red-800 transition-colors">
                 <input
                   type="checkbox"
                   checked={localPrefs.marketing}
                   onChange={() => togglePref('marketing')}
-                  className="w-5 h-5 rounded border-gray-300 text-[#E63946] focus:ring-red-500"
+                  className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-[#E63946] focus:ring-red-500"
                 />
                 <div>
-                  <p className="text-sm font-medium text-gray-800">Tips & Updates</p>
-                  <p className="text-xs text-gray-500">Occasional features and helpful content</p>
+                  <p className="text-sm font-medium text-gray-800 dark:text-white">Tips & Updates</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Occasional features and helpful content</p>
                 </div>
               </label>
             </div>
-            <p className="text-[11px] text-gray-500 mt-3 text-center">Changes save automatically • You can opt out anytime</p>
+            <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-3 text-center">Changes save automatically • You can opt out anytime</p>
           </div>
 
           {/* Location Alerts Section */}
-          <div className="bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 rounded-xl p-5 border border-emerald-100 mt-4">
+          <div className="bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-gray-800 dark:via-gray-800 dark:to-gray-800 rounded-xl p-5 border border-emerald-100 dark:border-gray-700 mt-4">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center shadow-sm">
                 <MapPin className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h4 className="font-bold text-gray-800">Location Alerts</h4>
-                <p className="text-xs text-gray-500">Get notified when rooms are listed in these areas</p>
+                <h4 className="font-bold text-gray-800 dark:text-white">Location Alerts</h4>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Get notified when rooms are listed in these areas</p>
               </div>
             </div>
             
             {areaSubscriptions.length > 0 ? (
               <div className="space-y-2">
                 {areaSubscriptions.map((area, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100 hover:border-emerald-200 transition-colors group">
+                  <div key={idx} className="flex items-center justify-between p-3 bg-white dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-700 hover:border-emerald-200 dark:hover:border-emerald-800 transition-colors group">
                     <div className="flex items-center gap-2">
                       <MapPin className="w-4 h-4 text-emerald-500" />
-                      <span className="text-sm font-medium text-gray-800">{area}</span>
+                      <span className="text-sm font-medium text-gray-800 dark:text-white">{area}</span>
                     </div>
                     <button
                       onClick={() => onUnsubscribeArea && onUnsubscribeArea(area)}
-                      className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                      className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-all"
                       aria-label={`Unsubscribe from ${area}`}
                     >
                       <Trash2 className="w-4 h-4" />
@@ -1881,27 +1881,27 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
                 ))}
               </div>
             ) : (
-              <div className="text-center py-6 bg-white/50 rounded-lg border border-dashed border-emerald-200">
-                <MapPin className="w-8 h-8 text-emerald-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-600 font-medium">No location alerts yet</p>
-                <p className="text-xs text-gray-500 mt-1">Search for an area and tap "Get Alerts" to subscribe</p>
+              <div className="text-center py-6 bg-white/50 dark:bg-gray-900/50 rounded-lg border border-dashed border-emerald-200 dark:border-gray-600">
+                <MapPin className="w-8 h-8 text-emerald-300 dark:text-emerald-600 mx-auto mb-2" />
+                <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">No location alerts yet</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Search for an area and tap "Get Alerts" to subscribe</p>
               </div>
             )}
             
-            <p className="text-[11px] text-gray-500 mt-3 text-center">
+            <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-3 text-center">
               💡 Tip: Search for a location on the Browse page and tap the bell icon
             </p>
           </div>
 
           {/* Account Linking Section */}
-          <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-violet-50 rounded-xl p-5 border border-blue-100 mt-4">
+          <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-violet-50 dark:from-gray-800 dark:via-gray-800 dark:to-gray-800 rounded-xl p-5 border border-blue-100 dark:border-gray-700 mt-4">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-sm">
                 <Link2 className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h4 className="font-bold text-gray-800">Linked Accounts</h4>
-                <p className="text-xs text-gray-500">Connect multiple sign-in methods</p>
+                <h4 className="font-bold text-gray-800 dark:text-white">Linked Accounts</h4>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Connect multiple sign-in methods</p>
               </div>
             </div>
 

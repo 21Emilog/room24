@@ -514,10 +514,10 @@ export default function BrowseView({
                 {/* Results Header */}
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h2 id="results-heading" className="text-2xl font-bold text-gray-800">
+                    <h2 id="results-heading" className="text-2xl font-bold text-gray-800 dark:text-white">
                       {listings.length === 0 ? 'No rooms found' : `${listings.length} Room${listings.length !== 1 ? 's' : ''} Available`}
                     </h2>
-                    <p className="text-gray-500 mt-1">
+                    <p className="text-gray-500 dark:text-gray-400 mt-1">
                       {searchLocation ? `Showing results for "${searchLocation}"` : 'Browse all available rooms in South Africa'}
                     </p>
                   </div>
@@ -531,12 +531,12 @@ export default function BrowseView({
                   </div>
                 ) : (
                   (paymentFilter ? listings.filter(l => l.paymentMethod === paymentFilter) : listings).length === 0 ? (
-                    <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center shadow-sm">
-                      <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <Search className="w-10 h-10 text-gray-300" />
+                    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-12 text-center shadow-sm">
+                      <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-700 dark:to-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Search className="w-10 h-10 text-gray-300 dark:text-gray-500" />
                       </div>
-                      <h3 className="text-xl font-bold text-gray-800 mb-2">No rooms found</h3>
-                      <p className="text-gray-500 text-sm mb-6 max-w-md mx-auto">
+                      <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">No rooms found</h3>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 max-w-md mx-auto">
                         Try adjusting your filters or search in a different area
                       </p>
                       <div className="flex flex-wrap justify-center gap-2 mb-6">
@@ -588,12 +588,12 @@ export default function BrowseView({
               <div className="hidden lg:block w-72 xl:w-80 flex-shrink-0">
                 <div className="sticky top-24 space-y-5">
                   {/* Save Search Card */}
-                  <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-5">
-                    <h3 className="font-bold text-gray-800 mb-2 flex items-center gap-2">
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-5">
+                    <h3 className="font-bold text-gray-800 dark:text-white mb-2 flex items-center gap-2">
                       <Bell className="w-5 h-5 text-[#E63946]" />
                       Get Notified
                     </h3>
-                    <p className="text-sm text-gray-500 mb-4">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                       Save this search and get alerts when new rooms match.
                     </p>
                     <button
@@ -604,14 +604,14 @@ export default function BrowseView({
                       Save Search
                     </button>
                     {savedSearches.length > 0 && (
-                      <div className="mt-4 pt-4 border-t border-gray-100">
-                        <p className="text-xs text-gray-500 mb-2">Your saved searches:</p>
+                      <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Your saved searches:</p>
                         <div className="space-y-2">
                           {savedSearches.slice(0, 3).map(s => (
                             <button
                               key={s.id}
                               onClick={() => loadSearch(s)}
-                              className="w-full text-left text-sm px-3 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-700 truncate"
+                              className="w-full text-left text-sm px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 truncate"
                             >
                               {s.location || 'Any location'} • R{s.priceRange[0]}-R{s.priceRange[1]}
                             </button>
@@ -647,7 +647,7 @@ export default function BrowseView({
                   </div>
 
                   {/* Ad Space */}
-                  <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <InFeedAd />
                   </div>
                 </div>
@@ -661,7 +661,7 @@ export default function BrowseView({
 
   // Mobile / tablet layout
   return (
-    <div className="bg-gradient-to-b from-slate-50 to-gray-100 min-h-screen pb-24" role="main" aria-labelledby="results-heading">
+    <div className="bg-gradient-to-b from-slate-50 to-gray-100 dark:from-gray-900 dark:to-gray-900 min-h-screen pb-24" role="main" aria-labelledby="results-heading">
       {/* Welcome Hero Section */}
       {showWelcomeHero && !currentUser && listings.length > 0 && (
         <div className="bg-gradient-to-br from-[#1D3557] via-[#1D3557] to-[#2d4a6f] text-white relative overflow-hidden">
@@ -715,7 +715,7 @@ export default function BrowseView({
         </div>
       )}
 
-      <div className="bg-gradient-to-b from-[#fff5f5] to-white border-b border-red-100 shadow-sm">
+      <div className="bg-gradient-to-b from-[#fff5f5] to-white dark:from-gray-900 dark:to-gray-900 border-b border-red-100 dark:border-gray-800 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-6">
           {/* Marketplace Pulse Header */}
           <div className="flex items-center justify-between mb-4">
@@ -724,8 +724,8 @@ export default function BrowseView({
                 <Home className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-[#1D3557]">MARKETPLACE PULSE</h2>
-                <p className="text-xs text-gray-500">See how RentMzansi is performing</p>
+                <h2 className="text-lg font-bold text-[#1D3557] dark:text-white">MARKETPLACE PULSE</h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400">See how RentMzansi is performing</p>
               </div>
             </div>
             <button className="text-sm text-[#E63946] hover:text-[#c5303c] font-semibold flex items-center gap-1">
@@ -750,7 +750,7 @@ export default function BrowseView({
                   setTimeout(() => setSearchFocused(false), 200);
                   if (searchLocation) addRecentSearch(searchLocation); 
                 }}
-                className="w-full pl-20 pr-12 py-5 border-2 border-red-200 rounded-2xl text-gray-800 text-lg focus:ring-4 focus:ring-red-100 focus:border-[#E63946] shadow-md transition-all duration-200 hover:border-[#E63946] placeholder-gray-400 bg-white"
+                className="w-full pl-20 pr-12 py-5 border-2 border-red-200 dark:border-gray-700 rounded-2xl text-gray-800 dark:text-white text-lg focus:ring-4 focus:ring-red-100 dark:focus:ring-red-900/30 focus:border-[#E63946] shadow-md transition-all duration-200 hover:border-[#E63946] placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-800"
                 aria-label="Location search"
               />
               {locationLoading && (
@@ -769,8 +769,8 @@ export default function BrowseView({
               )}
               {/* Location suggestions dropdown */}
               {locationSuggestions.length > 0 && (
-                <div className="absolute left-0 right-0 top-full mt-2 bg-white border-2 border-red-200 rounded-2xl shadow-xl z-20 overflow-hidden animate-fadeIn">
-                  <div className="text-xs text-[#E63946] px-4 py-2.5 bg-gradient-to-r from-red-50 to-rose-50 border-b border-red-100 font-semibold flex items-center gap-2">
+                <div className="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-gray-800 border-2 border-red-200 dark:border-gray-700 rounded-2xl shadow-xl z-20 overflow-hidden animate-fadeIn">
+                  <div className="text-xs text-[#E63946] px-4 py-2.5 bg-gradient-to-r from-red-50 to-rose-50 dark:from-gray-700 dark:to-gray-700 border-b border-red-100 dark:border-gray-600 font-semibold flex items-center gap-2">
                     <MapPin className="w-3.5 h-3.5" /> Suggestions
                   </div>
                   {locationSuggestions.map((s, i) => (
@@ -778,20 +778,20 @@ export default function BrowseView({
                       key={s}
                       type="button"
                       onClick={() => { setSearchLocation(s); setLocationSuggestions([]); addRecentSearch(s); }}
-                      className={`w-full text-left px-4 py-3 text-sm hover:bg-red-50 flex items-center gap-3 transition-colors ${i > 0 ? 'border-t border-gray-100' : ''}`}
+                      className={`w-full text-left px-4 py-3 text-sm hover:bg-red-50 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors ${i > 0 ? 'border-t border-gray-100 dark:border-gray-700' : ''}`}
                     >
-                      <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
                         <MapPin className="w-4 h-4 text-[#E63946]" />
                       </div>
-                      <span className="text-gray-800 font-medium">{s}</span>
+                      <span className="text-gray-800 dark:text-white font-medium">{s}</span>
                     </button>
                   ))}
                 </div>
               )}
               {/* Recent searches dropdown - show when input focused and no suggestions */}
               {searchFocused && recentSearches.length > 0 && locationSuggestions.length === 0 && (
-                <div className="absolute left-0 right-0 top-full mt-2 bg-white border-2 border-gray-200 rounded-2xl shadow-xl z-20 overflow-hidden animate-fadeIn">
-                  <div className="text-xs text-gray-600 px-4 py-2.5 bg-gray-50 border-b border-gray-100 font-semibold flex items-center gap-2">
+                <div className="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl z-20 overflow-hidden animate-fadeIn">
+                  <div className="text-xs text-gray-600 dark:text-gray-300 px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border-b border-gray-100 dark:border-gray-600 font-semibold flex items-center gap-2">
                     <Clock className="w-3.5 h-3.5" /> Recent Searches
                   </div>
                   {recentSearches.map((s, i) => (
@@ -800,12 +800,12 @@ export default function BrowseView({
                       type="button"
                       onMouseDown={(e) => e.preventDefault()} 
                       onClick={() => { setSearchLocation(s); setSearchFocused(false); }}
-                      className={`w-full text-left px-4 py-3 text-sm hover:bg-red-50 flex items-center gap-3 transition-colors ${i > 0 ? 'border-t border-gray-100' : ''}`}
+                      className={`w-full text-left px-4 py-3 text-sm hover:bg-red-50 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors ${i > 0 ? 'border-t border-gray-100 dark:border-gray-700' : ''}`}
                     >
-                      <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
                         <Clock className="w-4 h-4 text-[#E63946]" />
                       </div>
-                      <span className="text-gray-700">{s}</span>
+                      <span className="text-gray-700 dark:text-white">{s}</span>
                     </button>
                   ))}
                 </div>
@@ -849,7 +849,7 @@ export default function BrowseView({
             
             {/* Popular Areas Quick Select */}
             <div className="flex flex-wrap gap-2 items-center">
-              <span className="text-sm text-gray-600 font-semibold">Popular:</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400 font-semibold">Popular:</span>
               {['Sandton', 'Soweto', 'Pretoria', 'Cape Town', 'Durban', 'Johannesburg'].map(area => (
                 <button
                   key={area}
@@ -857,7 +857,7 @@ export default function BrowseView({
                   className={`text-sm px-4 py-2 rounded-xl font-medium transition-all duration-200 ${
                     searchLocation.toLowerCase() === area.toLowerCase()
                       ? 'bg-gradient-to-r from-[#E63946] to-[#c5303c] text-white shadow-md scale-105'
-                      : 'bg-white text-gray-700 hover:bg-red-50 hover:text-[#E63946] border-2 border-gray-200 hover:border-red-300 shadow-sm'
+                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-[#E63946] border-2 border-gray-200 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-800 shadow-sm'
                   }`}
                 >
                   {area}
@@ -866,14 +866,14 @@ export default function BrowseView({
             </div>
 
             {/* Quick Filter Chips */}
-            <div className="flex flex-wrap gap-2 items-center pt-4 border-t border-gray-100">
-              <span className="text-sm text-gray-600 font-semibold">Quick filters:</span>
+            <div className="flex flex-wrap gap-2 items-center pt-4 border-t border-gray-100 dark:border-gray-700">
+              <span className="text-sm text-gray-600 dark:text-gray-400 font-semibold">Quick filters:</span>
               <button
                 onClick={() => setPriceRange([0, 3000])}
                 className={`text-sm px-4 py-2 rounded-xl transition-all duration-200 flex items-center gap-1.5 font-medium ${
                   priceRange[1] === 3000 && priceRange[0] === 0
                     ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md scale-105'
-                    : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-2 border-emerald-200 hover:border-emerald-300'
+                    : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 border-2 border-emerald-200 dark:border-emerald-800 hover:border-emerald-300'
                 }`}
               >
                 💰 Under R3,000
@@ -883,7 +883,7 @@ export default function BrowseView({
                 className={`text-sm px-4 py-2 rounded-xl transition-all duration-200 flex items-center gap-1.5 font-medium ${
                   petFriendly
                     ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md scale-105'
-                    : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border-2 border-amber-200 hover:border-amber-300'
+                    : 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50 border-2 border-amber-200 dark:border-amber-800 hover:border-amber-300'
                 }`}
               >
                 🐾 Pet Friendly
@@ -893,7 +893,7 @@ export default function BrowseView({
                   // Visual indicator for available now - just scroll to see results
                   window.scrollTo({ top: 400, behavior: 'smooth' });
                 }}
-                className="text-sm px-4 py-2 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 border-2 border-blue-200 hover:border-blue-300 transition-all duration-200 flex items-center gap-1.5 font-medium"
+                className="text-sm px-4 py-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 border-2 border-blue-200 dark:border-blue-800 hover:border-blue-300 transition-all duration-200 flex items-center gap-1.5 font-medium"
               >
                 🏠 Available Now
               </button>
@@ -902,7 +902,7 @@ export default function BrowseView({
                 className={`text-sm px-4 py-2 rounded-xl transition-all duration-200 flex items-center gap-1.5 font-medium ${
                   selectedAmenities.includes('WiFi')
                     ? 'bg-gradient-to-r from-[#E63946] to-[#c5303c] text-white shadow-md scale-105'
-                    : 'bg-red-50 text-[#E63946] hover:bg-red-100 border-2 border-red-200 hover:border-red-300'
+                    : 'bg-red-50 dark:bg-red-900/30 text-[#E63946] hover:bg-red-100 dark:hover:bg-red-900/50 border-2 border-red-200 dark:border-red-800 hover:border-red-300'
                 }`}
               >
                 📶 WiFi
@@ -912,7 +912,7 @@ export default function BrowseView({
                 className={`text-sm px-4 py-2 rounded-xl transition-all duration-200 flex items-center gap-1.5 font-medium ${
                   selectedAmenities.includes('Parking')
                     ? 'bg-gradient-to-r from-slate-500 to-gray-600 text-white shadow-md scale-105'
-                    : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-2 border-slate-200 hover:border-slate-300'
+                    : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 hover:border-slate-300'
                 }`}
               >
                 🚗 Parking
@@ -933,12 +933,12 @@ export default function BrowseView({
             )}
           </div>
           <div className="flex gap-2 mb-3 flex-wrap items-center">
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-200 border border-gray-300">
-              <span className="text-sm font-medium text-gray-700">R{priceRange[0].toLocaleString()} - R{priceRange[1].toLocaleString()}</span>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">R{priceRange[0].toLocaleString()} - R{priceRange[1].toLocaleString()}</span>
               <select
                 value={priceRange[0]}
                 onChange={(e) => setPriceRange([parseInt(e.target.value), priceRange[1]])}
-                className="text-xs bg-transparent border-l border-gray-400 pl-2 focus:outline-none text-gray-700"
+                className="text-xs bg-transparent border-l border-gray-400 dark:border-gray-600 pl-2 focus:outline-none text-gray-700 dark:text-gray-300"
                 aria-label="Minimum price"
               >
                 <option value="0">Min</option>
@@ -949,7 +949,7 @@ export default function BrowseView({
               <select
                 value={priceRange[1]}
                 onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
-                className="text-xs bg-transparent border-l border-gray-400 pl-2 focus:outline-none text-gray-700"
+                className="text-xs bg-transparent border-l border-gray-400 dark:border-gray-600 pl-2 focus:outline-none text-gray-700 dark:text-gray-300"
                 aria-label="Maximum price"
               >
                 <option value="10000">R10k</option>
@@ -959,11 +959,11 @@ export default function BrowseView({
               </select>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Sort:</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">Sort:</span>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="text-sm px-3 py-2 rounded-lg bg-gray-200 border border-gray-300 text-gray-700 focus:ring-2 focus:ring-[#E63946]"
+                className="text-sm px-3 py-2 rounded-lg bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-[#E63946]"
                 aria-label="Sort order"
               >
                 <option value="newest">Newest</option>
@@ -972,11 +972,11 @@ export default function BrowseView({
               </select>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Payment:</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">Payment:</span>
               <select
                 value={paymentFilter}
                 onChange={(e) => setPaymentFilter(e.target.value)}
-                className="text-sm px-3 py-2 rounded-lg bg-gray-200 border border-gray-300 text-gray-700 focus:ring-2 focus:ring-[#E63946]"
+                className="text-sm px-3 py-2 rounded-lg bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-[#E63946]"
                 aria-label="Payment method filter"
               >
                 <option value="">Any</option>
@@ -992,10 +992,10 @@ export default function BrowseView({
             >{showAdvancedFilters ? '✕ Filters' : '⚙️ Filters'}</button>
           </div>
           {showAdvancedFilters && (
-            <div className="mt-3 p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-4">
+            <div className="mt-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 space-y-4">
               {/* Room Type */}
               <div>
-                <label className="text-xs font-semibold text-gray-700 mb-2 block">Room Type</label>
+                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Room Type</label>
                 <div className="flex gap-2">
                   {['Private', 'Shared'].map(type => (
                     <button
@@ -1004,7 +1004,7 @@ export default function BrowseView({
                       className={`px-3 py-1.5 rounded-md text-sm font-medium border transition ${ 
                         roomType === type.toLowerCase()
                           ? 'bg-[#E63946] text-white border-[#E63946] shadow-sm'
-                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                          : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
                       }`}
                     >{type}</button>
                   ))}
@@ -1013,7 +1013,7 @@ export default function BrowseView({
 
               {/* Lease Duration */}
               <div>
-                <label className="text-xs font-semibold text-gray-700 mb-2 block">Lease Duration (months)</label>
+                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Lease Duration (months)</label>
                 <div className="flex gap-2 flex-wrap">
                   {[
                     { label: '1-3', value: '1-3' },
@@ -1027,7 +1027,7 @@ export default function BrowseView({
                       className={`px-3 py-1.5 rounded-md text-sm font-medium border transition ${
                         leaseDuration === opt.value
                           ? 'bg-[#E63946] text-white border-[#E63946] shadow-sm'
-                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                          : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
                       }`}
                     >{opt.label}</button>
                   ))}
@@ -1041,15 +1041,15 @@ export default function BrowseView({
                     type="checkbox"
                     checked={petFriendly}
                     onChange={(e) => setPetFriendly(e.target.checked)}
-                    className="w-4 h-4 text-[#E63946] border-gray-300 rounded focus:ring-[#E63946]"
+                    className="w-4 h-4 text-[#E63946] border-gray-300 dark:border-gray-600 rounded focus:ring-[#E63946]"
                   />
-                  <span className="text-sm font-medium text-gray-700">🐾 Pet Friendly</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">🐾 Pet Friendly</span>
                 </label>
               </div>
 
               {/* Gender Preference */}
               <div>
-                <label className="text-xs font-semibold text-gray-700 mb-2 block">Gender Preference</label>
+                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Gender Preference</label>
                 <div className="flex gap-2">
                   {[
                     { label: 'Male', value: 'male' },
@@ -1062,7 +1062,7 @@ export default function BrowseView({
                       className={`px-3 py-1.5 rounded-md text-sm font-medium border transition ${
                         genderPreference === opt.value
                           ? 'bg-[#E63946] text-white border-[#E63946] shadow-sm'
-                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                          : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
                       }`}
                     >{opt.label}</button>
                   ))}
@@ -1071,14 +1071,14 @@ export default function BrowseView({
 
               {/* Amenities */}
               <div>
-                <label className="text-xs font-semibold text-gray-700 mb-2 block">Amenities</label>
+                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Amenities</label>
                 <div className="flex flex-wrap gap-1" aria-label="Amenities">
                   {amenityOptions.map(a => (
                     <button
                       key={a}
                       type="button"
                       onClick={() => toggleAmenity(a)}
-                      className={`px-2 py-1 rounded-md text-[11px] font-medium border transition ${selectedAmenities.includes(a) ? 'bg-[#E63946] text-white border-[#E63946] shadow-sm' : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'}`}
+                      className={`px-2 py-1 rounded-md text-[11px] font-medium border transition ${selectedAmenities.includes(a) ? 'bg-[#E63946] text-white border-[#E63946] shadow-sm' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
                       aria-pressed={selectedAmenities.includes(a)}
                     >{a}</button>
                   ))}
@@ -1095,7 +1095,7 @@ export default function BrowseView({
       </div>
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between items-center mt-4 mb-4">
-          <h2 id="results-heading" className="text-2xl font-bold text-gray-800">
+          <h2 id="results-heading" className="text-2xl font-bold text-gray-800 dark:text-white">
             {listings.length === 0 ? (
               'No rooms available'
             ) : (
@@ -1112,13 +1112,13 @@ export default function BrowseView({
           </div>
         ) : (
           (paymentFilter ? listings.filter(l => l.paymentMethod === paymentFilter) : listings).length === 0 ? (
-            <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-xl border-2 border-dashed border-gray-300 p-16 text-center">
-              <div className="bg-white w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+            <div className="bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-800 dark:to-gray-800 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 p-16 text-center">
+              <div className="bg-white dark:bg-gray-900 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
                 <Search className="w-12 h-12 text-gray-400" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-3">No rooms found</h3>
-              <p className="text-gray-600 mb-2">Try adjusting your filters or search in a different area</p>
-              <p className="text-gray-500 text-sm mb-8 max-w-md mx-auto">
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-3">No rooms found</h3>
+              <p className="text-gray-600 dark:text-gray-300 mb-2">Try adjusting your filters or search in a different area</p>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mb-8 max-w-md mx-auto">
                 Try different search terms or browse popular areas
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
