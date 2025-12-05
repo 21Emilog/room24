@@ -4,17 +4,21 @@ import { ArrowUp } from 'lucide-react';
 export default function BackToTop() {
   const [isVisible, setIsVisible] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
 
   useEffect(() => {
     const toggleVisibility = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+      setScrollProgress(progress);
+      
       // Show button when page is scrolled down 400px
-      if (window.scrollY > 400) {
+      if (scrollTop > 400) {
         setShouldRender(true);
-        // Small delay for mount animation
         setTimeout(() => setIsVisible(true), 10);
       } else {
         setIsVisible(false);
-        // Wait for fade out before unmounting
         setTimeout(() => setShouldRender(false), 300);
       }
     };
@@ -32,15 +36,45 @@ export default function BackToTop() {
 
   if (!shouldRender) return null;
 
+  // Calculate stroke dashoffset for circular progress
+  const circumference = 2 * Math.PI * 20; // radius = 20
+  const strokeDashoffset = circumference - (scrollProgress / 100) * circumference;
+
   return (
     <button
       onClick={scrollToTop}
-      className={`fixed bottom-24 right-4 md:bottom-8 md:right-8 z-40 w-12 h-12 bg-gradient-to-r from-red-500 to-red-500 hover:from-[#E63946] hover:to-[#c5303c] text-white rounded-full shadow-lg hover:shadow-xl flex items-center justify-center group active:scale-95 transition-all duration-300 ${
+      className={`fixed bottom-24 right-4 md:bottom-8 md:right-8 z-40 w-14 h-14 bg-white dark:bg-gray-800 text-[#E63946] rounded-full shadow-lg hover:shadow-xl hover:shadow-red-500/20 flex items-center justify-center group active:scale-95 transition-all duration-300 border-2 border-gray-100 dark:border-gray-700 hover:border-[#E63946] ${
         isVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-90'
       }`}
       aria-label="Back to top"
+      title={`Back to top (${Math.round(scrollProgress)}% scrolled)`}
     >
-      <ArrowUp className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
+      {/* Circular progress indicator */}
+      <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 48 48">
+        <circle
+          cx="24"
+          cy="24"
+          r="20"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          className="opacity-20"
+        />
+        <circle
+          cx="24"
+          cy="24"
+          r="20"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          className="transition-all duration-150"
+        />
+      </svg>
+      <ArrowUp className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform relative z-10" />
     </button>
   );
 }

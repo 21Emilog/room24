@@ -48,7 +48,7 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
   return (
     <div
       onClick={onClick}
-      className={`bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden border border-gray-100 hover:border-red-300 hover:-translate-y-1 group w-full max-w-sm ${listing.premium ? 'ring-2 ring-amber-400 ring-offset-2' : ''}`}
+      className={`bg-white dark:bg-gray-800 rounded-2xl shadow-sm hover:shadow-xl dark:shadow-gray-900/30 transition-all duration-300 cursor-pointer overflow-hidden border border-gray-100 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-500/50 hover:-translate-y-1 group w-full max-w-sm ${listing.premium ? 'ring-2 ring-amber-400 ring-offset-2 dark:ring-offset-gray-900' : ''}`}
       role="article"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(); } }}
@@ -56,7 +56,7 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
     >
       {/* Image Section */}
       {listing.photos && listing.photos.length > 0 ? (
-        <div className="relative bg-gray-200 aspect-[4/3] overflow-hidden">
+        <div className="relative bg-gray-200 dark:bg-gray-700 aspect-[4/3] overflow-hidden">
           {/* Skeleton placeholder while loading */}
           {!imageLoaded && !imageError && (
             <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-pulse" />
@@ -155,9 +155,9 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
         </div>
       ) : (
         /* No photo fallback */
-        <div className="bg-gradient-to-br from-gray-100 to-gray-200 aspect-[4/3] flex items-center justify-center relative">
-          <div className="w-16 h-16 rounded-2xl bg-white/80 flex items-center justify-center shadow-lg">
-            <Home className="w-8 h-8 text-gray-400" />
+        <div className="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 aspect-[4/3] flex items-center justify-center relative">
+          <div className="w-16 h-16 rounded-2xl bg-white/80 dark:bg-gray-600 flex items-center justify-center shadow-lg">
+            <Home className="w-8 h-8 text-gray-400 dark:text-gray-300" />
           </div>
           <div
             className={`absolute top-3 right-3 px-2.5 py-1 rounded-lg text-xs font-bold ${
@@ -174,11 +174,11 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
         {/* Title and time */}
         <div className="mb-3">
           <div className="flex items-start justify-between gap-2 mb-1.5">
-            <h3 className="font-bold text-base text-gray-800 group-hover:text-[#E63946] transition-colors line-clamp-1 flex-1 uppercase tracking-wide">
+            <h3 className="font-bold text-base text-gray-800 dark:text-white group-hover:text-[#E63946] transition-colors line-clamp-1 flex-1 uppercase tracking-wide">
               {listing.title}
             </h3>
             {listing.createdAt && (
-              <span className="text-[10px] font-medium text-gray-400 bg-gray-50 px-2 py-0.5 rounded-md flex-shrink-0 flex items-center gap-1">
+              <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700 px-2 py-0.5 rounded-md flex-shrink-0 flex items-center gap-1">
                 <Clock className="w-3 h-3" />
                 {formatRelativeTime(new Date(listing.createdAt))}
               </span>
@@ -189,10 +189,10 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
           <div className="flex items-center gap-3">
             <p className="text-[#E63946] font-extrabold text-xl tracking-tight">
               R{formattedPrice}
-              <span className="text-sm font-medium text-gray-400 ml-0.5">/mo</span>
+              <span className="text-sm font-medium text-gray-400 dark:text-gray-500 ml-0.5">/mo</span>
             </p>
             {avgRating && (
-              <div className="flex items-center gap-1 text-xs bg-amber-50 px-2 py-1 rounded-lg border border-amber-100">
+              <div className="flex items-center gap-1 text-xs bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded-lg border border-amber-100 dark:border-amber-700">
                 <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                 <span className="font-bold text-gray-700">{avgRating}</span>
                 <span className="text-gray-400">({reviews.length})</span>
@@ -201,7 +201,7 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
           </div>
           {/* Additional costs indicator */}
           {listing.additionalCosts && listing.additionalCosts.filter(c => c.name && c.amount).length > 0 && (
-            <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+            <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
               <span>💰</span> +additional costs apply
             </p>
           )}
@@ -210,16 +210,16 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
         {/* Payment method & availability badges */}
         <div className="flex flex-wrap gap-2 mb-3">
           {listing.paymentMethod && (
-            <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 text-xs px-2.5 py-1 rounded-lg font-medium border border-emerald-100">
+            <span className="inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs px-2.5 py-1 rounded-lg font-medium border border-emerald-100 dark:border-emerald-800">
               <span aria-hidden="true">💳</span> {listing.paymentMethod}
             </span>
           )}
           {isAvailableNow ? (
-            <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 text-xs px-2.5 py-1 rounded-lg font-medium border border-green-100">
+            <span className="inline-flex items-center gap-1.5 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs px-2.5 py-1 rounded-lg font-medium border border-green-100 dark:border-green-800">
               <span aria-hidden="true">🏠</span> Available Now
             </span>
           ) : isAvailableSoon && availableDate && (
-            <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 text-xs px-2.5 py-1 rounded-lg font-medium border border-blue-100">
+            <span className="inline-flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs px-2.5 py-1 rounded-lg font-medium border border-blue-100 dark:border-blue-800">
               <span aria-hidden="true">📅</span> {availableDate.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' })}
             </span>
           )}
@@ -228,7 +228,7 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
         {/* Location */}
         <div className="flex items-center text-sm mb-3">
           <MapPin className="w-4 h-4 mr-1.5 text-red-500 flex-shrink-0" aria-hidden="true" />
-          <span className="truncate font-semibold text-[#c5303c] uppercase tracking-wide">
+          <span className="truncate font-semibold text-[#c5303c] dark:text-red-400 uppercase tracking-wide">
             {addressLine || listing.location || 'Location TBA'}
           </span>
         </div>
@@ -239,13 +239,13 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
             {listing.amenities.slice(0, 3).map((amenity, index) => (
               <span
                 key={index}
-                className="inline-block bg-gray-100 text-gray-600 text-[11px] px-2.5 py-1 rounded-lg font-medium"
+                className="inline-block bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[11px] px-2.5 py-1 rounded-lg font-medium"
               >
                 {amenity}
               </span>
             ))}
             {listing.amenities.length > 3 && (
-              <span className="inline-block bg-red-50 text-[#E63946] text-[11px] px-2.5 py-1 rounded-lg font-semibold">
+              <span className="inline-block bg-red-50 dark:bg-red-900/30 text-[#E63946] dark:text-red-400 text-[11px] px-2.5 py-1 rounded-lg font-semibold">
                 +{listing.amenities.length - 3} more
               </span>
             )}
@@ -253,7 +253,7 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
         )}
         
         {/* CTA Button */}
-        <button className="w-full bg-gradient-to-r from-red-500 to-red-500 hover:from-[#E63946] hover:to-[#c5303c] text-white py-3 rounded-xl font-semibold text-sm transition-all duration-200 shadow-md hover:shadow-lg hover:shadow-red-500/25 active:scale-[0.98] flex items-center justify-center gap-2 group/btn">
+        <button className="w-full bg-gradient-to-r from-[#E63946] to-[#E63946] hover:from-[#E63946] hover:to-[#c5303c] text-white py-3 rounded-xl font-semibold text-sm transition-all duration-200 shadow-md hover:shadow-lg hover:shadow-red-500/25 active:scale-[0.98] flex items-center justify-center gap-2 group/btn">
           <span>View Details</span>
           <svg className="w-4 h-4 transform group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />

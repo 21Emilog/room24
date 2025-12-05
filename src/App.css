@@ -422,6 +422,27 @@ textarea:focus-visible {
   }
 }
 
+/* ===== Dark Mode Enhancements ===== */
+.dark {
+  color-scheme: dark;
+}
+
+.dark body {
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+}
+
+/* Smooth color transitions for theme changes */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 200ms;
+  transition-timing-function: ease-out;
+}
+
+/* Disable transitions for animations */
+.animate-shimmer, .animate-pulse, .animate-spin, .animate-bounce {
+  transition: none !important;
+}
+
 /* ===== Reduced Motion ===== */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -444,4 +465,37 @@ textarea:focus-visible {
   .filter-chip {
     border-width: 2px;
   }
+}
+
+/* ===== Selection Colors ===== */
+::selection {
+  background: rgba(230, 57, 70, 0.2);
+  color: inherit;
+}
+
+/* ===== Scrollbar Styling ===== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.4);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.6);
 }
