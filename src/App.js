@@ -825,8 +825,15 @@ const filteredListings = listings
     // Hide expired listings from browse view
     if (listing.expiresAt && new Date(listing.expiresAt) < new Date()) return false;
     
-    const matchesLocation = !searchLocation || 
-      (listing.location || '').toLowerCase().includes(searchLocation.toLowerCase());
+    // Search across all address fields (location, streetAddress, fullAddress, title, description)
+    const searchTerm = (searchLocation || '').toLowerCase().trim();
+    const matchesLocation = !searchTerm || 
+      (listing.location || '').toLowerCase().includes(searchTerm) ||
+      (listing.streetAddress || '').toLowerCase().includes(searchTerm) ||
+      (listing.fullAddress || '').toLowerCase().includes(searchTerm) ||
+      (listing.title || '').toLowerCase().includes(searchTerm) ||
+      (listing.description || '').toLowerCase().includes(searchTerm);
+    
     const price = parseFloat(listing.price);
     const matchesPrice = price >= priceRange[0] && price <= priceRange[1];
     const matchesAmenities = selectedAmenities.length === 0 || 
