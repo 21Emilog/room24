@@ -106,7 +106,7 @@ export default function MessagesView({
   if (isMobile) {
     if (selectedConversation) {
       return (
-        <div className="h-[calc(100vh-120px)]">
+        <div className="fixed inset-0 top-0 bottom-[60px] z-10 bg-white dark:bg-gray-900">
           <ChatWindow
             conversation={selectedConversation}
             currentUserId={currentUser.id}
@@ -118,7 +118,7 @@ export default function MessagesView({
     }
 
     return (
-      <div className="min-h-[calc(100vh-120px)] bg-white dark:bg-gray-900">
+      <div className="min-h-[calc(100vh-140px)] pb-20 bg-white dark:bg-gray-900">
         {/* Header */}
         <div className="sticky top-0 z-10 flex items-center gap-3 p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
           {onBack && (

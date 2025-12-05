@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, ArrowLeft, Zap, ChevronDown, ChevronUp } from 'lucide-react';
-import { getMessages, sendMessage, markMessagesAsRead, subscribeToMessages, getQuickReplies } from '../chat';
+import { Send, ArrowLeft, Zap, ChevronDown, ChevronUp, MoreVertical, Flag, Ban, X } from 'lucide-react';
+import { getMessages, sendMessage, markMessagesAsRead, subscribeToMessages, getQuickReplies, reportUser } from '../chat';
 
 function formatMessageTime(dateString) {
   const date = new Date(dateString);
@@ -30,6 +30,11 @@ export default function ChatWindow({
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [reportSuccess, setReportSuccess] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -54,8 +59,17 @@ export default function ChatWindow({
   useEffect(() => {
     const unsubscribe = subscribeToMessages(conversation.id, (newMsg) => {
       setMessages(prev => {
-        // Avoid duplicates
+        // Avoid duplicates - check by ID or content+sender for optimistic messages
         if (prev.some(m => m.id === newMsg.id)) return prev;
+        // Check if this is the server response for an optimistic message we sent
+        if (prev.some(m => m._optimistic && m.sender_id === newMsg.sender_id && m.content === newMsg.content)) {
+          // Replace optimistic message with real one
+          return prev.map(m => 
+            (m._optimistic && m.sender_id === newMsg.sender_id && m.content === newMsg.content) 
+              ? newMsg 
+              : m
+          );
+        }
         return [...prev, newMsg];
       });
       // Mark as read if we receive it
@@ -79,12 +93,28 @@ export default function ChatWindow({
     setNewMessage('');
     setSending(true);
 
+    // Add optimistic message with temporary ID
+    const tempId = 'temp-' + Date.now();
+    const optimisticMessage = {
+      id: tempId,
+      conversation_id: conversation.id,
+      sender_id: currentUserId,
+      content: content,
+      created_at: new Date().toISOString(),
+      read: false,
+      _optimistic: true
+    };
+    setMessages(prev => [...prev, optimisticMessage]);
+
     try {
       const sent = await sendMessage(conversation.id, currentUserId, content);
-      setMessages(prev => [...prev, sent]);
+      // Replace optimistic message with real one
+      setMessages(prev => prev.map(m => m.id === tempId ? sent : m));
     } catch (error) {
       console.error('Failed to send message:', error);
-      setNewMessage(content); // Restore on error
+      // Remove optimistic message and restore input on error
+      setMessages(prev => prev.filter(m => m.id !== tempId));
+      setNewMessage(content);
     } finally {
       setSending(false);
       inputRef.current?.focus();
@@ -106,10 +136,111 @@ export default function ChatWindow({
 
   const quickReplies = isLandlord ? getQuickReplies(currentUserId) : [];
 
+  const handleReport = async (reason) => {
+    setReportSubmitting(true);
+    try {
+      await reportUser({
+        reportedUserId: otherUser?.id,
+        reportedById: currentUserId,
+        conversationId: conversation.id,
+        reason
+      });
+      setReportSuccess(true);
+      setTimeout(() => {
+        setShowReportModal(false);
+        setReportSuccess(false);
+        setReportReason('');
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to submit report:', error);
+      alert('Failed to submit report. Please try again.');
+    } finally {
+      setReportSubmitting(false);
+    }
+  };
+
+  const reportReasons = [
+    'Spam or scam',
+    'Harassment or abuse',
+    'Fake listing',
+    'Inappropriate content',
+    'Suspicious activity',
+    'Other'
+  ];
+
   return (
-    <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900">
+    <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900 overflow-hidden">
+      {/* Report/Block Modal */}
+      {showReportModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-sm shadow-xl">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <Flag className="w-5 h-5 text-red-500" />
+                Report User
+              </h3>
+              <button
+                onClick={() => {
+                  setShowReportModal(false);
+                  setReportReason('');
+                  setReportSuccess(false);
+                }}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            
+            {reportSuccess ? (
+              <div className="p-6 text-center">
+                <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Ban className="w-8 h-8 text-green-600 dark:text-green-400" />
+                </div>
+                <p className="font-semibold text-gray-900 dark:text-white">Report Submitted</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Thank you. We'll review this report.
+                </p>
+              </div>
+            ) : (
+              <div className="p-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Why are you reporting {otherUser?.display_name || 'this user'}?
+                </p>
+                <div className="space-y-2">
+                  {reportReasons.map((reason) => (
+                    <button
+                      key={reason}
+                      onClick={() => setReportReason(reason)}
+                      disabled={reportSubmitting}
+                      className={`w-full text-left px-4 py-3 rounded-xl border transition-colors ${
+                        reportReason === reason
+                          ? 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
+                          : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      {reason}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => handleReport(reportReason)}
+                  disabled={!reportReason || reportSubmitting}
+                  className={`w-full mt-4 py-3 rounded-xl font-semibold transition-colors ${
+                    reportReason && !reportSubmitting
+                      ? 'bg-red-500 hover:bg-red-600 text-white'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  {reportSubmitting ? 'Submitting...' : 'Submit Report'}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Header */}
-      <div className="flex items-center gap-3 p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+      <div className="flex-shrink-0 flex items-center gap-3 p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
         <button
           onClick={onBack}
           className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
@@ -144,11 +275,43 @@ export default function ChatWindow({
             )}
           </div>
         </div>
+
+        {/* Menu Button */}
+        <div className="relative">
+          <button
+            onClick={() => setShowMenu(!showMenu)}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+            aria-label="More options"
+          >
+            <MoreVertical className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+          </button>
+          
+          {showMenu && (
+            <>
+              <div 
+                className="fixed inset-0 z-10" 
+                onClick={() => setShowMenu(false)}
+              />
+              <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-20 overflow-hidden">
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    setShowReportModal(true);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                >
+                  <Flag className="w-4 h-4" />
+                  <span className="font-medium">Report Spam</span>
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Listing Preview (if available) */}
       {listing && (
-        <div className="flex items-center gap-3 p-3 bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-900/30">
+        <div className="flex-shrink-0 flex items-center gap-3 p-3 bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-900/30">
           {listing.photos?.[0] && (
             <img 
               src={listing.photos[0]} 
@@ -243,7 +406,7 @@ export default function ChatWindow({
       )}
 
       {/* Input */}
-      <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+      <div className="flex-shrink-0 p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 safe-area-bottom">
         <div className="flex items-end gap-2">
           <textarea
             ref={inputRef}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, Suspense } from 'react';
-import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone, Sparkles, TrendingUp, ShieldCheck, ChevronDown, ArrowLeft, RefreshCw, AlertCircle, Trash2, GitCompare, MessageSquare, Copy } from 'lucide-react';
+import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone, Sparkles, TrendingUp, ShieldCheck, ChevronDown, ArrowLeft, RefreshCw, AlertCircle, Trash2, GitCompare, MessageSquare, Copy, MessageCircle } from 'lucide-react';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import BrowseView from './components/BrowseView';
@@ -1390,6 +1390,7 @@ const filteredListings = listings
         setCurrentView={setCurrentView}
         currentUser={currentUser}
         userType={userType}
+        unreadMessageCount={unreadMessageCount}
       />
 
       {showPrivacyPolicy && (
@@ -5308,11 +5309,12 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
   );
 }
 
-function BottomNav({ currentView, setCurrentView, currentUser, userType }) {
+function BottomNav({ currentView, setCurrentView, currentUser, userType, unreadMessageCount = 0 }) {
   const isLandlord = userType === 'landlord';
   const navItems = [
     { id: 'browse', label: 'Explore', icon: Search, activeColor: 'red' },
     { id: 'add', label: 'List', icon: PlusCircle, requiresAuth: true, activeColor: 'red', highlight: true },
+    { id: 'messages', label: 'Messages', icon: MessageCircle, requiresAuth: true, activeColor: 'red', badge: unreadMessageCount },
     { id: 'my-listings', label: 'My Rooms', icon: Home, requiresAuth: true, activeColor: 'navy', show: isLandlord },
     { id: 'favorites', label: 'Saved', icon: Heart, activeColor: 'red' },
     { id: 'profile', label: 'Profile', icon: User, activeColor: 'navy' }
@@ -5364,7 +5366,7 @@ function BottomNav({ currentView, setCurrentView, currentUser, userType }) {
               type="button"
               disabled={disabled}
               onClick={() => !disabled && setCurrentView(item.id)}
-              className={`flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-xl transition-all duration-200 ${
+              className={`relative flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-xl transition-all duration-200 ${
                 disabled ? 'opacity-35 cursor-not-allowed' : 'active:scale-95'
               } ${
                 isActive
@@ -5374,8 +5376,13 @@ function BottomNav({ currentView, setCurrentView, currentUser, userType }) {
               aria-current={isActive ? 'page' : undefined}
               aria-disabled={disabled}
             >
-              <span className={`transition-all duration-200 ${isActive ? 'scale-110 -translate-y-0.5' : ''}`}>
+              <span className={`relative transition-all duration-200 ${isActive ? 'scale-110 -translate-y-0.5' : ''}`}>
                 <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 1.75} />
+                {item.badge > 0 && (
+                  <span className="absolute -top-1.5 -right-2 min-w-[18px] h-[18px] bg-[#E63946] text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-lg animate-pulse">
+                    {item.badge > 99 ? '99+' : item.badge}
+                  </span>
+                )}
               </span>
               <span className={`text-[10px] transition-all ${isActive ? 'font-semibold' : 'font-medium'}`}>{item.label}</span>
               {isActive && <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#E63946]" />}

@@ -379,3 +379,27 @@ export function saveQuickReplies(landlordId, replies) {
     console.warn('Failed to save quick replies:', e);
   }
 }
+
+/**
+ * Report a user for spam, abuse, etc.
+ * @param {Object} params - { reportedUserId, reportedById, conversationId, reason }
+ * @returns {Promise<Object>} - The created report row
+ */
+export async function reportUser({ reportedUserId, reportedById, conversationId, reason }) {
+  const { data, error } = await supabase
+    .from('reports')
+    .insert({
+      reported_user_id: reportedUserId,
+      reported_by_id: reportedById,
+      conversation_id: conversationId,
+      reason,
+      created_at: new Date().toISOString(),
+    })
+    .select()
+    .single();
+  if (error) {
+    console.error('Error reporting user:', error);
+    throw error;
+  }
+  return data;
+}

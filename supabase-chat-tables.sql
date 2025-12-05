@@ -60,54 +60,54 @@ CREATE INDEX IF NOT EXISTS idx_messages_unread ON messages(conversation_id, read
 ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 
--- Conversations: Users can see conversations they're part of
-CREATE POLICY "Users can view their conversations"
-  ON conversations FOR SELECT
-  USING (auth.uid() = renter_id OR auth.uid() = landlord_id);
 
--- Conversations: Users can create conversations where they are the renter
-CREATE POLICY "Users can create conversations as renter"
-  ON conversations FOR INSERT
-  WITH CHECK (auth.uid() = renter_id);
+-- CREATE POLICY "Users can view their conversations"
+--   ON conversations FOR SELECT
+--   USING (auth.uid() = renter_id OR auth.uid() = landlord_id);
 
--- Conversations: Users can update conversations they're part of
-CREATE POLICY "Users can update their conversations"
-  ON conversations FOR UPDATE
-  USING (auth.uid() = renter_id OR auth.uid() = landlord_id);
 
--- Messages: Users can see messages in their conversations
-CREATE POLICY "Users can view messages in their conversations"
-  ON messages FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM conversations c
-      WHERE c.id = messages.conversation_id
-      AND (c.renter_id = auth.uid() OR c.landlord_id = auth.uid())
-    )
-  );
+-- CREATE POLICY "Users can create conversations as renter"
+--   ON conversations FOR INSERT
+--   WITH CHECK (auth.uid() = renter_id);
 
--- Messages: Users can send messages in their conversations
-CREATE POLICY "Users can send messages in their conversations"
-  ON messages FOR INSERT
-  WITH CHECK (
-    auth.uid() = sender_id AND
-    EXISTS (
-      SELECT 1 FROM conversations c
-      WHERE c.id = messages.conversation_id
-      AND (c.renter_id = auth.uid() OR c.landlord_id = auth.uid())
-    )
-  );
 
--- Messages: Users can mark messages as read
-CREATE POLICY "Users can update messages in their conversations"
-  ON messages FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM conversations c
-      WHERE c.id = messages.conversation_id
-      AND (c.renter_id = auth.uid() OR c.landlord_id = auth.uid())
-    )
-  );
+-- CREATE POLICY "Users can update their conversations"
+--   ON conversations FOR UPDATE
+--   USING (auth.uid() = renter_id OR auth.uid() = landlord_id);
+
+
+-- CREATE POLICY "Users can view messages in their conversations"
+--   ON messages FOR SELECT
+--   USING (
+--     EXISTS (
+--       SELECT 1 FROM conversations c
+--       WHERE c.id = messages.conversation_id
+--       AND (c.renter_id = auth.uid() OR c.landlord_id = auth.uid())
+--     )
+--   );
+
+
+-- CREATE POLICY "Users can send messages in their conversations"
+--   ON messages FOR INSERT
+--   WITH CHECK (
+--     auth.uid() = sender_id AND
+--     EXISTS (
+--       SELECT 1 FROM conversations c
+--       WHERE c.id = messages.conversation_id
+--       AND (c.renter_id = auth.uid() OR c.landlord_id = auth.uid())
+--     )
+--   );
+
+
+-- CREATE POLICY "Users can update messages in their conversations"
+--   ON messages FOR UPDATE
+--   USING (
+--     EXISTS (
+--       SELECT 1 FROM conversations c
+--       WHERE c.id = messages.conversation_id
+--       AND (c.renter_id = auth.uid() OR c.landlord_id = auth.uid())
+--     )
+--   );
 
 -- =====================================================
 -- REALTIME SUBSCRIPTIONS
@@ -137,11 +137,39 @@ CREATE TRIGGER trigger_update_last_message
   EXECUTE FUNCTION update_conversation_last_message();
 
 -- =====================================================
--- DONE! 
+
+
 -- =====================================================
--- After running this SQL:
--- 1. Your chat tables are ready
--- 2. Row Level Security is enabled
--- 3. Realtime subscriptions are enabled
--- 4. Last message timestamp auto-updates
+-- REPORTS TABLE (for spam/block/report feature)
+-- =====================================================
+-- Stores user reports for spam, abuse, fake listings, etc.
+
+CREATE TABLE IF NOT EXISTS reports (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  reported_user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  reported_by_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  conversation_id UUID REFERENCES conversations(id) ON DELETE CASCADE,
+  reason TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Indexes for faster queries
+CREATE INDEX IF NOT EXISTS idx_reports_reported_user ON reports(reported_user_id);
+CREATE INDEX IF NOT EXISTS idx_reports_reported_by ON reports(reported_by_id);
+CREATE INDEX IF NOT EXISTS idx_reports_conversation ON reports(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_reports_created ON reports(created_at);
+
+-- Enable RLS
+ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
+
+-- Users can view reports they created or received
+CREATE POLICY "Users can view their reports" ON reports FOR SELECT
+  USING (auth.uid() = reported_user_id OR auth.uid() = reported_by_id);
+
+-- Users can create reports (must be the reporter)
+CREATE POLICY "Users can create reports" ON reports FOR INSERT
+  WITH CHECK (auth.uid() = reported_by_id);
+
+-- Admins can view all reports (optional, add admin role check if needed)
+
 -- =====================================================
