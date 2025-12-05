@@ -544,6 +544,24 @@ export default function ListingDetailModal({ listing, landlord, onClose }) {
               </div>
               {showContact && (
                 <div className="space-y-3 pt-4 border-t border-red-200">
+                  {/* Safety Warning Banner */}
+                  <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 mb-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span className="text-white text-lg">⚠️</span>
+                      </div>
+                      <div>
+                        <h5 className="font-bold text-amber-800 mb-1">Safety Warning</h5>
+                        <p className="text-sm text-amber-700 leading-relaxed">
+                          <strong>Never pay a deposit or any money before viewing the room in person.</strong> Always meet the landlord at the property and verify everything before making any payments.
+                        </p>
+                        <p className="text-xs text-amber-600 mt-2 font-medium">
+                          🛡️ RentMzansi does not handle payments. Report suspicious listings immediately.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
                   {/* Quick Action Buttons */}
                   <div className="grid grid-cols-2 gap-2 mb-3">
                     {landlord.phone && (
