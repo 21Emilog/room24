@@ -3,6 +3,127 @@
 const STORAGE_KEY_SAVED_SEARCHES = 'saved-searches';
 const STORAGE_KEY_NOTIFICATIONS = 'notifications';
 const STORAGE_KEY_LISTING_SNAPSHOTS = 'listing-snapshots';
+const STORAGE_KEY_AREA_SUBSCRIPTIONS = 'area-subscriptions';
+const STORAGE_KEY_SEEN_LISTINGS = 'seen-listing-ids';
+
+// ===== AREA SUBSCRIPTIONS =====
+
+export function getAreaSubscriptions(userId) {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_AREA_SUBSCRIPTIONS);
+    const subs = raw ? JSON.parse(raw) : {};
+    return subs[userId] || [];
+  } catch {
+    return [];
+  }
+}
+
+export function getAllAreaSubscriptions() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_AREA_SUBSCRIPTIONS);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function subscribeToArea(userId, area) {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_AREA_SUBSCRIPTIONS);
+    const subs = raw ? JSON.parse(raw) : {};
+    subs[userId] = subs[userId] || [];
+    
+    const normalizedArea = area.trim().toLowerCase();
+    const exists = subs[userId].some(a => a.toLowerCase() === normalizedArea);
+    
+    if (!exists) {
+      subs[userId].push(area.trim());
+      localStorage.setItem(STORAGE_KEY_AREA_SUBSCRIPTIONS, JSON.stringify(subs));
+      return { success: true, message: `You'll be notified when rooms are listed in ${area}` };
+    }
+    return { success: false, message: `Already subscribed to ${area}` };
+  } catch (e) {
+    console.error('Failed to subscribe to area', e);
+    return { success: false, message: 'Failed to subscribe' };
+  }
+}
+
+export function unsubscribeFromArea(userId, area) {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_AREA_SUBSCRIPTIONS);
+    const subs = raw ? JSON.parse(raw) : {};
+    if (subs[userId]) {
+      subs[userId] = subs[userId].filter(a => a.toLowerCase() !== area.toLowerCase());
+      localStorage.setItem(STORAGE_KEY_AREA_SUBSCRIPTIONS, JSON.stringify(subs));
+    }
+    return { success: true };
+  } catch (e) {
+    console.error('Failed to unsubscribe from area', e);
+    return { success: false };
+  }
+}
+
+// Check new listings against area subscriptions
+export function checkAreaSubscriptions(userId, currentListings) {
+  if (!userId) return [];
+  
+  const subscribedAreas = getAreaSubscriptions(userId);
+  if (subscribedAreas.length === 0) return [];
+  
+  const notifications = [];
+  const seenIds = getSeenListingIds();
+  
+  currentListings.forEach(listing => {
+    const listingId = listing.id || `${listing.title}-${listing.createdAt}`;
+    
+    // Skip if we've already seen this listing
+    if (seenIds.includes(listingId)) return;
+    
+    // Check if listing location matches any subscribed area
+    const listingLocation = (listing.location || '').toLowerCase();
+    const listingFullAddress = (listing.fullAddress || '').toLowerCase();
+    
+    subscribedAreas.forEach(area => {
+      const areaLower = area.toLowerCase();
+      if (listingLocation.includes(areaLower) || listingFullAddress.includes(areaLower)) {
+        notifications.push({
+          type: 'area-alert',
+          title: `🏠 New Room in ${area}!`,
+          body: `"${listing.title}" - R${listing.price}/month in ${listing.location}`,
+          listingId: listingId,
+          area: area,
+          price: listing.price,
+          location: listing.location,
+        });
+      }
+    });
+  });
+  
+  // Mark listings as seen
+  const newSeenIds = [...new Set([...seenIds, ...currentListings.map(l => l.id || `${l.title}-${l.createdAt}`)])];
+  saveSeenListingIds(newSeenIds.slice(-500)); // Keep last 500
+  
+  return notifications;
+}
+
+function getSeenListingIds() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_SEEN_LISTINGS);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveSeenListingIds(ids) {
+  try {
+    localStorage.setItem(STORAGE_KEY_SEEN_LISTINGS, JSON.stringify(ids));
+  } catch (e) {
+    console.error('Failed to save seen listing ids', e);
+  }
+}
+
+// ===== SAVED SEARCHES =====
 
 export function getSavedSearches() {
   try {

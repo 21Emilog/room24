@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, Suspense } from 'react';
-import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone, Sparkles, TrendingUp, ShieldCheck, ChevronDown, ArrowLeft, RefreshCw, AlertCircle } from 'lucide-react';
+import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone, Sparkles, TrendingUp, ShieldCheck, ChevronDown, ArrowLeft, RefreshCw, AlertCircle, Trash2 } from 'lucide-react';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import BrowseView from './components/BrowseView';
@@ -7,7 +7,7 @@ import NotificationBanner from './components/NotificationBanner';
 import OfflineIndicator from './components/OfflineIndicator';
 import BackToTop from './components/BackToTop';
 import TurnstileWidget from './components/TurnstileWidget';
-import { getNotifications } from './utils/notificationEngine';
+import { getNotifications, addNotification, checkAreaSubscriptions, subscribeToArea as subscribeToAreaEngine, unsubscribeFromArea, getAreaSubscriptions } from './utils/notificationEngine';
 import { loadListingTemplate, saveListingTemplate, clearListingTemplate } from './utils/listingTemplateStorage';
 import { 
   fetchAllListings, 
@@ -280,9 +280,28 @@ export default function RentalPlatform() {
     
     loadListings();
     
-    // Subscribe to real-time listing updates
+    // Subscribe to real-time listing updates and check for area alerts
     const unsubscribeListings = subscribeToListings((updatedListings) => {
-      setListings(updatedListings);
+      setListings(prevListings => {
+        // Check for new listings matching user's area subscriptions
+        const userId = currentUser?.id;
+        if (userId) {
+          const areaNotifications = checkAreaSubscriptions(userId, updatedListings);
+          areaNotifications.forEach(notif => {
+            addNotification(notif);
+            // Show toast for immediate feedback
+            setNotificationBanner({
+              title: notif.title,
+              body: notif.body,
+            });
+          });
+          // Update unread count
+          if (areaNotifications.length > 0) {
+            setUnreadCount(getNotifications().filter(n => !n.read).length);
+          }
+        }
+        return updatedListings;
+      });
       localStorage.setItem('listings', JSON.stringify(updatedListings));
     });
     
@@ -408,46 +427,29 @@ export default function RentalPlatform() {
     showToast('Analytics disabled', 'info');
   };
 
-  const saveSubscriptions = async (subscriptions) => {
-    try {
-      localStorage.setItem('subscriptions', JSON.stringify(subscriptions));
-    } catch (error) {
-      console.error('Error saving subscriptions:', error);
-    }
-  };
-
-  const getSubscriptions = async () => {
-    try {
-      const res = localStorage.getItem('subscriptions');
-      return res ? JSON.parse(res) : {};
-    } catch (err) {
-      console.error('Error loading subscriptions', err);
-    }
-    return {};
-  };
-
   const subscribeToArea = async (userId, area) => {
     if (!userId) {
       openAuthModal('renter');
       return;
     }
     if (!area || area.trim() === '') {
-      alert('Please enter a location to subscribe to.');
+      showToast('Please enter a location to subscribe to.', 'warning');
       return;
     }
-    try {
-      const subs = await getSubscriptions();
-      subs[userId] = subs[userId] || [];
-      if (!subs[userId].includes(area)) {
-        subs[userId].push(area);
-        await saveSubscriptions(subs);
-        alert(`Subscribed to updates for ${area}`);
-      } else {
-        alert(`You are already subscribed to ${area}`);
-      }
-    } catch (err) {
-      console.error('Subscribe failed', err);
-      alert('Could not subscribe. Please try again.');
+    
+    const result = subscribeToAreaEngine(userId, area);
+    if (result.success) {
+      showToast(result.message, 'success', '🔔 Alert Created!');
+    } else {
+      showToast(result.message, 'info');
+    }
+  };
+
+  const handleUnsubscribeFromArea = (area) => {
+    if (!currentUser?.id) return;
+    const result = unsubscribeFromArea(currentUser.id, area);
+    if (result.success) {
+      showToast(`Unsubscribed from ${area}`, 'info');
     }
   };
 
@@ -1069,6 +1071,8 @@ const filteredListings = listings
               setUserType('landlord');
               setCurrentView('landlord-onboarding');
             } : null}
+            areaSubscriptions={currentUser?.id ? getAreaSubscriptions(currentUser.id) : []}
+            onUnsubscribeArea={handleUnsubscribeFromArea}
             onUpdatePrefs={async (prefs) => {
               const userId = currentUser?.id;
               if (userId) {
@@ -1473,7 +1477,7 @@ function ProfileSetupView({ onSubmit, userType }) {
   );
 }
 
-function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, onLinkGoogle, onLinkPhone, onBecomeLandlord }) {
+function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, onLinkGoogle, onLinkPhone, onBecomeLandlord, areaSubscriptions = [], onUnsubscribeArea }) {
   const prefs = user.notificationPrefs || { updates: true, marketing: false };
   const [localPrefs, setLocalPrefs] = React.useState(prefs);
   const [linkingInProgress, setLinkingInProgress] = React.useState(null);
@@ -1755,6 +1759,49 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
               </label>
             </div>
             <p className="text-[11px] text-gray-500 mt-3 text-center">Changes save automatically • You can opt out anytime</p>
+          </div>
+
+          {/* Location Alerts Section */}
+          <div className="bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 rounded-xl p-5 border border-emerald-100 mt-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center shadow-sm">
+                <MapPin className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h4 className="font-bold text-gray-800">Location Alerts</h4>
+                <p className="text-xs text-gray-500">Get notified when rooms are listed in these areas</p>
+              </div>
+            </div>
+            
+            {areaSubscriptions.length > 0 ? (
+              <div className="space-y-2">
+                {areaSubscriptions.map((area, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100 hover:border-emerald-200 transition-colors group">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-emerald-500" />
+                      <span className="text-sm font-medium text-gray-800">{area}</span>
+                    </div>
+                    <button
+                      onClick={() => onUnsubscribeArea && onUnsubscribeArea(area)}
+                      className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                      aria-label={`Unsubscribe from ${area}`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6 bg-white/50 rounded-lg border border-dashed border-emerald-200">
+                <MapPin className="w-8 h-8 text-emerald-300 mx-auto mb-2" />
+                <p className="text-sm text-gray-600 font-medium">No location alerts yet</p>
+                <p className="text-xs text-gray-500 mt-1">Search for an area and tap "Get Alerts" to subscribe</p>
+              </div>
+            )}
+            
+            <p className="text-[11px] text-gray-500 mt-3 text-center">
+              💡 Tip: Search for a location on the Browse page and tap the bell icon
+            </p>
           </div>
 
           {/* Account Linking Section */}
