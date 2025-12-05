@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Menu, X, Bell, User, LogOut, Search, PlusCircle, Heart, Settings, ChevronDown, Eye, EyeOff, MapPin, Moon, Sun } from 'lucide-react';
+import { Menu, X, Bell, User, LogOut, Search, PlusCircle, Heart, Settings, ChevronDown, Eye, EyeOff, MapPin, Moon, Sun, MessageSquare } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 
 // RentMzansi Logo Component
@@ -60,7 +60,8 @@ export default function Header({
   handleSignOut,
   setCurrentView,
   unreadCount,
-  onOpenNotifications
+  onOpenNotifications,
+  unreadMessageCount = 0
 }) {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -97,6 +98,7 @@ export default function Header({
 
   const navLinks = [
     { id: 'browse', label: 'Explore', icon: Search, show: true },
+    { id: 'messages', label: 'Messages', icon: MessageSquare, show: !!currentUser, badge: unreadMessageCount },
     { id: 'add', label: 'List', icon: PlusCircle, show: currentUser && isLandlord && !previewAsRenter },
     { id: 'my-listings', label: 'My Rooms', icon: MapPin, show: currentUser && isLandlord && !previewAsRenter },
     { id: 'favorites', label: 'Saved', icon: Heart, show: true },
@@ -127,10 +129,15 @@ export default function Header({
                 <button
                   key={link.id}
                   onClick={() => setCurrentView(link.id)}
-                  className="flex items-center gap-2 px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-xl font-medium text-sm transition-all duration-200"
+                  className="relative flex items-center gap-2 px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-xl font-medium text-sm transition-all duration-200"
                 >
                   <Icon className="w-4 h-4" />
                   {link.label}
+                  {link.badge > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                      {link.badge > 9 ? '9+' : link.badge}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -286,11 +293,18 @@ export default function Header({
                 <button
                   key={link.id}
                   onClick={() => { setCurrentView(link.id); setShowMobileMenu(false); }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-white/80 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors"
+                  className="w-full flex items-center justify-between px-4 py-3 text-white/80 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors"
                   role="menuitem"
                 >
-                  <Icon className="w-5 h-5" />
-                  {link.label}
+                  <div className="flex items-center gap-3">
+                    <Icon className="w-5 h-5" />
+                    {link.label}
+                  </div>
+                  {link.badge > 0 && (
+                    <span className="w-6 h-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                      {link.badge > 9 ? '9+' : link.badge}
+                    </span>
+                  )}
                 </button>
               );
             })}

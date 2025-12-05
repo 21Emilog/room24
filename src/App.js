@@ -9,6 +9,7 @@ import BackToTop from './components/BackToTop';
 import TurnstileWidget from './components/TurnstileWidget';
 import { getNotifications, addNotification, checkAreaSubscriptions, subscribeToArea as subscribeToAreaEngine, unsubscribeFromArea, getAreaSubscriptions, getCompareList, clearCompareList, removeFromCompare, getLandlordQuickReplies, saveLandlordQuickReplies } from './utils/notificationEngine';
 import { loadListingTemplate, saveListingTemplate, clearListingTemplate } from './utils/listingTemplateStorage';
+import { getOrCreateConversation, getUnreadCount as getChatUnreadCount } from './chat';
 import { 
   fetchAllListings, 
   createListing, 
@@ -37,6 +38,7 @@ const AboutModal = React.lazy(() => import('./components/AboutModal'));
 const AnalyticsConsentModal = React.lazy(() => import('./components/AnalyticsConsentModal'));
 const NotificationsPanel = React.lazy(() => import('./components/NotificationsPanel'));
 const PhotoEditor = React.lazy(() => import('./components/PhotoEditor'));
+const MessagesView = React.lazy(() => import('./components/MessagesView'));
 
 // Cloudflare Turnstile site key - set in Vercel env vars
 const TURNSTILE_SITE_KEY = process.env.REACT_APP_TURNSTILE_SITE_KEY || '';
@@ -91,6 +93,8 @@ export default function RentalPlatform() {
   const [editingListing, setEditingListing] = useState(null); // Listing being edited
   const [compareList, setCompareList] = useState(() => getCompareList()); // Room comparison list
   const [showCompareView, setShowCompareView] = useState(false);
+  const [pendingChatListing, setPendingChatListing] = useState(null); // For opening chat from listing detail
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0); // Chat unread count
 
 
   const composedProfile = useMemo(() => {
@@ -820,6 +824,56 @@ const handleRelistListing = async (listingId) => {
 
   // Messaging removed
 
+// Handle starting a chat with a landlord from listing detail
+const handleMessageLandlord = async (listing, landlord) => {
+  if (!currentUser?.id) {
+    openAuthModal('renter', 'signin');
+    return;
+  }
+  
+  if (!landlord?.id) {
+    showToast('Unable to message this landlord', 'error');
+    return;
+  }
+  
+  try {
+    // Create or get existing conversation
+    await getOrCreateConversation(listing.id, currentUser.id, landlord.id);
+    
+    // Store the listing info for the messages view
+    setPendingChatListing({ listing, landlord });
+    
+    // Navigate to messages
+    setSelectedListing(null); // Close listing modal
+    setCurrentView('messages');
+    showToast('Chat opened!', 'success');
+  } catch (err) {
+    console.error('Failed to start chat:', err);
+    showToast('Failed to start chat. Please try again.', 'error');
+  }
+};
+
+// Update chat unread count
+React.useEffect(() => {
+  if (!currentUser?.id) {
+    setUnreadMessageCount(0);
+    return;
+  }
+  
+  const updateCount = async () => {
+    try {
+      const count = await getChatUnreadCount(currentUser.id);
+      setUnreadMessageCount(count);
+    } catch (err) {
+      console.error('Failed to get unread count:', err);
+    }
+  };
+  
+  updateCount();
+  const interval = setInterval(updateCount, 30000); // Update every 30 seconds
+  return () => clearInterval(interval);
+}, [currentUser?.id]);
+
 const filteredListings = listings
   .filter(listing => {
     // Hide rented listings from browse view
@@ -960,6 +1014,7 @@ const filteredListings = listings
         setCurrentView={setCurrentView}
         unreadCount={unreadCount}
         onOpenNotifications={() => setShowNotificationsPanel(true)}
+        unreadMessageCount={unreadMessageCount}
       />
 
       {currentView === 'browse' && (
@@ -1170,7 +1225,17 @@ const filteredListings = listings
                     />
         )}
 
-        {/* Messages view removed */}
+        {/* Messages View */}
+        {currentView === 'messages' && currentUser && (
+          <LazyModalBoundary label="Loading messages...">
+            <MessagesView
+              currentUser={currentUser}
+              userType={userType}
+              onBack={() => setCurrentView('browse')}
+              initialConversation={null}
+            />
+          </LazyModalBoundary>
+        )}
 
         {currentView === 'add' && (
           <AddListingView
@@ -1278,6 +1343,7 @@ const filteredListings = listings
             showToast={showToast}
             allListings={listings}
             onSelectListing={setSelectedListing}
+            onMessageLandlord={handleMessageLandlord}
           />
         </LazyModalBoundary>
       )}

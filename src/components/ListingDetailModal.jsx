@@ -133,7 +133,7 @@ function PhotoGallery({ photos, currentIndex, onClose, onNavigate }) {
   );
 }
 
-export default function ListingDetailModal({ listing, landlord, onClose, currentUserId, allListings = [], onSelectListing }) {
+export default function ListingDetailModal({ listing, landlord, onClose, currentUserId, allListings = [], onSelectListing, onMessageLandlord }) {
   const [showContact, setShowContact] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
@@ -706,6 +706,17 @@ export default function ListingDetailModal({ listing, landlord, onClose, current
                     <Calendar className="w-4 h-4" />
                     Request to View Room
                   </button>
+                  
+                  {/* Message in App Button */}
+                  {onMessageLandlord && currentUserId && currentUserId !== landlord?.id && (
+                    <button
+                      onClick={() => onMessageLandlord(listing, landlord)}
+                      className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white py-3.5 rounded-xl font-bold text-sm transition-all shadow-lg hover:shadow-xl active:scale-95 mb-3"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      Message in App
+                    </button>
+                  )}
                   
                   {/* Contact Details */}
                   <div className="bg-white rounded-xl p-4 space-y-3 shadow-sm">
