@@ -51,14 +51,10 @@ export async function getOrCreateConversation(listingId, renterId, landlordId) {
  * Get all conversations for a user (as renter or landlord)
  */
 export async function getUserConversations(userId) {
+  // Simple query without JOINs to avoid foreign key issues
   const { data, error } = await supabase
     .from('conversations')
-    .select(`
-      *,
-      listing:listings(id, title, photos, price, location),
-      renter:profiles!conversations_renter_id_fkey(id, display_name, photo_url),
-      landlord:profiles!conversations_landlord_id_fkey(id, display_name, photo_url)
-    `)
+    .select('*')
     .or(`renter_id.eq.${userId},landlord_id.eq.${userId}`)
     .order('last_message_at', { ascending: false });
 
@@ -67,7 +63,47 @@ export async function getUserConversations(userId) {
     return [];
   }
 
-  return data || [];
+  // Manually fetch related data for each conversation
+  const enrichedConversations = await Promise.all(
+    (data || []).map(async (convo) => {
+      // Fetch listing info
+      let listing = null;
+      if (convo.listing_id) {
+        const { data: listingData } = await supabase
+          .from('listings')
+          .select('id, title, photos, price, location')
+          .eq('id', convo.listing_id)
+          .maybeSingle();
+        listing = listingData;
+      }
+
+      // Fetch renter profile
+      let renter = null;
+      if (convo.renter_id) {
+        const { data: renterData } = await supabase
+          .from('profiles')
+          .select('id, display_name, photo_url')
+          .eq('id', convo.renter_id)
+          .maybeSingle();
+        renter = renterData;
+      }
+
+      // Fetch landlord profile
+      let landlord = null;
+      if (convo.landlord_id) {
+        const { data: landlordData } = await supabase
+          .from('profiles')
+          .select('id, display_name, photo_url')
+          .eq('id', convo.landlord_id)
+          .maybeSingle();
+        landlord = landlordData;
+      }
+
+      return { ...convo, listing, renter, landlord };
+    })
+  );
+
+  return enrichedConversations;
 }
 
 /**
@@ -76,12 +112,7 @@ export async function getUserConversations(userId) {
 export async function getConversation(conversationId) {
   const { data, error } = await supabase
     .from('conversations')
-    .select(`
-      *,
-      listing:listings(id, title, photos, price, location),
-      renter:profiles!conversations_renter_id_fkey(id, display_name, photo_url),
-      landlord:profiles!conversations_landlord_id_fkey(id, display_name, photo_url)
-    `)
+    .select('*')
     .eq('id', conversationId)
     .single();
 
@@ -90,7 +121,38 @@ export async function getConversation(conversationId) {
     throw error;
   }
 
-  return data;
+  // Manually fetch related data
+  let listing = null;
+  if (data.listing_id) {
+    const { data: listingData } = await supabase
+      .from('listings')
+      .select('id, title, photos, price, location')
+      .eq('id', data.listing_id)
+      .maybeSingle();
+    listing = listingData;
+  }
+
+  let renter = null;
+  if (data.renter_id) {
+    const { data: renterData } = await supabase
+      .from('profiles')
+      .select('id, display_name, photo_url')
+      .eq('id', data.renter_id)
+      .maybeSingle();
+    renter = renterData;
+  }
+
+  let landlord = null;
+  if (data.landlord_id) {
+    const { data: landlordData } = await supabase
+      .from('profiles')
+      .select('id, display_name, photo_url')
+      .eq('id', data.landlord_id)
+      .maybeSingle();
+    landlord = landlordData;
+  }
+
+  return { ...data, listing, renter, landlord };
 }
 
 // ===========================
