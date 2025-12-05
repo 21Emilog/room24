@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, Suspense } from 'react';
-import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone, Sparkles, TrendingUp, ShieldCheck, ChevronDown, ArrowLeft, RefreshCw, AlertCircle, Trash2, GitCompare, MessageSquare, Copy, Moon, Sun } from 'lucide-react';
+import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone, Sparkles, TrendingUp, ShieldCheck, ChevronDown, ArrowLeft, RefreshCw, AlertCircle, Trash2, GitCompare, MessageSquare, Copy } from 'lucide-react';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import BrowseView from './components/BrowseView';
@@ -7,7 +7,6 @@ import NotificationBanner from './components/NotificationBanner';
 import OfflineIndicator from './components/OfflineIndicator';
 import BackToTop from './components/BackToTop';
 import TurnstileWidget from './components/TurnstileWidget';
-import { useTheme } from './contexts/ThemeContext';
 import { getNotifications, addNotification, checkAreaSubscriptions, subscribeToArea as subscribeToAreaEngine, unsubscribeFromArea, getAreaSubscriptions, getCompareList, clearCompareList, removeFromCompare, getLandlordQuickReplies, saveLandlordQuickReplies } from './utils/notificationEngine';
 import { loadListingTemplate, saveListingTemplate, clearListingTemplate } from './utils/listingTemplateStorage';
 import { 
@@ -1985,9 +1984,6 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
 
             <p className="text-[11px] text-gray-500 mt-3 text-center">Link accounts to sign in with any method</p>
           </div>
-
-          {/* App Settings Section */}
-          <AppSettingsSection />
 
           {/* Quick Replies Section - Landlords Only */}
           {user.type === 'landlord' && showToast && (
@@ -4683,68 +4679,6 @@ function CompareView({ listings, compareList, onRemove, onClear, onSelectListing
           </table>
         </div>
       </div>
-    </div>
-  );
-}
-
-// App Settings Component (Theme only)
-function AppSettingsSection() {
-  const { toggleTheme, isDark } = useTheme();
-  
-  return (
-    <div className="bg-gradient-to-br from-purple-50 via-violet-50 to-indigo-50 dark:from-gray-800 dark:via-gray-800 dark:to-gray-700 rounded-xl p-5 border border-purple-100 dark:border-gray-600 mt-4">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-sm">
-          <Sparkles className="w-5 h-5 text-white" />
-        </div>
-        <div>
-          <h4 className="font-bold text-gray-800 dark:text-white">App Settings</h4>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Customize your experience</p>
-        </div>
-      </div>
-
-      {/* Theme Toggle */}
-      <div className="bg-white dark:bg-gray-700 rounded-lg p-4 border border-gray-100 dark:border-gray-600">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {isDark ? (
-              <Moon className="w-5 h-5 text-indigo-500" />
-            ) : (
-              <Sun className="w-5 h-5 text-amber-500" />
-            )}
-            <div>
-              <p className="text-sm font-medium text-gray-800 dark:text-white">
-                {isDark ? 'Dark Mode' : 'Light Mode'}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                {isDark ? 'Switch to light theme' : 'Switch to dark theme'}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={toggleTheme}
-            className={`relative w-14 h-8 rounded-full transition-all duration-300 ${
-              isDark 
-                ? 'bg-indigo-500' 
-                : 'bg-gray-200'
-            }`}
-          >
-            <span className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-all duration-300 flex items-center justify-center ${
-              isDark ? 'left-7' : 'left-1'
-            }`}>
-              {isDark ? (
-                <Moon className="w-3.5 h-3.5 text-indigo-500" />
-              ) : (
-                <Sun className="w-3.5 h-3.5 text-amber-500" />
-              )}
-            </span>
-          </button>
-        </div>
-      </div>
-
-      <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-3 text-center">
-        Settings are saved automatically
-      </p>
     </div>
   );
 }

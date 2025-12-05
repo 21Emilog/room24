@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Menu, X, Bell, User, LogOut, Search, PlusCircle, Heart, Settings, ChevronDown, Eye, EyeOff, MapPin } from 'lucide-react';
+import { Menu, X, Bell, User, LogOut, Search, PlusCircle, Heart, Settings, ChevronDown, Eye, EyeOff, MapPin, Moon, Sun } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
 
 // RentMzansi Logo Component
 const Logo = ({ className = "w-10 h-10" }) => (
@@ -10,6 +11,46 @@ const Logo = ({ className = "w-10 h-10" }) => (
     <circle cx="50" cy="50" r="3" fill="#1D3557"/>
   </svg>
 );
+
+// Theme Toggle Component - compact button for header
+const ThemeToggle = () => {
+  const { toggleTheme, isDark } = useTheme();
+  
+  return (
+    <button
+      onClick={toggleTheme}
+      className="p-2.5 text-white/80 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-300 group"
+      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      title={isDark ? 'Light mode' : 'Dark mode'}
+    >
+      <div className="relative w-5 h-5">
+        <Sun className={`w-5 h-5 absolute inset-0 transition-all duration-300 ${isDark ? 'opacity-0 rotate-90 scale-50' : 'opacity-100 rotate-0 scale-100'}`} />
+        <Moon className={`w-5 h-5 absolute inset-0 transition-all duration-300 ${isDark ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-50'}`} />
+      </div>
+    </button>
+  );
+};
+
+// Mobile Theme Toggle - full width button for mobile menu
+const MobileThemeToggle = () => {
+  const { toggleTheme, isDark } = useTheme();
+  
+  return (
+    <button
+      onClick={toggleTheme}
+      className="w-full flex items-center justify-between px-4 py-3 text-white/80 hover:bg-white/10 rounded-xl font-medium transition-colors"
+      role="menuitem"
+    >
+      <div className="flex items-center gap-3">
+        {isDark ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+        <span>{isDark ? 'Dark Mode' : 'Light Mode'}</span>
+      </div>
+      <div className={`w-10 h-6 rounded-full relative transition-colors ${isDark ? 'bg-indigo-500' : 'bg-white/30'}`}>
+        <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${isDark ? 'left-5' : 'left-1'}`} />
+      </div>
+    </button>
+  );
+};
 
 export default function Header({
   currentUser,
@@ -96,7 +137,10 @@ export default function Header({
           </nav>
 
           {/* Right Side Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            {/* Dark Mode Toggle */}
+            <ThemeToggle />
+
             {/* Landlord Preview Toggle */}
             {currentUser && isLandlord && (
               <button
@@ -269,6 +313,7 @@ export default function Header({
             {currentUser ? (
               <>
                 <div className="border-t border-white/10 my-2" />
+                <MobileThemeToggle />
                 <button
                   onClick={() => { setCurrentView('profile'); setShowMobileMenu(false); }}
                   className="w-full flex items-center gap-3 px-4 py-3 text-white/80 hover:bg-white/10 rounded-xl font-medium transition-colors"
@@ -289,6 +334,7 @@ export default function Header({
             ) : (
               <>
                 <div className="border-t border-white/10 my-2" />
+                <MobileThemeToggle />
                 <button
                   onClick={() => { openAuthModal('renter', 'signin'); setShowMobileMenu(false); }}
                   className="w-full px-4 py-3 text-white/80 hover:bg-white/10 rounded-xl font-medium transition-colors text-center"
