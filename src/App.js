@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, Suspense } from 'react';
-import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone, Sparkles, TrendingUp, ShieldCheck, ChevronDown, ArrowLeft, RefreshCw, AlertCircle, Trash2, GitCompare, Users, MessageSquare, Copy, Moon, Sun, Globe } from 'lucide-react';
+import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone, Sparkles, TrendingUp, ShieldCheck, ChevronDown, ArrowLeft, RefreshCw, AlertCircle, Trash2, GitCompare, MessageSquare, Copy, Moon, Sun, Globe } from 'lucide-react';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import BrowseView from './components/BrowseView';
@@ -9,7 +9,7 @@ import BackToTop from './components/BackToTop';
 import TurnstileWidget from './components/TurnstileWidget';
 import { useTheme } from './contexts/ThemeContext';
 import { useLanguage } from './contexts/LanguageContext';
-import { getNotifications, addNotification, checkAreaSubscriptions, subscribeToArea as subscribeToAreaEngine, unsubscribeFromArea, getAreaSubscriptions, getCompareList, clearCompareList, removeFromCompare, saveRoommateProfile, getRoommateProfile, getAllRoommateProfiles, deleteRoommateProfile, getLandlordQuickReplies, saveLandlordQuickReplies, checkViewedListingPriceDrops } from './utils/notificationEngine';
+import { getNotifications, addNotification, checkAreaSubscriptions, subscribeToArea as subscribeToAreaEngine, unsubscribeFromArea, getAreaSubscriptions, getCompareList, clearCompareList, removeFromCompare, getLandlordQuickReplies, saveLandlordQuickReplies } from './utils/notificationEngine';
 import { loadListingTemplate, saveListingTemplate, clearListingTemplate } from './utils/listingTemplateStorage';
 import { 
   fetchAllListings, 
@@ -93,8 +93,7 @@ export default function RentalPlatform() {
   const [editingListing, setEditingListing] = useState(null); // Listing being edited
   const [compareList, setCompareList] = useState(() => getCompareList()); // Room comparison list
   const [showCompareView, setShowCompareView] = useState(false);
-  const [showRoommateView, setShowRoommateView] = useState(false);
-  const [roommateProfiles, setRoommateProfiles] = useState(() => getAllRoommateProfiles());
+
 
   const composedProfile = useMemo(() => {
     if (!currentUser) return null;
@@ -1258,19 +1257,7 @@ const filteredListings = listings
           />
         )}
 
-        {/* Roommate Matching View */}
-        {showRoommateView && (
-          <RoommateView
-            currentUser={composedProfile}
-            onSaveProfile={(profile) => {
-              saveRoommateProfile(currentUser?.id || 'anonymous', profile);
-              setRoommateProfiles(getAllRoommateProfiles());
-              showToast('Profile saved! Finding matches...', 'success');
-            }}
-            profiles={roommateProfiles}
-            onClose={() => setShowRoommateView(false)}
-          />
-        )}
+
       </div>
 
       {selectedListing && (
@@ -1324,16 +1311,7 @@ const filteredListings = listings
         </button>
       )}
 
-      {/* Floating Roommate Finder Button - for renters */}
-      {userType !== 'landlord' && !showRoommateView && !showCompareView && (
-        <button
-          onClick={() => setShowRoommateView(true)}
-          className="fixed bottom-24 left-4 z-30 flex items-center gap-2 bg-gradient-to-r from-teal-600 to-emerald-600 text-white px-4 py-3 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105"
-        >
-          <Users className="w-5 h-5" />
-          <span className="font-semibold">Find Roommate</span>
-        </button>
-      )}
+
 
       <BottomNav 
         currentView={currentView}
@@ -4710,233 +4688,6 @@ function CompareView({ listings, compareList, onRemove, onClear, onSelectListing
   );
 }
 
-// Roommate Matching View
-function RoommateView({ currentUser, onClose, showToast }) {
-  const [activeTab, setActiveTab] = useState('browse'); // 'browse' | 'profile'
-  const [profiles, setProfiles] = useState([]);
-  const [myProfile, setMyProfile] = useState(null);
-  const [filters, setFilters] = useState({ location: '', maxBudget: '' });
-  const [profileForm, setProfileForm] = useState({
-    name: '',
-    age: '',
-    gender: 'any',
-    budget: '',
-    preferredAreas: '',
-    moveInDate: '',
-    about: '',
-    contact: '',
-  });
-  
-  useEffect(() => {
-    setProfiles(getAllRoommateProfiles().filter(p => p.userId !== currentUser?.id));
-    if (currentUser?.id) {
-      const existing = getRoommateProfile(currentUser.id);
-      if (existing) {
-        setMyProfile(existing);
-        setProfileForm({
-          name: existing.name || '',
-          age: existing.age || '',
-          gender: existing.gender || 'any',
-          budget: existing.budget || '',
-          preferredAreas: (existing.preferredAreas || []).join(', '),
-          moveInDate: existing.moveInDate || '',
-          about: existing.about || '',
-          contact: existing.contact || '',
-        });
-      }
-    }
-  }, [currentUser?.id]);
-  
-  const handleSaveProfile = () => {
-    if (!currentUser?.id) {
-      showToast('Please sign in to create a profile', 'error');
-      return;
-    }
-    const profile = {
-      ...profileForm,
-      preferredAreas: profileForm.preferredAreas.split(',').map(a => a.trim()).filter(Boolean),
-      budget: parseFloat(profileForm.budget) || 0,
-    };
-    saveRoommateProfile(currentUser.id, profile);
-    setMyProfile(profile);
-    showToast('Roommate profile saved!', 'success');
-    setActiveTab('browse');
-    setProfiles(getAllRoommateProfiles().filter(p => p.userId !== currentUser?.id));
-  };
-  
-  const handleDeleteProfile = () => {
-    if (window.confirm('Delete your roommate profile?')) {
-      deleteRoommateProfile(currentUser?.id);
-      setMyProfile(null);
-      showToast('Profile deleted', 'success');
-    }
-  };
-  
-  const filteredProfiles = profiles.filter(p => {
-    if (filters.location && !p.preferredAreas?.some(a => a.toLowerCase().includes(filters.location.toLowerCase()))) return false;
-    if (filters.maxBudget && p.budget > parseFloat(filters.maxBudget)) return false;
-    return true;
-  });
-  
-  return (
-    <div className="min-h-screen bg-gray-50 pb-24">
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-6">
-        <div className="max-w-7xl mx-auto flex items-center gap-4">
-          <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl">
-            <ArrowLeft className="w-6 h-6" />
-          </button>
-          <div className="flex-1">
-            <h2 className="text-2xl font-bold">Find a Roommate</h2>
-            <p className="text-blue-200">Connect with people looking to share</p>
-          </div>
-        </div>
-      </div>
-      
-      {/* Tabs */}
-      <div className="max-w-7xl mx-auto px-4 py-4">
-        <div className="flex gap-2 mb-6">
-          <button
-            onClick={() => setActiveTab('browse')}
-            className={`flex-1 py-3 rounded-xl font-semibold transition-all ${activeTab === 'browse' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600'}`}
-          >
-            Browse Roommates
-          </button>
-          <button
-            onClick={() => setActiveTab('profile')}
-            className={`flex-1 py-3 rounded-xl font-semibold transition-all ${activeTab === 'profile' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600'}`}
-          >
-            {myProfile ? 'My Profile' : 'Create Profile'}
-          </button>
-        </div>
-        
-        {activeTab === 'browse' && (
-          <>
-            {/* Filters */}
-            <div className="bg-white rounded-xl p-4 mb-6 flex flex-wrap gap-3">
-              <input
-                type="text"
-                placeholder="Search by area..."
-                value={filters.location}
-                onChange={e => setFilters({ ...filters, location: e.target.value })}
-                className="flex-1 min-w-[150px] px-4 py-2 border border-gray-200 rounded-lg"
-              />
-              <input
-                type="number"
-                placeholder="Max budget"
-                value={filters.maxBudget}
-                onChange={e => setFilters({ ...filters, maxBudget: e.target.value })}
-                className="w-32 px-4 py-2 border border-gray-200 rounded-lg"
-              />
-            </div>
-            
-            {/* Profiles Grid */}
-            {filteredProfiles.length === 0 ? (
-              <div className="text-center py-12">
-                <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-gray-800 mb-2">No Roommates Found</h3>
-                <p className="text-gray-500 mb-6">Be the first to create a profile!</p>
-                <button onClick={() => setActiveTab('profile')} className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold">
-                  Create Profile
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredProfiles.map((profile, idx) => (
-                  <div key={idx} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
-                        <User className="w-6 h-6 text-white" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-gray-800">{profile.name || 'Anonymous'}</h4>
-                        <p className="text-sm text-gray-500">{profile.age ? `${profile.age} years` : ''} {profile.gender !== 'any' ? `• ${profile.gender}` : ''}</p>
-                      </div>
-                    </div>
-                    <div className="space-y-2 mb-4">
-                      <p className="text-sm"><span className="text-gray-500">Budget:</span> <span className="font-semibold text-[#E63946]">R{profile.budget?.toLocaleString()}/mo</span></p>
-                      <p className="text-sm"><span className="text-gray-500">Areas:</span> {profile.preferredAreas?.join(', ') || 'Any'}</p>
-                      {profile.moveInDate && <p className="text-sm"><span className="text-gray-500">Move in:</span> {new Date(profile.moveInDate).toLocaleDateString()}</p>}
-                    </div>
-                    {profile.about && <p className="text-sm text-gray-600 mb-4 line-clamp-2">{profile.about}</p>}
-                    {profile.contact && (
-                      <a
-                        href={`https://wa.me/${profile.contact.replace(/[^0-9]/g,'').replace(/^0/, '27')}?text=${encodeURIComponent(`Hi ${profile.name}, I saw your roommate profile on RentMzansi!`)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block w-full text-center bg-green-500 text-white py-2.5 rounded-xl font-semibold hover:bg-green-600"
-                      >
-                        Contact via WhatsApp
-                      </a>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-        
-        {activeTab === 'profile' && (
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <h3 className="text-lg font-bold text-gray-800 mb-4">{myProfile ? 'Edit Your Profile' : 'Create Roommate Profile'}</h3>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                  <input type="text" value={profileForm.name} onChange={e => setProfileForm({...profileForm, name: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg" placeholder="Your name" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Age</label>
-                  <input type="number" value={profileForm.age} onChange={e => setProfileForm({...profileForm, age: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg" placeholder="25" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-                  <select value={profileForm.gender} onChange={e => setProfileForm({...profileForm, gender: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg">
-                    <option value="any">Any / Prefer not to say</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Budget (R/month)</label>
-                  <input type="number" value={profileForm.budget} onChange={e => setProfileForm({...profileForm, budget: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg" placeholder="3500" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Areas (comma separated)</label>
-                <input type="text" value={profileForm.preferredAreas} onChange={e => setProfileForm({...profileForm, preferredAreas: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg" placeholder="Sandton, Rosebank, Midrand" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Move-in Date</label>
-                <input type="date" value={profileForm.moveInDate} onChange={e => setProfileForm({...profileForm, moveInDate: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">About You</label>
-                <textarea value={profileForm.about} onChange={e => setProfileForm({...profileForm, about: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg" rows={3} placeholder="Tell potential roommates about yourself..." />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp Number</label>
-                <input type="tel" value={profileForm.contact} onChange={e => setProfileForm({...profileForm, contact: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg" placeholder="0812345678" />
-              </div>
-              <div className="flex gap-3 pt-4">
-                <button onClick={handleSaveProfile} className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700">
-                  {myProfile ? 'Update Profile' : 'Create Profile'}
-                </button>
-                {myProfile && (
-                  <button onClick={handleDeleteProfile} className="px-6 bg-red-100 text-red-600 py-3 rounded-xl font-semibold hover:bg-red-200">
-                    Delete
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // App Settings Component (Language & Theme)
 function AppSettingsSection() {
   const { toggleTheme, isDark } = useTheme();
@@ -5578,13 +5329,14 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
 }
 
 function BottomNav({ currentView, setCurrentView, currentUser, userType }) {
+  const { t } = useLanguage();
   const isLandlord = userType === 'landlord';
   const navItems = [
-    { id: 'browse', label: 'Explore', icon: Search, activeColor: 'red' },
-    { id: 'add', label: 'List', icon: PlusCircle, requiresAuth: true, activeColor: 'red', highlight: true },
-    { id: 'my-listings', label: 'My Rooms', icon: Home, requiresAuth: true, activeColor: 'navy', show: isLandlord },
-    { id: 'favorites', label: 'Saved', icon: Heart, activeColor: 'red' },
-    { id: 'profile', label: 'Profile', icon: User, activeColor: 'navy' }
+    { id: 'browse', labelKey: 'explore', icon: Search, activeColor: 'red' },
+    { id: 'add', labelKey: 'list', icon: PlusCircle, requiresAuth: true, activeColor: 'red', highlight: true },
+    { id: 'my-listings', labelKey: 'myRooms', icon: Home, requiresAuth: true, activeColor: 'navy', show: isLandlord },
+    { id: 'favorites', labelKey: 'saved', icon: Heart, activeColor: 'red' },
+    { id: 'profile', labelKey: 'profile', icon: User, activeColor: 'navy' }
   ];
 
   const visibleItems = navItems.filter(item => item && (item.show === undefined || item.show));
@@ -5621,7 +5373,7 @@ function BottomNav({ currentView, setCurrentView, currentUser, userType }) {
                 }`}>
                   <Icon className="w-5 h-5 text-white" strokeWidth={2.5} />
                 </span>
-                <span className="text-[10px] font-bold">{item.label}</span>
+                <span className="text-[10px] font-bold">{t(item.labelKey)}</span>
                 {isActive && <span className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-[#E63946]" />}
               </button>
             );
@@ -5646,7 +5398,7 @@ function BottomNav({ currentView, setCurrentView, currentUser, userType }) {
               <span className={`transition-all duration-200 ${isActive ? 'scale-110 -translate-y-0.5' : ''}`}>
                 <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 1.75} />
               </span>
-              <span className={`text-[10px] transition-all ${isActive ? 'font-semibold' : 'font-medium'}`}>{item.label}</span>
+              <span className={`text-[10px] transition-all ${isActive ? 'font-semibold' : 'font-medium'}`}>{t(item.labelKey)}</span>
               {isActive && <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#E63946]" />}
             </button>
           );
