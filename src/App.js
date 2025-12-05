@@ -835,6 +835,13 @@ const handleMessageLandlord = async (listing, landlord) => {
     showToast('Unable to message this landlord', 'error');
     return;
   }
+
+  // Debug log
+  console.log('Starting chat:', { 
+    listingId: listing.id, 
+    renterId: currentUser.id, 
+    landlordId: landlord.id 
+  });
   
   try {
     // Create or get existing conversation
@@ -849,6 +856,7 @@ const handleMessageLandlord = async (listing, landlord) => {
     showToast('Chat opened!', 'success');
   } catch (err) {
     console.error('Failed to start chat:', err);
+    console.error('Error details:', JSON.stringify(err, null, 2));
     showToast('Failed to start chat. Please try again.', 'error');
   }
 };
