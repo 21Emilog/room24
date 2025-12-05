@@ -199,6 +199,12 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
               </div>
             )}
           </div>
+          {/* Additional costs indicator */}
+          {listing.additionalCosts && listing.additionalCosts.filter(c => c.name && c.amount).length > 0 && (
+            <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+              <span>💰</span> +additional costs apply
+            </p>
+          )}
         </div>
         
         {/* Payment method & availability badges */}

@@ -307,9 +307,34 @@ export default function ListingDetailModal({ listing, landlord, onClose }) {
             />
           )}
           <h3 className="text-2xl font-extrabold mb-2 text-gray-900">{listing.title}</h3>
-          <div className="text-transparent bg-gradient-to-r from-[#E63946] to-[#c5303c] bg-clip-text font-bold text-3xl mb-4">
+          <div className="text-transparent bg-gradient-to-r from-[#E63946] to-[#c5303c] bg-clip-text font-bold text-3xl mb-2">
             R{typeof listing.price === 'number' ? listing.price.toLocaleString('en-ZA') : listing.price}<span className="text-lg text-gray-500 font-normal">/month</span>
           </div>
+          
+          {/* Additional Costs */}
+          {listing.additionalCosts && listing.additionalCosts.length > 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+              <h4 className="font-semibold text-amber-800 mb-2 flex items-center gap-2">
+                <span>💰</span> Additional Costs
+              </h4>
+              <div className="space-y-2">
+                {listing.additionalCosts.filter(c => c.name && c.amount).map((cost, index) => (
+                  <div key={index} className="flex justify-between items-center text-sm">
+                    <span className="text-gray-700">{cost.name}</span>
+                    <span className="font-semibold text-amber-700">
+                      R{parseFloat(cost.amount).toLocaleString('en-ZA')}
+                      <span className="text-xs font-normal text-gray-500 ml-1">
+                        {cost.frequency === 'monthly' ? '/month' : '(once-off)'}
+                      </span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-amber-600 mt-3 border-t border-amber-200 pt-2">
+                ⚠️ These costs are in addition to the monthly rent shown above
+              </p>
+            </div>
+          )}
           
           {/* Share & Action Buttons */}
           <div className="flex flex-wrap gap-2 mb-6">

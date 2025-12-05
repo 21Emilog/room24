@@ -3545,6 +3545,7 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
     amenities: listing?.amenities || [],
     contactPhone: listing?.contactPhone || '',
     contactWhatsapp: listing?.contactWhatsapp || '',
+    additionalCosts: listing?.additionalCosts || [],
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -3665,6 +3666,80 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
               placeholder="3500"
             />
             {errors.price && <p className="text-red-500 text-xs mt-1">{errors.price}</p>}
+          </div>
+
+          {/* Additional Costs */}
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <label className="block text-sm font-semibold text-gray-800 mb-2">💰 Additional Costs (Optional)</label>
+            <p className="text-xs text-gray-600 mb-3">Help renters budget correctly by listing any extra fees not included in the monthly rent.</p>
+            
+            {(formData.additionalCosts || []).map((cost, index) => (
+              <div key={index} className="flex gap-2 mb-2">
+                <input
+                  type="text"
+                  value={cost.name}
+                  onChange={(e) => {
+                    const updated = [...(formData.additionalCosts || [])];
+                    updated[index] = { ...updated[index], name: e.target.value };
+                    setFormData({ ...formData, additionalCosts: updated });
+                  }}
+                  className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-red-100 focus:border-red-500"
+                  placeholder="e.g., Security deposit, Parking"
+                />
+                <input
+                  type="number"
+                  value={cost.amount}
+                  onChange={(e) => {
+                    const updated = [...(formData.additionalCosts || [])];
+                    updated[index] = { ...updated[index], amount: e.target.value };
+                    setFormData({ ...formData, additionalCosts: updated });
+                  }}
+                  className="w-28 px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-red-100 focus:border-red-500"
+                  placeholder="Amount (R)"
+                />
+                <select
+                  value={cost.frequency || 'once'}
+                  onChange={(e) => {
+                    const updated = [...(formData.additionalCosts || [])];
+                    updated[index] = { ...updated[index], frequency: e.target.value };
+                    setFormData({ ...formData, additionalCosts: updated });
+                  }}
+                  className="w-28 px-2 py-2 border-2 border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-red-100 focus:border-red-500"
+                >
+                  <option value="once">Once-off</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const updated = (formData.additionalCosts || []).filter((_, i) => i !== index);
+                    setFormData({ ...formData, additionalCosts: updated });
+                  }}
+                  className="p-2 text-red-500 hover:bg-red-100 rounded-lg transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+            
+            <button
+              type="button"
+              onClick={() => {
+                const updated = [...(formData.additionalCosts || []), { name: '', amount: '', frequency: 'once' }];
+                setFormData({ ...formData, additionalCosts: updated });
+              }}
+              className="mt-2 text-sm font-medium text-[#E63946] hover:text-[#c5303c] flex items-center gap-1"
+            >
+              + Add cost item
+            </button>
+            
+            <div className="mt-3 text-xs text-gray-500 space-y-1">
+              <p><strong>Common examples:</strong></p>
+              <p>• Security deposit (usually 1-2 months rent) - Once-off</p>
+              <p>• Electricity/Water - Monthly</p>
+              <p>• Parking - Monthly</p>
+              <p>• WiFi contribution - Monthly</p>
+            </div>
           </div>
 
           {/* Location */}
@@ -4049,7 +4124,10 @@ function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus }
                 )}
                 <div className="p-5">
                   <h3 className="font-bold text-lg text-gray-800 mb-1 line-clamp-1 uppercase tracking-wide">{listing.title}</h3>
-                  <div className="text-[#E63946] font-bold text-xl mb-2">R{listing.price?.toLocaleString()}<span className="text-sm font-normal text-gray-500">/month</span></div>
+                  <div className="text-[#E63946] font-bold text-xl mb-1">R{listing.price?.toLocaleString()}<span className="text-sm font-normal text-gray-500">/month</span></div>
+                  {listing.additionalCosts && listing.additionalCosts.filter(c => c.name && c.amount).length > 0 && (
+                    <p className="text-xs text-amber-600 mb-2">💰 +{listing.additionalCosts.filter(c => c.name && c.amount).length} additional cost{listing.additionalCosts.filter(c => c.name && c.amount).length > 1 ? 's' : ''}</p>
+                  )}
                   <div className="flex items-center text-sm mb-4">
                     <MapPin className="w-4 h-4 mr-1.5 text-red-500" />
                     <span className="line-clamp-1 uppercase tracking-wide font-semibold text-[#c5303c]">{listing.location}</span>
