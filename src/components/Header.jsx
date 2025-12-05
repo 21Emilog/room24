@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu, X, Bell, User, LogOut, Search, PlusCircle, Heart, Settings, ChevronDown, Eye, EyeOff, MapPin } from 'lucide-react';
-import { useLanguage } from '../contexts/LanguageContext';
 
 // RentMzansi Logo Component
 const Logo = ({ className = "w-10 h-10" }) => (
@@ -54,13 +53,12 @@ export default function Header({
   }, []);
 
   const isLandlord = currentUser?.type === 'landlord';
-  const { t } = useLanguage();
 
   const navLinks = [
-    { id: 'browse', labelKey: 'explore', icon: Search, show: true },
-    { id: 'add', labelKey: 'list', icon: PlusCircle, show: currentUser && isLandlord && !previewAsRenter },
-    { id: 'my-listings', labelKey: 'myRooms', icon: MapPin, show: currentUser && isLandlord && !previewAsRenter },
-    { id: 'favorites', labelKey: 'saved', icon: Heart, show: true },
+    { id: 'browse', label: 'Explore', icon: Search, show: true },
+    { id: 'add', label: 'List', icon: PlusCircle, show: currentUser && isLandlord && !previewAsRenter },
+    { id: 'my-listings', label: 'My Rooms', icon: MapPin, show: currentUser && isLandlord && !previewAsRenter },
+    { id: 'favorites', label: 'Saved', icon: Heart, show: true },
   ].filter(link => link.show);
 
   return (
@@ -91,7 +89,7 @@ export default function Header({
                   className="flex items-center gap-2 px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-xl font-medium text-sm transition-all duration-200"
                 >
                   <Icon className="w-4 h-4" />
-                  {t(link.labelKey)}
+                  {link.label}
                 </button>
               );
             })}
@@ -248,7 +246,7 @@ export default function Header({
                   role="menuitem"
                 >
                   <Icon className="w-5 h-5" />
-                  {t(link.labelKey)}
+                  {link.label}
                 </button>
               );
             })}

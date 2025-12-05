@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Search, MapPin, User, Phone, Mail, ArrowLeft, ShieldCheck, Star, Maximize, ExternalLink, Share2, Copy, MessageCircle, Eye, GitCompare, Zap, Calendar, Clock, Award, Home, ChevronRight } from 'lucide-react';
 import VirtualTourViewer from './VirtualTourViewer';
 import { trackListingView, trackUserViewedListing, addToCompare, getCompareList, removeFromCompare, trackLandlordContactClick, getResponseTimeBadge } from '../utils/notificationEngine';
-import { calculateQualityScore, getQualityLabel } from '../utils/translations';
+import { calculateQualityScore, getQualityLabel } from '../utils/qualityScore';
 
 function PhotoGallery({ photos, currentIndex, onClose, onNavigate }) {
   const [touchStart, setTouchStart] = useState(null);

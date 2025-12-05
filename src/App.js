@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, Suspense } from 'react';
-import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone, Sparkles, TrendingUp, ShieldCheck, ChevronDown, ArrowLeft, RefreshCw, AlertCircle, Trash2, GitCompare, MessageSquare, Copy, Moon, Sun, Globe } from 'lucide-react';
+import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone, Sparkles, TrendingUp, ShieldCheck, ChevronDown, ArrowLeft, RefreshCw, AlertCircle, Trash2, GitCompare, MessageSquare, Copy, Moon, Sun } from 'lucide-react';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import BrowseView from './components/BrowseView';
@@ -8,7 +8,6 @@ import OfflineIndicator from './components/OfflineIndicator';
 import BackToTop from './components/BackToTop';
 import TurnstileWidget from './components/TurnstileWidget';
 import { useTheme } from './contexts/ThemeContext';
-import { useLanguage } from './contexts/LanguageContext';
 import { getNotifications, addNotification, checkAreaSubscriptions, subscribeToArea as subscribeToAreaEngine, unsubscribeFromArea, getAreaSubscriptions, getCompareList, clearCompareList, removeFromCompare, getLandlordQuickReplies, saveLandlordQuickReplies } from './utils/notificationEngine';
 import { loadListingTemplate, saveListingTemplate, clearListingTemplate } from './utils/listingTemplateStorage';
 import { 
@@ -1569,7 +1568,6 @@ function ProfileSetupView({ onSubmit, userType }) {
 }
 
 function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, onLinkGoogle, onLinkPhone, onBecomeLandlord, areaSubscriptions = [], onUnsubscribeArea, showToast }) {
-  const { t } = useLanguage();
   const prefs = user.notificationPrefs || { updates: true, marketing: false };
   const [localPrefs, setLocalPrefs] = React.useState(prefs);
   const [linkingInProgress, setLinkingInProgress] = React.useState(null);
@@ -1632,15 +1630,15 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
         
         <div className="max-w-xl mx-auto flex justify-between items-start relative z-10">
           <div>
-            <p className="text-[#F1FAEE]/80 text-sm font-medium mb-1">{t('welcomeBack') || 'Welcome back'}</p>
-            <h2 className="text-2xl font-bold text-white">{t('myProfile')}</h2>
+            <p className="text-[#F1FAEE]/80 text-sm font-medium mb-1">Welcome back</p>
+            <h2 className="text-2xl font-bold text-white">My Profile</h2>
           </div>
           <button
             onClick={onEdit}
             className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2 border border-white/30 hover:scale-105 active:scale-95 shadow-lg"
           >
             <Edit className="w-4 h-4" />
-            {t('edit')}
+            Edit
           </button>
         </div>
         
@@ -4689,10 +4687,9 @@ function CompareView({ listings, compareList, onRemove, onClear, onSelectListing
   );
 }
 
-// App Settings Component (Language & Theme)
+// App Settings Component (Theme only)
 function AppSettingsSection() {
   const { toggleTheme, isDark } = useTheme();
-  const { language, setLanguage, t, languageNames } = useLanguage();
   
   return (
     <div className="bg-gradient-to-br from-purple-50 via-violet-50 to-indigo-50 dark:from-gray-800 dark:via-gray-800 dark:to-gray-700 rounded-xl p-5 border border-purple-100 dark:border-gray-600 mt-4">
@@ -4701,13 +4698,13 @@ function AppSettingsSection() {
           <Sparkles className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h4 className="font-bold text-gray-800 dark:text-white">{t('appSettings')}</h4>
-          <p className="text-xs text-gray-500 dark:text-gray-400">{t('customizeExperience')}</p>
+          <h4 className="font-bold text-gray-800 dark:text-white">App Settings</h4>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Customize your experience</p>
         </div>
       </div>
 
       {/* Theme Toggle */}
-      <div className="bg-white dark:bg-gray-700 rounded-lg p-4 mb-3 border border-gray-100 dark:border-gray-600">
+      <div className="bg-white dark:bg-gray-700 rounded-lg p-4 border border-gray-100 dark:border-gray-600">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {isDark ? (
@@ -4717,10 +4714,10 @@ function AppSettingsSection() {
             )}
             <div>
               <p className="text-sm font-medium text-gray-800 dark:text-white">
-                {isDark ? t('darkMode') : t('lightMode')}
+                {isDark ? 'Dark Mode' : 'Light Mode'}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                {isDark ? t('switchToLight') : t('switchToDark')}
+                {isDark ? 'Switch to light theme' : 'Switch to dark theme'}
               </p>
             </div>
           </div>
@@ -4745,34 +4742,8 @@ function AppSettingsSection() {
         </div>
       </div>
 
-      {/* Language Selector */}
-      <div className="bg-white dark:bg-gray-700 rounded-lg p-4 border border-gray-100 dark:border-gray-600">
-        <div className="flex items-center gap-3 mb-3">
-          <Globe className="w-5 h-5 text-purple-500" />
-          <div>
-            <p className="text-sm font-medium text-gray-800 dark:text-white">{t('profile') || 'Language'}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">{t('chooseLanguage')}</p>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          {Object.entries(languageNames).map(([code, name]) => (
-            <button
-              key={code}
-              onClick={() => setLanguage(code)}
-              className={`p-3 rounded-lg text-sm font-medium transition-all ${
-                language === code
-                  ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-md'
-                  : 'bg-gray-50 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-500 border border-gray-200 dark:border-gray-500'
-              }`}
-            >
-              {name}
-            </button>
-          ))}
-        </div>
-      </div>
-
       <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-3 text-center">
-        {t('settingsSaved')}
+        Settings are saved automatically
       </p>
     </div>
   );
@@ -5330,14 +5301,13 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
 }
 
 function BottomNav({ currentView, setCurrentView, currentUser, userType }) {
-  const { t } = useLanguage();
   const isLandlord = userType === 'landlord';
   const navItems = [
-    { id: 'browse', labelKey: 'explore', icon: Search, activeColor: 'red' },
-    { id: 'add', labelKey: 'list', icon: PlusCircle, requiresAuth: true, activeColor: 'red', highlight: true },
-    { id: 'my-listings', labelKey: 'myRooms', icon: Home, requiresAuth: true, activeColor: 'navy', show: isLandlord },
-    { id: 'favorites', labelKey: 'saved', icon: Heart, activeColor: 'red' },
-    { id: 'profile', labelKey: 'profile', icon: User, activeColor: 'navy' }
+    { id: 'browse', label: 'Explore', icon: Search, activeColor: 'red' },
+    { id: 'add', label: 'List', icon: PlusCircle, requiresAuth: true, activeColor: 'red', highlight: true },
+    { id: 'my-listings', label: 'My Rooms', icon: Home, requiresAuth: true, activeColor: 'navy', show: isLandlord },
+    { id: 'favorites', label: 'Saved', icon: Heart, activeColor: 'red' },
+    { id: 'profile', label: 'Profile', icon: User, activeColor: 'navy' }
   ];
 
   const visibleItems = navItems.filter(item => item && (item.show === undefined || item.show));
@@ -5374,7 +5344,7 @@ function BottomNav({ currentView, setCurrentView, currentUser, userType }) {
                 }`}>
                   <Icon className="w-5 h-5 text-white" strokeWidth={2.5} />
                 </span>
-                <span className="text-[10px] font-bold">{t(item.labelKey)}</span>
+                <span className="text-[10px] font-bold">{item.label}</span>
                 {isActive && <span className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-[#E63946]" />}
               </button>
             );
@@ -5399,7 +5369,7 @@ function BottomNav({ currentView, setCurrentView, currentUser, userType }) {
               <span className={`transition-all duration-200 ${isActive ? 'scale-110 -translate-y-0.5' : ''}`}>
                 <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 1.75} />
               </span>
-              <span className={`text-[10px] transition-all ${isActive ? 'font-semibold' : 'font-medium'}`}>{t(item.labelKey)}</span>
+              <span className={`text-[10px] transition-all ${isActive ? 'font-semibold' : 'font-medium'}`}>{item.label}</span>
               {isActive && <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#E63946]" />}
             </button>
           );

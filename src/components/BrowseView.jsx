@@ -4,7 +4,6 @@ import ListingCard from './ListingCard';
 import ListingSkeletonCard from './ListingSkeletonCard';
 import { InFeedAd } from './AdBanner';
 import { getSavedSearches, checkNewListings, checkPriceDrops, addNotification, saveSearch as saveSearchToEngine } from '../utils/notificationEngine';
-import { useLanguage } from '../contexts/LanguageContext';
 
 export default function BrowseView({
   listings,
@@ -23,7 +22,6 @@ export default function BrowseView({
   subscribeToArea,
   previewMode
 }) {
-  const { t } = useLanguage();
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' ? window.innerWidth >= 1024 : false);
   const [paymentFilter, setPaymentFilter] = useState('');
@@ -312,7 +310,7 @@ export default function BrowseView({
             try { localStorage.removeItem('filter-gender-preference'); } catch {}
           }}
           className="filter-chip bg-red-50 text-red-700 hover:bg-red-100"
-        >{t('clearAll')}</button>
+        >Clear All</button>
       </div>
     );
   };
@@ -429,12 +427,12 @@ export default function BrowseView({
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-8">
               <div className="flex flex-wrap lg:flex-nowrap gap-4 items-end">
                 <div className="flex-1 min-w-[200px]">
-                  <label className="text-sm font-semibold text-gray-700 mb-2 block">{t('location')}</label>
+                  <label className="text-sm font-semibold text-gray-700 mb-2 block">Location</label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
                       type="text"
-                      placeholder={t('searchByLocation')}
+                      placeholder="Search by location..."
                       value={searchLocation}
                       onChange={e => setSearchLocation(e.target.value)}
                       className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#E63946] focus:border-[#E63946] text-gray-800"
@@ -537,9 +535,9 @@ export default function BrowseView({
                       <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
                         <Search className="w-10 h-10 text-gray-300" />
                       </div>
-                      <h3 className="text-xl font-bold text-gray-800 mb-2">{t('noRoomsFound')}</h3>
+                      <h3 className="text-xl font-bold text-gray-800 mb-2">No rooms found</h3>
                       <p className="text-gray-500 text-sm mb-6 max-w-md mx-auto">
-                        {t('tryDifferentFilters')}
+                        Try adjusting your filters or search in a different area
                       </p>
                       <div className="flex flex-wrap justify-center gap-2 mb-6">
                         <span className="text-xs text-gray-500">Try:</span>
@@ -743,7 +741,7 @@ export default function BrowseView({
               </div>
               <input
                 type="text"
-                placeholder={t('searchByLocation')}
+                placeholder="Search by location..."
                 value={searchLocation}
                 onChange={(e) => setSearchLocation(e.target.value)}
                 onFocus={() => setSearchFocused(true)}
@@ -1118,10 +1116,10 @@ export default function BrowseView({
               <div className="bg-white w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
                 <Search className="w-12 h-12 text-gray-400" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-3">{t('noRoomsFound')}</h3>
-              <p className="text-gray-600 mb-2">{t('tryDifferentFilters')}</p>
+              <h3 className="text-2xl font-bold text-gray-800 mb-3">No rooms found</h3>
+              <p className="text-gray-600 mb-2">Try adjusting your filters or search in a different area</p>
               <p className="text-gray-500 text-sm mb-8 max-w-md mx-auto">
-                {t('tryDifferentSearch')}
+                Try different search terms or browse popular areas
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
                 <button
@@ -1138,7 +1136,7 @@ export default function BrowseView({
                   }}
                   className="inline-flex items-center gap-2 bg-[#E63946] hover:bg-[#c5303c] text-white font-medium px-6 py-2.5 rounded-lg transition shadow-sm"
                 >
-                  {t('clearAll')}
+                  Clear All
                 </button>
               </div>
             </div>

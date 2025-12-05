@@ -4,7 +4,6 @@ import './index.css';
 import App from './App';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { LanguageProvider } from './contexts/LanguageContext';
 import reportWebVitals from './reportWebVitals';
 // Register service worker for PWA install (only in production builds served over HTTPS)
 
@@ -25,9 +24,7 @@ root.render(
   <React.StrictMode>
     <ErrorBoundary>
       <ThemeProvider>
-        <LanguageProvider>
-          <App />
-        </LanguageProvider>
+        <App />
       </ThemeProvider>
     </ErrorBoundary>
   </React.StrictMode>
