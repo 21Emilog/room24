@@ -121,10 +121,7 @@ export default function RentalPlatform() {
   // Auth functions to pass to AuthModal - Uses Supabase
   const authFunctions = {
     signUp: async (email, password, displayName, userTypeParam = 'renter', phone = '', captchaToken = '') => {
-      console.log('signUp called with:', { email, displayName, userTypeParam, phone });
-      
       const user = await signUpWithEmail(email, password, captchaToken);
-      console.log('User created:', user.id);
       
       // Create user profile data
       const profileData = {
@@ -137,15 +134,12 @@ export default function RentalPlatform() {
         landlordComplete: userTypeParam === 'renter',
       };
       
-      console.log('Profile data to save:', profileData);
-      
       // Store in localStorage
       saveProfile(user.id, profileData);
       
       // Sync profile to Supabase so other users can see this user's name in messages
       try {
         await syncProfileToSupabase(user.id, profileData);
-        console.log('Profile synced to Supabase successfully');
       } catch (syncErr) {
         console.warn('Failed to sync new user profile to Supabase:', syncErr);
       }
@@ -559,8 +553,6 @@ const handleProfileSetup = async (profileData) => {
 };
 
 const handleUpdateProfile = async (profileData) => {
-  console.log('handleUpdateProfile called with:', profileData);
-  
   if (!currentUser?.id) {
     showToast('Please sign in again to update your profile.', 'error');
     return;
@@ -588,12 +580,9 @@ const handleUpdateProfile = async (profileData) => {
       updatedAt: new Date().toISOString(),
     };
 
-    console.log('Updated profile to save:', updatedProfile);
-
     saveProfile(currentUser.id, updatedProfile);
     try {
       await syncProfileToSupabase(currentUser.id, updatedProfile);
-      console.log('Profile edit synced to Supabase successfully');
     } catch (syncErr) {
       console.warn('Supabase profile sync failed, will retry later:', syncErr);
       showToast('Profile saved offline. We will sync once you are back online.', 'warning', 'Cloud sync delayed');
@@ -5221,15 +5210,14 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
 
               {/* Info message for landlords */}
               {mode === 'signup' && (
-                <div className="p-4 bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-xl">
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Home className="w-5 h-5 text-amber-600" />
+                <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Home className="w-4 h-4 text-blue-600" />
                     </div>
-                    <div>
-                      <p className="text-sm font-semibold text-amber-800">Want to list rooms?</p>
-                      <p className="text-xs text-amber-700 mt-0.5">After signing up, go to your <strong>Profile</strong> and change your account role to <strong>Landlord</strong> to start posting listings.</p>
-                    </div>
+                    <p className="text-xs text-blue-700">
+                      <span className="font-semibold">Landlord?</span> Edit your profile after signup to list rooms.
+                    </p>
                   </div>
                 </div>
               )}
