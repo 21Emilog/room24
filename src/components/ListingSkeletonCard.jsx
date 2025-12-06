@@ -2,14 +2,14 @@ import React from 'react';
 
 export default function ListingSkeletonCard() {
   return (
-    <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div className="w-full max-w-sm bg-white dark:bg-gray-800 rounded-3xl shadow-md border border-gray-100 dark:border-gray-700 overflow-hidden">
       {/* Image skeleton with shimmer - matching ListingCard aspect ratio */}
-      <div className="relative w-full aspect-[4/3] bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 overflow-hidden">
+      <div className="relative w-full aspect-[4/3] bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer" />
         {/* Favorite button placeholder */}
-        <div className="absolute top-3 left-3 w-10 h-10 bg-white/80 rounded-xl" />
+        <div className="absolute top-3 left-3 w-12 h-12 bg-white/80 dark:bg-gray-600/80 rounded-2xl" />
         {/* Status badge placeholder */}
-        <div className="absolute top-3 right-3 w-20 h-6 bg-white/60 rounded-lg" />
+        <div className="absolute top-3 right-3 w-24 h-7 bg-white/60 dark:bg-gray-600/60 rounded-xl" />
       </div>
       
       {/* Content Section */}
@@ -53,7 +53,7 @@ export default function ListingSkeletonCard() {
         </div>
         
         {/* Button skeleton */}
-        <div className="relative h-12 bg-gradient-to-r from-red-100 via-red-50 to-red-100 rounded-xl overflow-hidden">
+        <div className="relative h-14 bg-gradient-to-r from-red-200 via-red-100 to-red-200 dark:from-red-900/50 dark:via-red-800/50 dark:to-red-900/50 rounded-2xl overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer" />
         </div>
       </div>

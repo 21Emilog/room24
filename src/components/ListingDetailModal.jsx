@@ -59,22 +59,22 @@ function PhotoGallery({ photos, currentIndex, onClose, onNavigate }) {
     <div
       ref={containerRef}
       tabIndex={-1}
-      className="fixed inset-0 bg-black/95 z-50 flex flex-col outline-none"
+      className="fixed inset-0 bg-black/98 z-50 flex flex-col outline-none"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
       {/* Header */}
-      <div className="flex justify-between items-center p-4 text-white safe-area-top">
+      <div className="flex justify-between items-center p-4 text-white safe-area-top bg-gradient-to-b from-black/80 to-transparent">
         <div className="flex items-center gap-3">
           <button 
             onClick={onClose} 
-            className="p-2 hover:bg-white/10 rounded-full transition-colors"
+            className="p-3 bg-white/10 backdrop-blur-sm hover:bg-white/20 rounded-2xl transition-all duration-200 hover:scale-105 active:scale-95"
             aria-label="Close gallery"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
-          <span className="text-sm font-medium bg-white/10 px-3 py-1 rounded-full">
-            {currentIndex + 1} of {photos.length}
+          <span className="text-sm font-bold bg-white/10 backdrop-blur-sm px-4 py-2 rounded-xl">
+            {currentIndex + 1} / {photos.length}
           </span>
         </div>
       </div>
@@ -84,7 +84,7 @@ function PhotoGallery({ photos, currentIndex, onClose, onNavigate }) {
         {currentIndex > 0 && (
           <button
             onClick={() => onNavigate('prev')}
-            className="absolute left-2 sm:left-6 bg-white/20 backdrop-blur-sm text-white p-3 sm:p-4 rounded-full hover:bg-white/30 z-10 transition-all duration-200 hover:scale-110 active:scale-95 shadow-lg"
+            className="absolute left-2 sm:left-8 bg-white/10 backdrop-blur-md text-white p-4 sm:p-5 rounded-2xl hover:bg-white/20 z-10 transition-all duration-300 hover:scale-110 active:scale-95 shadow-xl border border-white/10"
             aria-label="Previous photo"
           >
             <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -93,12 +93,12 @@ function PhotoGallery({ photos, currentIndex, onClose, onNavigate }) {
         <img 
           src={photos[currentIndex]} 
           alt={`Room view ${currentIndex + 1}`} 
-          className="max-w-full max-h-full object-contain rounded-lg shadow-2xl transition-opacity duration-300" 
+          className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl transition-all duration-500" 
         />
         {currentIndex < photos.length - 1 && (
           <button
             onClick={() => onNavigate('next')}
-            className="absolute right-2 sm:right-6 bg-white/20 backdrop-blur-sm text-white p-3 sm:p-4 rounded-full hover:bg-white/30 z-10 transition-all duration-200 hover:scale-110 active:scale-95 shadow-lg"
+            className="absolute right-2 sm:right-8 bg-white/10 backdrop-blur-md text-white p-4 sm:p-5 rounded-2xl hover:bg-white/20 z-10 transition-all duration-300 hover:scale-110 active:scale-95 shadow-xl border border-white/10"
             aria-label="Next photo"
           >
             <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6 transform rotate-180" />
@@ -106,19 +106,19 @@ function PhotoGallery({ photos, currentIndex, onClose, onNavigate }) {
         )}
         
         {/* Swipe hint */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-center text-xs text-white/60 bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full hidden sm:block">
-          Use arrow keys or swipe to navigate
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-center text-xs text-white/70 bg-white/10 backdrop-blur-sm px-5 py-2.5 rounded-xl hidden sm:flex items-center gap-2 border border-white/10">
+          <span>⌨️</span> Arrow keys or swipe to navigate
         </div>
       </div>
       
       {/* Thumbnails */}
-      <div className="p-4 safe-area-bottom">
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+      <div className="p-4 safe-area-bottom bg-gradient-to-t from-black/80 to-transparent">
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide justify-center">
           {photos.map((photo, index) => (
             <button
               key={index}
               onClick={() => onNavigate('goto', index)}
-              className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden transition-all duration-200 ${index === currentIndex ? 'ring-2 ring-[#E63946] ring-offset-2 ring-offset-black scale-105' : 'opacity-50 hover:opacity-80'}`}
+              className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden transition-all duration-300 ${index === currentIndex ? 'ring-3 ring-[#E63946] ring-offset-2 ring-offset-black scale-110 shadow-lg shadow-red-500/30' : 'opacity-40 hover:opacity-70 hover:scale-105'}`}
             >
               <img
                 src={photo}

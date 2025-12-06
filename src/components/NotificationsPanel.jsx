@@ -40,46 +40,46 @@ export default function NotificationsPanel({ onClose, onSelectListing }) {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start sm:items-center justify-center p-0 sm:p-4 z-50 overflow-y-auto">
-      <div className="bg-white rounded-none sm:rounded-2xl max-w-2xl w-full h-full sm:h-auto sm:max-h-[80vh] overflow-y-auto shadow-2xl fade-in">
-        <div className="sticky top-0 bg-white/95 backdrop-blur-md border-b border-gray-100 p-4 flex justify-between items-center z-10">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-              <Bell className="w-5 h-5 text-[#E63946]" />
+      <div className="bg-white dark:bg-gray-800 rounded-none sm:rounded-3xl max-w-2xl w-full h-full sm:h-auto sm:max-h-[80vh] overflow-y-auto shadow-2xl fade-in">
+        <div className="sticky top-0 bg-gradient-to-r from-[#1D3557] to-[#2d4a6f] p-5 flex justify-between items-center z-10 sm:rounded-t-3xl">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg">
+              <Bell className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-gray-800">Notifications</h2>
+              <h2 className="text-lg font-bold text-white">Notifications</h2>
               {unreadCount > 0 && (
-                <p className="text-xs text-gray-500">{unreadCount} unread</p>
+                <p className="text-xs text-white/70">{unreadCount} unread</p>
               )}
             </div>
           </div>
           <button 
             onClick={onClose} 
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all"
+            className="p-2.5 text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all"
             aria-label="Close notifications"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="border-b">
+        <div className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
           <div className="flex">
             <button
               onClick={() => setActiveTab('notifications')}
-              className={`flex-1 py-3 text-sm font-semibold ${
+              className={`flex-1 py-4 text-sm font-bold transition-all ${
                 activeTab === 'notifications'
-                  ? 'text-[#E63946] border-b-2 border-[#E63946]'
-                  : 'text-gray-600 hover:text-gray-800'
+                  ? 'text-[#E63946] border-b-3 border-[#E63946] bg-white dark:bg-gray-800'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-white/50 dark:hover:bg-gray-700/50'
               }`}
             >
               Notifications ({notifications.length})
             </button>
             <button
               onClick={() => setActiveTab('searches')}
-              className={`flex-1 py-3 text-sm font-semibold ${
+              className={`flex-1 py-4 text-sm font-bold transition-all ${
                 activeTab === 'searches'
-                  ? 'text-[#E63946] border-b-2 border-[#E63946]'
-                  : 'text-gray-600 hover:text-gray-800'
+                  ? 'text-[#E63946] border-b-3 border-[#E63946] bg-white dark:bg-gray-800'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-white/50 dark:hover:bg-gray-700/50'
               }`}
             >
               Saved Searches ({savedSearches.length})
