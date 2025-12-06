@@ -277,16 +277,17 @@ export default function BrowseView({
     if (genderPreference) chips.push({ type: 'gender', label: `${genderPreference.charAt(0).toUpperCase() + genderPreference.slice(1)} only` });
     if (chips.length === 0) return null;
     return (
-      <div className="filter-chip-bar" aria-label="Active filters">
+      <div className="filter-chip-bar flex flex-wrap gap-2 mt-2" aria-label="Active filters">
         {chips.map((chip, idx) => (
           <button
             key={idx}
             onClick={() => clearChip(chip.type, chip.value)}
-            className="filter-chip"
+            className="filter-chip px-4 py-1.5 rounded-full bg-gray-100 text-gray-700 hover:bg-[#E63946]/10 hover:text-[#E63946] focus:bg-[#E63946]/20 focus:text-[#E63946] transition-all duration-150 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#E63946]/40 text-sm font-medium flex items-center gap-1"
             aria-label={`Remove ${chip.label} filter`}
+            tabIndex={0}
           >
             <span>{chip.label}</span>
-            <span aria-hidden="true">✕</span>
+            <span aria-hidden="true" className="ml-1 text-base">✕</span>
           </button>
         ))}
         <button
@@ -309,7 +310,7 @@ export default function BrowseView({
             try { localStorage.removeItem('filter-pet-friendly'); } catch {}
             try { localStorage.removeItem('filter-gender-preference'); } catch {}
           }}
-          className="filter-chip bg-red-50 text-red-700 hover:bg-red-100"
+          className="filter-chip px-4 py-1.5 rounded-full bg-red-50 text-red-700 hover:bg-red-100 focus:bg-red-100 focus:text-red-700 transition-all duration-150 border border-red-200 text-sm font-semibold ml-2 focus:outline-none focus:ring-2 focus:ring-red-300"
         >Clear All</button>
       </div>
     );
@@ -427,45 +428,48 @@ export default function BrowseView({
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-8">
               <div className="flex flex-wrap lg:flex-nowrap gap-4 items-end">
                 <div className="flex-1 min-w-[200px]">
-                  <label className="text-sm font-semibold text-gray-700 mb-2 block">Location</label>
+                  <label className="text-sm font-semibold text-gray-700 mb-2 block" htmlFor="browse-location-search">Location</label>
                   <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" aria-hidden="true" />
                     <input
+                      id="browse-location-search"
                       type="text"
-                      placeholder="Search by location..."
+                      placeholder="e.g. Sandton, Cape Town, Midrand..."
                       value={searchLocation}
                       onChange={e => setSearchLocation(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#E63946] focus:border-[#E63946] text-gray-800"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-[#E63946]/30 focus:border-[#E63946] text-gray-800 shadow-sm transition-all duration-200 placeholder-gray-400"
+                      aria-label="Search by location"
+                      autoComplete="off"
                     />
                   </div>
                 </div>
                 <div className="w-36">
-                  <label className="text-sm font-semibold text-gray-700 mb-2 block">Min Price</label>
-                  <select
+                  <label className="text-sm font-semibold text-gray-700 mb-2 block" htmlFor="min-price-input">Min Price</label>
+                  <input
+                    id="min-price-input"
+                    type="number"
+                    min="0"
+                    step="100"
                     value={priceRange[0]}
-                    onChange={(e) => setPriceRange([parseInt(e.target.value), priceRange[1]])}
+                    onChange={e => setPriceRange([parseInt(e.target.value) || 0, priceRange[1]])}
                     className="w-full py-3 px-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#E63946] text-gray-800"
-                  >
-                    <option value="0">R0</option>
-                    <option value="500">R500</option>
-                    <option value="1000">R1,000</option>
-                    <option value="1500">R1,500</option>
-                    <option value="2000">R2,000</option>
-                  </select>
+                    placeholder="R0"
+                    aria-label="Minimum price"
+                  />
                 </div>
                 <div className="w-36">
-                  <label className="text-sm font-semibold text-gray-700 mb-2 block">Max Price</label>
-                  <select
+                  <label className="text-sm font-semibold text-gray-700 mb-2 block" htmlFor="max-price-input">Max Price</label>
+                  <input
+                    id="max-price-input"
+                    type="number"
+                    min="0"
+                    step="100"
                     value={priceRange[1]}
-                    onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
+                    onChange={e => setPriceRange([priceRange[0], parseInt(e.target.value) || 10000])}
                     className="w-full py-3 px-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#E63946] text-gray-800"
-                  >
-                    <option value="2000">R2,000</option>
-                    <option value="3000">R3,000</option>
-                    <option value="5000">R5,000</option>
-                    <option value="7500">R7,500</option>
-                    <option value="10000">R10,000</option>
-                  </select>
+                    placeholder="R10,000"
+                    aria-label="Maximum price"
+                  />
                 </div>
                 <div className="w-40">
                   <label className="text-sm font-semibold text-gray-700 mb-2 block">Sort By</label>
@@ -481,9 +485,11 @@ export default function BrowseView({
                 </div>
                 <button
                   onClick={() => addRecentSearch(searchLocation)}
-                  className="bg-[#E63946] hover:bg-[#c5303c] text-white font-bold px-8 py-3 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+                  className="bg-[#E63946] hover:bg-[#c5303c] text-white font-bold px-8 py-3 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-[#E63946]/40"
+                  aria-label="Search rooms"
+                  tabIndex={0}
                 >
-                  <Search className="w-5 h-5" />
+                  <Search className="w-5 h-5" aria-hidden="true" />
                   Search
                 </button>
               </div>
@@ -495,11 +501,13 @@ export default function BrowseView({
                   <button
                     key={area}
                     onClick={() => setSearchLocation(area)}
-                    className={`text-sm px-4 py-1.5 rounded-full transition-all ${
+                    className={`text-sm px-5 py-2 rounded-full transition-all duration-150 font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-[#E63946]/30 border border-gray-200 ${
                       searchLocation.toLowerCase().includes(area.toLowerCase())
-                        ? 'bg-[#E63946] text-white'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        ? 'bg-[#E63946] text-white scale-105 ring-2 ring-[#E63946]/40 shadow-lg'
+                        : 'bg-gray-100 text-gray-600 hover:bg-[#E63946]/10 hover:text-[#E63946] active:scale-95'
                     }`}
+                    aria-label={`Search popular area: ${area}`}
+                    tabIndex={0}
                   >
                     {area}
                   </button>
@@ -526,26 +534,31 @@ export default function BrowseView({
 
                 {/* Listings Grid - Adjusted for better density */}
                 {initialLoad ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6" aria-label="Loading listings">
-                    {Array.from({ length: 6 }).map((_, i) => <ListingSkeletonCard key={i} />)}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 animate-fadeIn" aria-label="Loading listings">
+                    {Array.from({ length: 6 }).map((_, i) => <ListingSkeletonCard key={i} className="animate-pulse" />)}
                   </div>
                 ) : (
                   (paymentFilter ? listings.filter(l => l.paymentMethod === paymentFilter) : listings).length === 0 ? (
-                    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-12 text-center shadow-sm">
-                      <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-700 dark:to-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <Search className="w-10 h-10 text-gray-300 dark:text-gray-500" />
+                    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-12 text-center shadow-sm flex flex-col items-center justify-center">
+                      <div className="w-24 h-24 mb-6 flex items-center justify-center">
+                        <svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <rect x="8" y="24" width="80" height="56" rx="16" fill="#F3F4F6" />
+                          <rect x="20" y="36" width="56" height="32" rx="8" fill="#E63946" fillOpacity="0.08" />
+                          <circle cx="48" cy="52" r="8" fill="#E63946" fillOpacity="0.15" />
+                        </svg>
                       </div>
                       <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">No rooms found</h3>
                       <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 max-w-md mx-auto">
-                        Try adjusting your filters or search in a different area
+                        We couldn't find any rooms matching your search.<br />Try adjusting your filters or searching in a popular area below.
                       </p>
                       <div className="flex flex-wrap justify-center gap-2 mb-6">
-                        <span className="text-xs text-gray-500">Try:</span>
-                        {['Sandton', 'Soweto', 'Pretoria', 'Cape Town'].map(area => (
+                        <span className="text-xs text-gray-500">Popular areas:</span>
+                        {['Sandton', 'Soweto', 'Pretoria', 'Cape Town', 'Durban', 'Midrand'].map(area => (
                           <button
                             key={area}
                             onClick={() => setSearchLocation(area)}
-                            className="text-xs px-3 py-1.5 rounded-full bg-red-50 text-[#E63946] hover:bg-red-100 border border-red-200 transition-all"
+                            className="text-xs px-3 py-1.5 rounded-full bg-red-50 text-[#E63946] hover:bg-red-100 border border-red-200 transition-all focus:outline-none focus:ring-2 focus:ring-red-300"
+                            aria-label={`Try searching in ${area}`}
                           >
                             {area}
                           </button>
@@ -558,7 +571,8 @@ export default function BrowseView({
                           setSelectedAmenities([]);
                           setPaymentFilter('');
                         }}
-                        className="text-sm text-[#E63946] hover:text-[#c5303c] font-semibold"
+                        className="text-sm text-[#E63946] hover:text-[#c5303c] font-semibold focus:outline-none focus:ring-2 focus:ring-red-300"
+                        aria-label="Clear all filters"
                       >
                         Clear all filters
                       </button>
@@ -571,7 +585,9 @@ export default function BrowseView({
                     }`}>
                       {(paymentFilter ? listings.filter(l => l.paymentMethod === paymentFilter) : listings).map((listing, idx) => (
                         <React.Fragment key={listing.id}>
-                          <ListingCard listing={listing} onClick={() => onSelectListing(listing)} />
+                          <div className="animate-fadeInUp" style={{ animationDelay: `${idx * 60}ms` }}>
+                            <ListingCard listing={listing} onClick={() => onSelectListing(listing)} />
+                          </div>
                           {(idx + 1) % 6 === 0 && idx !== listings.length - 1 && (
                             <div className="lg:col-span-2 xl:col-span-3">
                               <InFeedAd />

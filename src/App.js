@@ -137,6 +137,13 @@ export default function RentalPlatform() {
       // Store in localStorage
       saveProfile(user.id, profileData);
       
+      // Sync profile to Supabase so other users can see this user's name in messages
+      try {
+        await syncProfileToSupabase(user.id, profileData);
+      } catch (syncErr) {
+        console.warn('Failed to sync new user profile to Supabase:', syncErr);
+      }
+      
       // Update local state
       setUserProfile(profileData);
       setUserType(userTypeParam);
@@ -313,7 +320,7 @@ export default function RentalPlatform() {
     });
     
     // Set up Supabase Auth listener
-    const { data: { subscription: authSubscription } } = onAuthStateChange((user, event) => {
+    const { data: { subscription: authSubscription } } = onAuthStateChange(async (user, event) => {
       console.log('Auth state changed:', event, user?.id);
       
       if (user) {
@@ -330,6 +337,13 @@ export default function RentalPlatform() {
           }
           setUserProfile(localProfile);
           setUserType(localProfile.userType || localUserType || 'renter');
+          
+          // Sync existing profile to Supabase to ensure it's available for chat
+          try {
+            await syncProfileToSupabase(user.id, localProfile);
+          } catch (syncErr) {
+            console.warn('Failed to sync profile to Supabase on auth change:', syncErr);
+          }
         } else {
           // No profile - create minimal one
           const newProfile = {
@@ -342,6 +356,13 @@ export default function RentalPlatform() {
           saveProfile(user.id, newProfile);
           setUserProfile(newProfile);
           setUserType(localUserType || 'renter');
+          
+          // Sync new profile to Supabase
+          try {
+            await syncProfileToSupabase(user.id, newProfile);
+          } catch (syncErr) {
+            console.warn('Failed to sync new profile to Supabase:', syncErr);
+          }
         }
       } else {
         setCurrentUser(null);
@@ -352,7 +373,7 @@ export default function RentalPlatform() {
     });
     
     // Check for existing session on load
-    getSession().then(({ data: { session } }) => {
+    getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         // Trigger the auth state handler
         const user = session.user;
@@ -368,6 +389,13 @@ export default function RentalPlatform() {
           }
           setUserProfile(localProfile);
           setUserType(localProfile.userType || localUserType || 'renter');
+          
+          // Sync existing profile to Supabase
+          try {
+            await syncProfileToSupabase(user.id, localProfile);
+          } catch (syncErr) {
+            console.warn('Failed to sync profile on session restore:', syncErr);
+          }
         } else {
           const newProfile = {
             displayName: user.user_metadata?.full_name || user.email?.split('@')[0] || '',
@@ -379,6 +407,13 @@ export default function RentalPlatform() {
           saveProfile(user.id, newProfile);
           setUserProfile(newProfile);
           setUserType(localUserType || 'renter');
+          
+          // Sync new profile to Supabase
+          try {
+            await syncProfileToSupabase(user.id, newProfile);
+          } catch (syncErr) {
+            console.warn('Failed to sync new profile on session restore:', syncErr);
+          }
         }
       }
       setAuthLoading(false);
@@ -1388,13 +1423,15 @@ const filteredListings = listings
 
 
 
-      <BottomNav 
-        currentView={currentView}
-        setCurrentView={setCurrentView}
-        currentUser={currentUser}
-        userType={userType}
-        unreadMessageCount={unreadMessageCount}
-      />
+      {currentView !== 'messages' && (
+        <BottomNav 
+          currentView={currentView}
+          setCurrentView={setCurrentView}
+          currentUser={currentUser}
+          userType={userType}
+          unreadMessageCount={unreadMessageCount}
+        />
+      )}
 
       {showPrivacyPolicy && (
         <LazyModalBoundary label="Opening policy...">
@@ -2063,12 +2100,7 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
             <p className="text-[11px] text-gray-500 mt-3 text-center">Link accounts to sign in with any method</p>
           </div>
 
-          {/* Quick Replies Section - Landlords Only */}
-          {user.type === 'landlord' && showToast && (
-            <div className="mt-4">
-              <QuickRepliesSection landlordId={user.id} showToast={showToast} />
-            </div>
-          )}
+          {/* Quick Replies Section removed: now handled in-app via messaging */}
 
           {/* Sign Out Button */}
           {onSignOut && (
@@ -3019,29 +3051,27 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 via-rose-50 to-red-50 pb-24">
+    <div className="min-h-screen w-full bg-gradient-to-br from-red-50 via-rose-50 to-red-50 pb-24 flex flex-col">
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#1D3557] via-[#1D3557] to-[#2d4a6f] text-white">
-        <div className="max-w-3xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button onClick={onCancel} className="w-10 h-10 rounded-xl bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all active:scale-95">
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div>
-                <h2 className="text-2xl font-bold">Post a Room</h2>
-                <p className="text-white/80 text-sm">List your space in minutes</p>
-              </div>
+      <div className="bg-gradient-to-r from-[#1D3557] via-[#1D3557] to-[#2d4a6f] text-white w-full px-0 py-0">
+        <div className="w-full px-8 py-8 flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <button onClick={onCancel} className="w-12 h-12 rounded-2xl bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all active:scale-95">
+              <ArrowLeft className="w-6 h-6" />
+            </button>
+            <div>
+              <h2 className="text-3xl font-bold tracking-tight">Post a Room</h2>
+              <p className="text-white/80 text-base mt-1">List your space in minutes</p>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-[#E63946] flex items-center justify-center">
-              <Home className="w-6 h-6" />
-            </div>
+          </div>
+          <div className="w-14 h-14 rounded-2xl bg-[#E63946] flex items-center justify-center">
+            <Home className="w-7 h-7" />
           </div>
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-4 -mt-4">
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 md:p-8">
+      <div className="w-full px-0 flex-1 flex justify-center items-start">
+        <div className="w-full max-w-5xl mx-auto bg-white rounded-3xl shadow-2xl border border-gray-100 p-8 md:p-12 mt-[-2rem]">
           {/* Progress Indicator */}
           <div className="mb-8">
             <div className="flex justify-between items-center mb-3">
@@ -5316,12 +5346,12 @@ function BottomNav({ currentView, setCurrentView, currentUser, userType, unreadM
   const isLandlord = userType === 'landlord';
   const navItems = [
     { id: 'browse', label: 'Explore', icon: Search, activeColor: 'red' },
-    { id: 'add', label: 'List', icon: PlusCircle, requiresAuth: true, activeColor: 'red', highlight: true },
+    isLandlord && { id: 'add', label: 'List', icon: PlusCircle, requiresAuth: true, activeColor: 'red', highlight: true },
     { id: 'messages', label: 'Messages', icon: MessageCircle, requiresAuth: true, activeColor: 'red', badge: unreadMessageCount, preview: '', notificationDot: unreadMessageCount > 0 },
     { id: 'my-listings', label: 'My Rooms', icon: Home, requiresAuth: true, activeColor: 'navy', show: isLandlord },
-    { id: 'favorites', label: 'Saved', icon: Heart, activeColor: 'red' },
+    userType === 'renter' && { id: 'favorites', label: 'Saved', icon: Heart, activeColor: 'red' },
     { id: 'profile', label: 'Profile', icon: User, activeColor: 'navy' }
-  ];
+  ].filter(Boolean);
 
   const visibleItems = navItems.filter(item => item && (item.show === undefined || item.show));
 

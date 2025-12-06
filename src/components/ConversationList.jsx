@@ -104,7 +104,10 @@ export default function ConversationList({
                     ? 'text-gray-900 dark:text-white' 
                     : 'text-gray-700 dark:text-gray-300'
                 }`}>
-                  {otherUser?.display_name || 'Unknown User'}
+                  {otherUser?.display_name
+                    || (otherUser?.id
+                      ? `Deleted User (${otherUser.id.slice(0, 6)}...)`
+                      : 'Unknown User')}
                 </h4>
                 <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">
                   {formatRelativeTime(convo.last_message_at)}

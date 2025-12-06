@@ -423,17 +423,6 @@ export default function ChatWindow({
                       )}
                     </div>
                   )}
-                  // Helper: get a color from a string (sender id)
-                  function getColorFromId(id) {
-                    if (!id) return '#E63946';
-                    // Simple hash to pick a color
-                    const colors = ['#E63946', '#1D3557', '#457B9D', '#A8DADC', '#F1FAEE', '#F9C74F', '#90BE6D', '#43AA8B', '#577590'];
-                    let hash = 0;
-                    for (let i = 0; i < id.length; i++) {
-                      hash = id.charCodeAt(i) + ((hash << 5) - hash);
-                    }
-                    return colors[Math.abs(hash) % colors.length];
-                  }
                   <div
                     className={`relative max-w-[75%] px-4 py-2 rounded-2xl shadow-sm transition-all ${
                       isMe
