@@ -2395,9 +2395,9 @@ function EditProfileView({ user, onSubmit, onCancel }) {
                   onBlur={(e) => { setTouched({ ...touched, name: true }); validateField('name', e.target.value); }}
                   aria-invalid={errors.name ? 'true' : 'false'}
                   aria-describedby={errors.name ? 'edit-name-error' : undefined}
-                  className={`w-full px-4 py-3 border-2 ${errors.name ? 'border-red-400' : 'border-gray-200'} bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-violet-400 focus:border-transparent transition placeholder-gray-400`}
+                  className={`w-full px-4 py-3.5 border-2 ${errors.name ? 'border-red-400 bg-red-50 ring-4 ring-red-100' : 'border-gray-200 hover:border-gray-300'} bg-gray-50/50 focus:bg-white text-gray-800 rounded-2xl focus:ring-4 focus:ring-violet-200 focus:border-violet-500 transition-all duration-200 placeholder-gray-400`}
                 />
-                {errors.name && touched.name && <p id="edit-name-error" className="mt-1 text-xs text-red-600">{errors.name}</p>}
+                {errors.name && touched.name && <p id="edit-name-error" className="mt-1.5 text-xs text-red-600 font-medium flex items-center gap-1"><span>⚠</span>{errors.name}</p>}
               </div>
 
               <div>
@@ -2412,10 +2412,10 @@ function EditProfileView({ user, onSubmit, onCancel }) {
                     onBlur={(e) => { setTouched({ ...touched, phone: true }); validateField('phone', e.target.value); }}
                     aria-invalid={errors.phone ? 'true' : 'false'}
                     aria-describedby={errors.phone ? 'edit-phone-error' : undefined}
-                    className={`w-full pl-11 pr-4 py-3 border-2 ${errors.phone ? 'border-red-400' : 'border-gray-200'} bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-violet-400 focus:border-transparent transition placeholder-gray-400`}
+                    className={`w-full pl-11 pr-4 py-3.5 border-2 ${errors.phone ? 'border-red-400 bg-red-50 ring-4 ring-red-100' : 'border-gray-200 hover:border-gray-300'} bg-gray-50/50 focus:bg-white text-gray-800 rounded-2xl focus:ring-4 focus:ring-violet-200 focus:border-violet-500 transition-all duration-200 placeholder-gray-400`}
                   />
                 </div>
-                {errors.phone && touched.phone && <p id="edit-phone-error" className="mt-1 text-xs text-red-600">{errors.phone}</p>}
+                {errors.phone && touched.phone && <p id="edit-phone-error" className="mt-1.5 text-xs text-red-600 font-medium flex items-center gap-1"><span>⚠</span>{errors.phone}</p>}
               </div>
 
               <div>
@@ -2430,10 +2430,10 @@ function EditProfileView({ user, onSubmit, onCancel }) {
                     onBlur={(e) => { setTouched({ ...touched, email: true }); validateField('email', e.target.value); }}
                     aria-invalid={errors.email ? 'true' : 'false'}
                     aria-describedby={errors.email ? 'edit-email-error' : undefined}
-                    className={`w-full pl-11 pr-4 py-3 border-2 ${errors.email ? 'border-red-400' : 'border-gray-200'} bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-violet-400 focus:border-transparent transition placeholder-gray-400`}
+                    className={`w-full pl-11 pr-4 py-3.5 border-2 ${errors.email ? 'border-red-400 bg-red-50 ring-4 ring-red-100' : 'border-gray-200 hover:border-gray-300'} bg-gray-50/50 focus:bg-white text-gray-800 rounded-2xl focus:ring-4 focus:ring-violet-200 focus:border-violet-500 transition-all duration-200 placeholder-gray-400`}
                   />
                 </div>
-                {errors.email && touched.email && <p id="edit-email-error" className="mt-1 text-xs text-red-600">{errors.email}</p>}
+                {errors.email && touched.email && <p id="edit-email-error" className="mt-1.5 text-xs text-red-600 font-medium flex items-center gap-1"><span>⚠</span>{errors.email}</p>}
               </div>
 
               <div>
@@ -2445,7 +2445,7 @@ function EditProfileView({ user, onSubmit, onCancel }) {
                     value={formData.whatsapp}
                     onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
                     placeholder="e.g., +27 71 234 5678"
-                    className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-violet-400 focus:border-transparent transition placeholder-gray-400"
+                    className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-200 hover:border-gray-300 bg-gray-50/50 focus:bg-white text-gray-800 rounded-2xl focus:ring-4 focus:ring-violet-200 focus:border-violet-500 transition-all duration-200 placeholder-gray-400"
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">Used to create a WhatsApp chat link on your listings.</p>
@@ -2482,25 +2482,26 @@ function EditProfileView({ user, onSubmit, onCancel }) {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-3 pt-6 border-t border-gray-200">
+              <div className="flex gap-4 pt-6 border-t border-gray-200">
                 <button
                   onClick={onCancel}
-                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3.5 rounded-xl transition-all active:scale-95"
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-4 rounded-2xl transition-all duration-200 active:scale-[0.98] border-2 border-transparent hover:border-gray-300"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={isSaving}
-                  className="flex-1 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-semibold py-3.5 rounded-xl transition-all shadow-lg hover:shadow-xl active:scale-95 disabled:opacity-70 flex items-center justify-center gap-2"
+                  className="flex-1 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-bold py-4 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-purple-500/25 active:scale-[0.98] disabled:opacity-70 flex items-center justify-center gap-2 relative overflow-hidden group"
                 >
+                  <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
                   {isSaving ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span className="relative flex items-center gap-2">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       Saving...
-                    </>
+                    </span>
                   ) : (
-                    'Save Changes'
+                    <span className="relative">Save Changes</span>
                   )}
                 </button>
               </div>

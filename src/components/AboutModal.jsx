@@ -15,14 +15,18 @@ export default function AboutModal({ onClose }) {
   );
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto animate-fadeIn">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div className="fixed inset-0 bg-gradient-to-br from-gray-900/70 via-slate-900/60 to-gray-900/70 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto animate-fadeIn">
+      {/* Decorative background blurs */}
+      <div className="fixed top-20 left-10 w-72 h-72 bg-red-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="fixed bottom-20 right-10 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+      
+      <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-[0_25px_60px_-12px_rgba(0,0,0,0.35)] border border-white/20">
         {/* Header */}
         <div className="sticky top-0 bg-gradient-to-r from-[#1D3557] via-[#1D3557] to-[#2d4a6f] px-6 py-6 rounded-t-2xl relative overflow-hidden">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRoLTJ2LTRoMnYtMmgtMnYtMmgydi0ySDI0djJoMnYyaC0ydjJoMnY0aC0ydjJoMTJ2LTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
           <button 
             onClick={onClose} 
-            className="absolute top-4 right-4 text-white/80 hover:text-white hover:bg-white/20 p-2 rounded-lg transition-all duration-200"
+            className="absolute top-4 right-4 text-white/80 hover:text-white hover:bg-white/20 p-2.5 rounded-xl transition-all duration-300 hover:scale-110 hover:rotate-90 active:scale-95"
           >
             <X className="w-5 h-5" />
           </button>
@@ -200,9 +204,10 @@ export default function AboutModal({ onClose }) {
             </p>
             <button
               onClick={onClose}
-              className="w-full bg-gradient-to-r from-[#E63946] to-[#c5303c] hover:from-[#c5303c] hover:to-[#a82933] text-white font-semibold py-3.5 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
+              className="w-full bg-gradient-to-r from-[#E63946] to-[#c5303c] hover:from-[#c5303c] hover:to-[#a82933] text-white font-bold py-4 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-red-500/25 active:scale-[0.98] relative overflow-hidden group"
             >
-              Close
+              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+              <span className="relative">Close</span>
             </button>
           </div>
         </div>

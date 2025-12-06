@@ -3,8 +3,12 @@ import { X, Shield } from 'lucide-react';
 
 export default function PrivacyPolicyModal({ onClose }) {
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto animate-fadeIn">
-      <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div className="fixed inset-0 bg-gradient-to-br from-gray-900/70 via-slate-900/60 to-gray-900/70 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto animate-fadeIn">
+      {/* Decorative background blurs */}
+      <div className="fixed top-20 right-20 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="fixed bottom-20 left-10 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+      
+      <div className="bg-white/95 backdrop-blur-xl rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-[0_25px_60px_-12px_rgba(0,0,0,0.35)] border border-white/20">
         <div className="sticky top-0 bg-gradient-to-r from-[#1D3557] to-[#2d4a6f] px-6 py-4 flex items-center justify-between rounded-t-2xl">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
@@ -14,7 +18,7 @@ export default function PrivacyPolicyModal({ onClose }) {
           </div>
           <button 
             onClick={onClose} 
-            className="text-white/80 hover:text-white hover:bg-white/20 p-2 rounded-lg transition-all duration-200"
+            className="text-white/80 hover:text-white hover:bg-white/20 p-2.5 rounded-xl transition-all duration-300 hover:scale-110 hover:rotate-90 active:scale-95"
           >
             <X className="w-5 h-5" />
           </button>
