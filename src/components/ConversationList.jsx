@@ -72,31 +72,33 @@ export default function ConversationList({
           <button
             key={convo.id}
             onClick={() => onSelectConversation(convo)}
-            className={`group flex items-center gap-3 p-3 text-left rounded-2xl transition-all duration-200 ${
+            className={`group relative flex items-center gap-3 p-3.5 text-left rounded-2xl transition-all duration-300 overflow-hidden ${
               isSelected 
-                ? 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-lg shadow-red-500/25 scale-[1.02]' 
+                ? 'bg-gradient-to-r from-red-500 via-rose-500 to-red-500 text-white shadow-xl shadow-red-500/30 scale-[1.02]' 
                 : hasUnread
-                  ? 'bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30'
-                  : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'
+                  ? 'bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 hover:from-red-100 hover:to-rose-100 dark:hover:from-red-900/30 dark:hover:to-rose-900/30'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:shadow-md'
             }`}
           >
+            {/* Shine effect on hover */}
+            <span className={`absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full transition-transform duration-700 ${isSelected ? '' : 'group-hover:translate-x-full'}`} />
             {/* Avatar */}
             <div className="relative flex-shrink-0">
               {otherUser?.photo_url ? (
                 <img
                   src={otherUser.photo_url}
                   alt={otherUser.display_name}
-                  className={`w-14 h-14 rounded-2xl object-cover border-2 transition-all ${
-                    isSelected ? 'border-white/30' : 'border-transparent'
+                  className={`w-14 h-14 rounded-2xl object-cover border-2 transition-all duration-300 shadow-md ${
+                    isSelected ? 'border-white/40 shadow-lg' : 'border-transparent group-hover:border-red-200 dark:group-hover:border-red-800'
                   }`}
                 />
               ) : (
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-md transition-all duration-300 ${
                   isSelected 
-                    ? 'bg-white/20' 
-                    : 'bg-gradient-to-br from-red-100 to-rose-100 dark:from-red-900/50 dark:to-rose-900/50'
+                    ? 'bg-white/25 backdrop-blur-sm border-2 border-white/30' 
+                    : 'bg-gradient-to-br from-red-100 to-rose-100 dark:from-red-900/50 dark:to-rose-900/50 group-hover:from-red-200 group-hover:to-rose-200 dark:group-hover:from-red-800/50 dark:group-hover:to-rose-800/50'
                 }`}>
-                  <span className={`font-bold text-xl ${
+                  <span className={`font-bold text-xl transition-all ${
                     isSelected ? 'text-white' : 'text-red-500 dark:text-red-400'
                   }`}>
                     {otherUser?.display_name?.[0]?.toUpperCase() || '?'}
@@ -104,7 +106,7 @@ export default function ConversationList({
                 </div>
               )}
               {hasUnread && !isSelected && (
-                <span className="absolute -top-1 -right-1 min-w-[22px] h-[22px] px-1.5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                <span className="absolute -top-1 -right-1 min-w-[22px] h-[22px] px-1.5 bg-gradient-to-br from-red-500 to-rose-600 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg shadow-red-500/50 animate-bounce ring-2 ring-white dark:ring-gray-800">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}

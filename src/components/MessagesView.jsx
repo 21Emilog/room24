@@ -135,26 +135,32 @@ export default function MessagesView({
     return (
       <div className="min-h-[calc(100vh-140px)] pb-20 bg-gradient-to-b from-slate-50 to-gray-100 dark:from-gray-900 dark:to-gray-900 transition-all duration-300">
         {/* Premium Header */}
-        <div className="sticky top-0 z-20 bg-gradient-to-r from-[#1D3557] to-[#2d4a6f] text-white shadow-lg">
-          <div className="flex items-center gap-3 p-4">
+        <div className="sticky top-0 z-20 bg-gradient-to-r from-[#1D3557] via-[#2d4a6f] to-[#1D3557] text-white shadow-xl overflow-hidden">
+          {/* Animated shine effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_3s_infinite]" style={{ animationTimingFunction: 'ease-in-out' }} />
+          
+          <div className="relative flex items-center gap-3 p-4">
             {onBack && (
               <button
                 onClick={onBack}
-                className="p-2 hover:bg-white/10 rounded-xl transition-colors"
+                className="p-2.5 hover:bg-white/15 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
                 aria-label="Back"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
             )}
             <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-inner ring-2 ring-white/10">
                   <MessageSquare className="w-5 h-5" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold">Messages</h1>
+                  <h1 className="text-xl font-bold tracking-tight">Messages</h1>
                   {totalUnread > 0 && (
-                    <p className="text-xs text-white/70">{totalUnread} unread message{totalUnread !== 1 ? 's' : ''}</p>
+                    <p className="text-xs text-white/70 flex items-center gap-1.5">
+                      <span className="w-2 h-2 bg-red-400 rounded-full animate-pulse" />
+                      {totalUnread} unread message{totalUnread !== 1 ? 's' : ''}
+                    </p>
                   )}
                 </div>
               </div>
@@ -164,14 +170,16 @@ export default function MessagesView({
           {/* Search Bar */}
           {conversations.length > 0 && (
             <div className="px-4 pb-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
+              <div className="relative group">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center group-focus-within:bg-white/20 transition-colors">
+                  <Search className="w-4 h-4 text-white/70" />
+                </div>
                 <input
                   type="text"
                   placeholder="Search conversations..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 text-sm focus:outline-none focus:ring-2 focus:ring-white/30"
+                  className="w-full pl-14 pr-4 py-3 bg-white/10 hover:bg-white/15 border border-white/20 rounded-2xl text-white placeholder-white/50 text-sm focus:outline-none focus:ring-2 focus:ring-white/40 focus:bg-white/20 transition-all duration-200"
                 />
               </div>
             </div>
@@ -213,29 +221,35 @@ export default function MessagesView({
 
   // Desktop: side-by-side layout
   return (
-    <div className="flex h-[calc(100vh-120px)] bg-gradient-to-br from-slate-100 to-gray-100 dark:from-gray-900 dark:to-gray-900 rounded-2xl overflow-hidden shadow-xl mx-4 my-4">
+    <div className="flex h-[calc(100vh-120px)] bg-gradient-to-br from-slate-100 to-gray-100 dark:from-gray-900 dark:to-gray-900 rounded-3xl overflow-hidden shadow-2xl mx-4 my-4 border border-gray-200/50 dark:border-gray-700/50">
       {/* Conversation List Panel */}
-      <div className="w-[380px] flex-shrink-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col">
+      <div className="w-[400px] flex-shrink-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-[#1D3557] to-[#2d4a6f] text-white p-5">
-          <div className="flex items-center gap-3 mb-4">
+        <div className="bg-gradient-to-r from-[#1D3557] via-[#2d4a6f] to-[#1D3557] text-white p-5 relative overflow-hidden">
+          {/* Animated shimmer */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_3s_infinite]" style={{ animationTimingFunction: 'ease-in-out' }} />
+          
+          <div className="relative flex items-center gap-3 mb-4">
             {onBack && (
               <button
                 onClick={onBack}
-                className="p-2 hover:bg-white/10 rounded-xl transition-colors"
+                className="p-2.5 hover:bg-white/15 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
                 aria-label="Back"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
             )}
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-inner ring-2 ring-white/10">
                 <MessageSquare className="w-6 h-6" />
               </div>
               <div>
-                <h1 className="text-xl font-bold">Messages</h1>
+                <h1 className="text-xl font-bold tracking-tight">Messages</h1>
                 {totalUnread > 0 ? (
-                  <p className="text-xs text-white/70">{totalUnread} unread</p>
+                  <p className="text-xs text-white/70 flex items-center gap-1.5">
+                    <span className="w-2 h-2 bg-red-400 rounded-full animate-pulse" />
+                    {totalUnread} unread
+                  </p>
                 ) : (
                   <p className="text-xs text-white/70">{conversations.length} conversation{conversations.length !== 1 ? 's' : ''}</p>
                 )}
@@ -244,14 +258,16 @@ export default function MessagesView({
           </div>
           
           {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
+          <div className="relative group">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center group-focus-within:bg-white/20 transition-colors">
+              <Search className="w-4 h-4 text-white/70" />
+            </div>
             <input
               type="text"
               placeholder="Search conversations..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 text-sm focus:outline-none focus:ring-2 focus:ring-white/30"
+              className="w-full pl-14 pr-4 py-3 bg-white/10 hover:bg-white/15 border border-white/20 rounded-2xl text-white placeholder-white/50 text-sm focus:outline-none focus:ring-2 focus:ring-white/40 focus:bg-white/20 transition-all duration-200"
             />
           </div>
         </div>

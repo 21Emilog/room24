@@ -285,31 +285,34 @@ export default function ChatWindow({
       )}
 
       {/* Header */}
-      <div className="flex-shrink-0 flex items-center gap-3 p-4 bg-gradient-to-r from-red-500 via-rose-500 to-red-600 shadow-lg">
+      <div className="flex-shrink-0 flex items-center gap-3 p-4 bg-gradient-to-r from-[#E63946] via-rose-500 to-[#E63946] shadow-xl relative overflow-hidden">
+        {/* Animated background shimmer */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_3s_infinite]" style={{ animationTimingFunction: 'ease-in-out' }} />
+        
         <button
           onClick={onBack}
-          className="p-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl transition-all duration-200 hover:scale-105"
+          className="relative p-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl transition-all duration-200 hover:scale-110 active:scale-95 shadow-inner"
           aria-label="Back to conversations"
         >
           <ArrowLeft className="w-5 h-5 text-white" />
         </button>
         
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="relative">
+        <div className="relative flex items-center gap-3 flex-1 min-w-0">
+          <div className="relative group">
             {otherUser?.photo_url ? (
               <img 
                 src={otherUser.photo_url} 
                 alt={otherUser.display_name} 
-                className="w-11 h-11 rounded-xl object-cover border-2 border-white/30 shadow-lg"
+                className="w-12 h-12 rounded-xl object-cover border-2 border-white/30 shadow-lg group-hover:scale-105 transition-transform duration-200"
               />
             ) : (
-              <div className="w-11 h-11 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 border-white/30">
+              <div className="w-12 h-12 rounded-xl bg-white/25 backdrop-blur-sm flex items-center justify-center border-2 border-white/30 shadow-lg group-hover:scale-105 transition-transform duration-200">
                 <span className="text-white font-bold text-lg">
                   {otherUser?.display_name?.[0]?.toUpperCase() || '?'}
                 </span>
               </div>
             )}
-            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-400 border-2 border-white rounded-full" />
+            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-emerald-400 border-2 border-white rounded-full shadow-md" />
           </div>
           
           <div className="flex-1 min-w-0">
@@ -359,25 +362,25 @@ export default function ChatWindow({
 
       {/* Listing Preview (if available) */}
       {listing && (
-        <div className="flex-shrink-0 flex items-center gap-3 p-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-b border-amber-200/50 dark:border-amber-800/30">
+        <div className="flex-shrink-0 flex items-center gap-3 p-4 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 dark:from-amber-900/20 dark:via-orange-900/20 dark:to-amber-900/20 border-b border-amber-200/50 dark:border-amber-800/30 group cursor-pointer hover:from-amber-100 hover:via-orange-100 hover:to-amber-100 dark:hover:from-amber-900/30 dark:hover:via-orange-900/30 dark:hover:to-amber-900/30 transition-all duration-200">
           {listing.photos?.[0] && (
             <img 
               src={listing.photos[0]} 
               alt={listing.title}
-              className="w-14 h-14 rounded-xl object-cover shadow-md"
+              className="w-16 h-16 rounded-xl object-cover shadow-md ring-2 ring-amber-200/50 dark:ring-amber-800/50 group-hover:scale-105 transition-transform duration-200"
             />
           )}
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
               {listing.title}
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 truncate flex items-center gap-1">
-              📍 {listing.location}
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate flex items-center gap-1.5 mt-0.5">
+              <span className="text-amber-600">📍</span> {listing.location}
             </p>
           </div>
-          <div className="text-right">
-            <p className="text-sm font-bold text-red-500">R{listing.price?.toLocaleString()}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">per month</p>
+          <div className="text-right bg-white dark:bg-gray-800 px-3 py-2 rounded-xl shadow-sm">
+            <p className="text-sm font-bold text-[#E63946]">R{listing.price?.toLocaleString()}</p>
+            <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">per month</p>
           </div>
         </div>
       )}
@@ -439,17 +442,26 @@ export default function ChatWindow({
                     </div>
                   )}
                   <div
-                    className={`relative max-w-[75%] px-4 py-2.5 transition-all duration-200 ${
+                    className={`relative max-w-[75%] px-4 py-3 transition-all duration-300 group ${
                       isMe
-                        ? 'bg-gradient-to-br from-red-500 via-rose-500 to-red-600 text-white rounded-2xl rounded-br-md shadow-lg shadow-red-500/20'
-                        : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-2xl rounded-bl-md shadow-md border border-gray-100 dark:border-gray-600'
-                    } ${msg._optimistic ? 'opacity-70' : ''}`}
+                        ? 'bg-gradient-to-br from-[#E63946] via-rose-500 to-[#c5303c] text-white rounded-2xl rounded-br-sm shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30'
+                        : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-2xl rounded-bl-sm shadow-md hover:shadow-lg border border-gray-100 dark:border-gray-600'
+                    } ${msg._optimistic ? 'opacity-70 scale-[0.98]' : 'hover:scale-[1.01]'}`}
                     style={{ wordBreak: 'break-word' }}
                   >
-                    <p className="whitespace-pre-wrap break-words leading-relaxed">{msg.content}</p>
+                    <p className="whitespace-pre-wrap break-words leading-relaxed text-[15px]">{msg.content}</p>
+                    {/* Delivered indicator for sent messages */}
+                    {isMe && !msg._optimistic && (
+                      <div className="flex items-center justify-end gap-1 mt-1 -mb-1">
+                        <span className="text-[10px] text-white/60 font-medium">Sent</span>
+                        <svg className="w-3 h-3 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    )}
                     {msg._optimistic && (
-                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow">
-                        <div className="w-2 h-2 border border-red-500 border-t-transparent rounded-full animate-spin" />
+                      <div className="absolute -bottom-1.5 -right-1.5 w-5 h-5 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-md ring-2 ring-red-100 dark:ring-red-900">
+                        <div className="w-2.5 h-2.5 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
                       </div>
                     )}
                   </div>
@@ -497,9 +509,9 @@ export default function ChatWindow({
       )}
 
       {/* Input */}
-      <div className="flex-shrink-0 p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 safe-area-bottom">
+      <div className="flex-shrink-0 p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 safe-area-bottom shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
         <div className="flex items-end gap-3">
-          <div className="flex-1 relative">
+          <div className="flex-1 relative group">
             <textarea
               ref={inputRef}
               value={newMessage}
@@ -507,21 +519,26 @@ export default function ChatWindow({
               onKeyDown={handleKeyDown}
               placeholder="Type a message..."
               rows={1}
-              className="w-full resize-none px-5 py-3.5 bg-gray-100 dark:bg-gray-700 border-2 border-transparent rounded-2xl focus:border-red-500 focus:bg-white dark:focus:bg-gray-600 focus:ring-0 focus:outline-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200"
+              className="w-full resize-none px-5 py-4 bg-gray-100 dark:bg-gray-700 border-2 border-transparent rounded-2xl focus:border-[#E63946] focus:bg-white dark:focus:bg-gray-600 focus:ring-4 focus:ring-red-100 dark:focus:ring-red-900/30 focus:outline-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200 shadow-inner"
               style={{ maxHeight: '120px' }}
             />
+            {newMessage.length > 0 && (
+              <span className={`absolute right-3 bottom-2 text-[10px] font-medium transition-colors ${newMessage.length > 500 ? 'text-red-500' : 'text-gray-400'}`}>
+                {newMessage.length}/500
+              </span>
+            )}
           </div>
           <button
             onClick={handleSend}
             disabled={!newMessage.trim() || sending}
-            className={`p-4 rounded-2xl transition-all duration-200 ${
+            className={`p-4 rounded-2xl transition-all duration-300 ${
               newMessage.trim() && !sending
-                ? 'bg-gradient-to-br from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 hover:scale-105 active:scale-95'
+                ? 'bg-gradient-to-br from-[#E63946] to-rose-600 hover:from-[#c5303c] hover:to-rose-700 text-white shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 hover:scale-110 active:scale-95'
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
             }`}
             aria-label="Send message"
           >
-            <Send className={`w-5 h-5 ${sending ? 'animate-pulse' : ''}`} />
+            <Send className={`w-5 h-5 transition-transform ${sending ? 'animate-pulse' : newMessage.trim() ? 'translate-x-0.5 -translate-y-0.5' : ''}`} />
           </button>
         </div>
       </div>
