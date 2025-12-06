@@ -5317,7 +5317,7 @@ function BottomNav({ currentView, setCurrentView, currentUser, userType, unreadM
   const navItems = [
     { id: 'browse', label: 'Explore', icon: Search, activeColor: 'red' },
     { id: 'add', label: 'List', icon: PlusCircle, requiresAuth: true, activeColor: 'red', highlight: true },
-    { id: 'messages', label: 'Messages', icon: MessageCircle, requiresAuth: true, activeColor: 'red', badge: unreadMessageCount },
+    { id: 'messages', label: 'Messages', icon: MessageCircle, requiresAuth: true, activeColor: 'red', badge: unreadMessageCount, preview: '', notificationDot: unreadMessageCount > 0 },
     { id: 'my-listings', label: 'My Rooms', icon: Home, requiresAuth: true, activeColor: 'navy', show: isLandlord },
     { id: 'favorites', label: 'Saved', icon: Heart, activeColor: 'red' },
     { id: 'profile', label: 'Profile', icon: User, activeColor: 'navy' }
@@ -5326,16 +5326,16 @@ function BottomNav({ currentView, setCurrentView, currentUser, userType, unreadM
   const visibleItems = navItems.filter(item => item && (item.show === undefined || item.show));
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#1D3557] to-[#2d4a6f] backdrop-blur-xl px-2 py-2 z-20 md:hidden safe-area-bottom shadow-[0_-4px_20px_rgba(15,23,42,0.2)]" role="navigation" aria-label="Main navigation">
+    <nav className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#1D3557] to-[#2d4a6f] backdrop-blur-xl px-2 py-2 z-20 md:hidden safe-area-bottom shadow-[0_-4px_20px_rgba(15,23,42,0.2)] transition-all duration-300" role="navigation" aria-label="Main navigation">
       <div
-        className="grid gap-1 max-w-md mx-auto"
+        className="grid gap-2 max-w-md mx-auto"
         style={{ gridTemplateColumns: `repeat(${visibleItems.length}, minmax(0, 1fr))` }}
       >
         {visibleItems.map(item => {
           const Icon = item.icon;
           const disabled = item.requiresAuth && !currentUser;
           const isActive = currentView === item.id;
-          
+
           // Special highlight style for "List" button - floating action button style
           if (item.highlight && !disabled) {
             return (
@@ -5343,52 +5343,62 @@ function BottomNav({ currentView, setCurrentView, currentUser, userType, unreadM
                 key={item.id}
                 type="button"
                 onClick={() => setCurrentView(item.id)}
-                className={`relative flex flex-col items-center gap-0.5 py-1 px-1 rounded-xl transition-all duration-200 active:scale-95 ${
+                className={`relative flex flex-col items-center gap-1 py-1 px-1 rounded-xl transition-all duration-300 active:scale-95 ${
                   isActive
                     ? 'text-white'
                     : 'text-white/80 hover:text-white'
                 }`}
                 aria-current={isActive ? 'page' : undefined}
+                aria-label={item.label}
               >
-                <span className={`p-2.5 rounded-2xl transition-all duration-200 shadow-lg ${
+                <span className={`p-3 rounded-2xl transition-all duration-300 shadow-lg ${
                   isActive 
-                    ? 'bg-[#E63946] shadow-red-500/50 -translate-y-2 scale-110' 
+                    ? 'bg-[#E63946] shadow-red-500/50 -translate-y-2 scale-110 ring-2 ring-red-300' 
                     : 'bg-[#E63946]/90 hover:bg-[#E63946] hover:-translate-y-1'
                 }`}>
-                  <Icon className="w-5 h-5 text-white" strokeWidth={2.5} />
+                  <Icon className="w-7 h-7 text-white" strokeWidth={2.5} />
                 </span>
-                <span className="text-[10px] font-bold">{item.label}</span>
+                <span className="text-[11px] font-bold">{item.label}</span>
                 {isActive && <span className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-[#E63946]" />}
               </button>
             );
           }
-          
+
+          // Message tab: add notification dot, unread badge, preview tooltip
+          const showBadge = item.id === 'messages' && item.badge > 0;
+          const showDot = item.id === 'messages' && item.notificationDot && !showBadge;
           return (
             <button
               key={item.id}
               type="button"
               disabled={disabled}
               onClick={() => !disabled && setCurrentView(item.id)}
-              className={`relative flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-xl transition-all duration-200 ${
+              className={`relative flex flex-col items-center gap-1 py-2 px-1 rounded-xl transition-all duration-300 ${
                 disabled ? 'opacity-35 cursor-not-allowed' : 'active:scale-95'
               } ${
                 isActive
-                  ? 'text-white font-semibold'
+                  ? 'text-white font-semibold bg-[#1D3557]/80 shadow-lg ring-2 ring-red-300'
                   : 'text-white/50 hover:text-white/80'
               }`}
               aria-current={isActive ? 'page' : undefined}
               aria-disabled={disabled}
+              aria-label={item.label}
+              tabIndex={0}
             >
-              <span className={`relative transition-all duration-200 ${isActive ? 'scale-110 -translate-y-0.5' : ''}`}>
-                <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 1.75} />
-                {item.badge > 0 && (
-                  <span className="absolute -top-1.5 -right-2 min-w-[18px] h-[18px] bg-[#E63946] text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-lg animate-pulse">
+              <span className={`relative transition-all duration-300 ${isActive ? 'scale-110 -translate-y-0.5' : ''}`}
+                title={item.id === 'messages' && item.preview ? item.preview : undefined}
+              >
+                <Icon className="w-7 h-7" strokeWidth={isActive ? 2.5 : 1.75} />
+                {showBadge && (
+                  <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] bg-[#E63946] text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-lg animate-bounce">
                     {item.badge > 99 ? '99+' : item.badge}
                   </span>
                 )}
+                {showDot && (
+                  <span className="absolute -top-1.5 -right-2 w-3 h-3 bg-[#E63946] rounded-full shadow-lg animate-pulse" />
+                )}
               </span>
-              <span className={`text-[10px] transition-all ${isActive ? 'font-semibold' : 'font-medium'}`}>{item.label}</span>
-              {isActive && <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#E63946]" />}
+              <span className={`text-[11px] transition-all ${isActive ? 'font-semibold' : 'font-medium'}`}>{item.label}</span>
             </button>
           );
         })}
