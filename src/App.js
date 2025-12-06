@@ -121,7 +121,10 @@ export default function RentalPlatform() {
   // Auth functions to pass to AuthModal - Uses Supabase
   const authFunctions = {
     signUp: async (email, password, displayName, userTypeParam = 'renter', phone = '', captchaToken = '') => {
+      console.log('signUp called with:', { email, displayName, userTypeParam, phone });
+      
       const user = await signUpWithEmail(email, password, captchaToken);
+      console.log('User created:', user.id);
       
       // Create user profile data
       const profileData = {
@@ -134,12 +137,15 @@ export default function RentalPlatform() {
         landlordComplete: userTypeParam === 'renter',
       };
       
+      console.log('Profile data to save:', profileData);
+      
       // Store in localStorage
       saveProfile(user.id, profileData);
       
       // Sync profile to Supabase so other users can see this user's name in messages
       try {
         await syncProfileToSupabase(user.id, profileData);
+        console.log('Profile synced to Supabase successfully');
       } catch (syncErr) {
         console.warn('Failed to sync new user profile to Supabase:', syncErr);
       }
