@@ -559,6 +559,8 @@ const handleProfileSetup = async (profileData) => {
 };
 
 const handleUpdateProfile = async (profileData) => {
+  console.log('handleUpdateProfile called with:', profileData);
+  
   if (!currentUser?.id) {
     showToast('Please sign in again to update your profile.', 'error');
     return;
@@ -586,9 +588,12 @@ const handleUpdateProfile = async (profileData) => {
       updatedAt: new Date().toISOString(),
     };
 
+    console.log('Updated profile to save:', updatedProfile);
+
     saveProfile(currentUser.id, updatedProfile);
     try {
       await syncProfileToSupabase(currentUser.id, updatedProfile);
+      console.log('Profile edit synced to Supabase successfully');
     } catch (syncErr) {
       console.warn('Supabase profile sync failed, will retry later:', syncErr);
       showToast('Profile saved offline. We will sync once you are back online.', 'warning', 'Cloud sync delayed');
