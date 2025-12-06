@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, ArrowLeft, Zap, ChevronDown, ChevronUp, MoreVertical, Flag, Ban, X } from 'lucide-react';
 import { getMessages, sendMessage, markMessagesAsRead, subscribeToMessages, getQuickReplies, reportUser } from '../chat';
+import { supabase } from '../supabase';
 
 function formatMessageTime(dateString) {
   const date = new Date(dateString);
@@ -81,8 +82,24 @@ export default function ChatWindow({
     return unsubscribe;
   }, [conversation.id, currentUserId]);
 
-  // Scroll to bottom on new messages
+
+  // Fetch sender profiles for all messages (if not present)
   useEffect(() => {
+    async function enrichMessages() {
+      const missing = messages.filter(m => !m.sender_profile && !m._optimistic);
+      if (missing.length === 0) return;
+      const ids = [...new Set(missing.map(m => m.sender_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, display_name, photo_url')
+        .in('id', ids);
+      setMessages(prev => prev.map(m => {
+        if (m.sender_profile || m._optimistic) return m;
+        const prof = profiles?.find(p => p.id === m.sender_id);
+        return prof ? { ...m, sender_profile: prof } : m;
+      }));
+    }
+    enrichMessages();
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
@@ -346,23 +363,44 @@ export default function ChatWindow({
             const isMe = msg.sender_id === currentUserId;
             const showTime = idx === 0 || 
               new Date(msg.created_at) - new Date(messages[idx - 1].created_at) > 5 * 60 * 1000;
+            const showSender = !isMe && (idx === 0 || messages[idx - 1].sender_id !== msg.sender_id);
+            const sender = isMe
+              ? { display_name: 'You', photo_url: conversation?.renter_id === currentUserId ? conversation?.renter?.photo_url : conversation?.landlord?.photo_url }
+              : msg.sender_profile || (msg.sender_id === conversation?.renter_id ? conversation?.renter : conversation?.landlord);
 
             return (
-              <div key={msg.id}>
+              <div key={msg.id} className="mb-2">
                 {showTime && (
                   <p className="text-xs text-center text-gray-400 dark:text-gray-500 mb-2">
                     {formatMessageTime(msg.created_at)}
                   </p>
                 )}
-                <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                <div className={`flex items-end gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                  {!isMe && (
+                    <div className="flex flex-col items-center mr-1">
+                      {showSender && (
+                        <>
+                          {sender?.photo_url ? (
+                            <img src={sender.photo_url} alt={sender.display_name} className="w-7 h-7 rounded-full object-cover mb-0.5 shadow" />
+                          ) : (
+                            <div className="w-7 h-7 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center mb-0.5">
+                              <span className="text-red-600 dark:text-red-300 font-semibold text-xs">{sender?.display_name?.[0]?.toUpperCase() || '?'}</span>
+                            </div>
+                          )}
+                          <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium max-w-[70px] truncate text-center">{sender?.display_name}</span>
+                        </>
+                      )}
+                    </div>
+                  )}
                   <div
-                    className={`max-w-[75%] px-4 py-2 rounded-2xl ${
+                    className={`relative max-w-[75%] px-4 py-2 rounded-2xl shadow-sm transition-all ${
                       isMe
-                        ? 'bg-red-500 text-white rounded-br-md'
+                        ? 'bg-gradient-to-br from-red-400 to-red-600 text-white rounded-br-md ml-auto'
                         : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-bl-md'
                     }`}
+                    style={{ wordBreak: 'break-word' }}
                   >
-                    <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                    <p className="whitespace-pre-wrap break-words leading-relaxed">{msg.content}</p>
                   </div>
                 </div>
               </div>
