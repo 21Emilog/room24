@@ -4912,6 +4912,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState('');
   const [resetSent, setResetSent] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
   
   // Turnstile captcha state
   const [captchaToken, setCaptchaToken] = useState('');
@@ -4920,6 +4921,11 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
   
   const captchaEnabled = Boolean(turnstileSiteKey);
   const requiresCaptcha = captchaEnabled && (mode === 'signin' || mode === 'signup' || mode === 'reset');
+
+  // Animate in on mount
+  useEffect(() => {
+    requestAnimationFrame(() => setIsVisible(true));
+  }, []);
 
   // Reset captcha when mode changes
   useEffect(() => {
@@ -5044,35 +5050,47 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
     }
   };
 
+  const handleClose = () => {
+    setIsVisible(false);
+    setTimeout(onClose, 200);
+  };
+
   return (
-    <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-start sm:items-center justify-center p-4 pt-16 sm:pt-4 z-50 overflow-y-auto">
-      <div className="bg-white rounded-2xl w-full max-w-md p-8 my-auto shadow-2xl fade-in border border-gray-100">
+    <div 
+      className={`fixed inset-0 bg-gradient-to-br from-gray-900/70 via-slate-900/60 to-gray-900/70 backdrop-blur-md flex items-start sm:items-center justify-center p-4 pt-16 sm:pt-4 z-50 overflow-y-auto transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
+      onClick={(e) => e.target === e.currentTarget && handleClose()}
+    >
+      {/* Decorative background elements */}
+      <div className="fixed top-20 left-10 w-72 h-72 bg-red-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="fixed bottom-20 right-10 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+      
+      <div className={`bg-white/95 backdrop-blur-xl rounded-3xl w-full max-w-md p-8 my-auto shadow-[0_25px_60px_-12px_rgba(0,0,0,0.35)] border border-white/50 transition-all duration-300 ${isVisible ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-4 opacity-0'}`}>
         {/* Header */}
         <div className="flex items-start justify-between mb-6">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg">
-                <Home className="w-5 h-5 text-white" />
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-[#E63946] to-[#c5303c] rounded-2xl flex items-center justify-center shadow-lg shadow-red-500/30 ring-4 ring-red-100">
+                <Home className="w-6 h-6 text-white" />
               </div>
-              <span className="text-xl font-extrabold">
+              <span className="text-2xl font-extrabold tracking-tight">
                 <span className="bg-gradient-to-r from-[#E63946] to-[#c5303c] bg-clip-text text-transparent">Room</span>
-                <span className="text-rose-500">24</span>
+                <span className="text-rose-400">24</span>
               </span>
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mt-4">
+            <h3 className="text-2xl font-bold text-gray-900 mt-4 tracking-tight">
               {mode === 'signin' && 'Welcome back!'}
               {mode === 'signup' && 'Create your account'}
               {mode === 'reset' && 'Reset password'}
             </h3>
-            <p className="text-sm text-gray-500 mt-1">
-              {mode === 'signin' && 'Sign in to continue'}
-              {mode === 'signup' && 'Join RentMzansi today'}
-              {mode === 'reset' && "We'll send you a reset link"}
+            <p className="text-sm text-gray-500 mt-1.5">
+              {mode === 'signin' && 'Sign in to continue your journey'}
+              {mode === 'signup' && 'Join thousands on RentMzansi'}
+              {mode === 'reset' && "We'll send you a secure reset link"}
             </p>
           </div>
           <button 
-            onClick={onClose} 
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+            onClick={handleClose} 
+            className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100/80 rounded-xl transition-all duration-200 hover:scale-110 hover:rotate-90 active:scale-95"
           >
             <X className="w-5 h-5" />
           </button>
@@ -5080,21 +5098,25 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
 
         {/* Auth Error */}
         {authError && (
-          <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-sm flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-            {authError}
+          <div className="mb-4 p-4 bg-gradient-to-r from-rose-50 to-red-50 border border-rose-200 rounded-2xl text-rose-700 text-sm flex items-center gap-3 shadow-sm animate-shake">
+            <div className="w-8 h-8 bg-rose-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <AlertTriangle className="w-4 h-4 text-rose-600" />
+            </div>
+            <span className="font-medium">{authError}</span>
           </div>
         )}
 
         {/* Reset Success Message */}
         {resetSent && (
-          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm flex items-center gap-2">
-            <CheckCircle className="w-4 h-4 flex-shrink-0" />
-            Password reset email sent! Check your inbox.
+          <div className="mb-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl text-green-700 text-sm flex items-center gap-3 shadow-sm">
+            <div className="w-8 h-8 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <CheckCircle className="w-4 h-4 text-green-600" />
+            </div>
+            <span className="font-medium">Password reset email sent! Check your inbox.</span>
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-5">
           {/* Google Sign In Button */}
           {(mode === 'signin' || mode === 'signup') && (
             <>
@@ -5102,9 +5124,9 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
                 type="button"
                 onClick={handleGoogleSignIn}
                 disabled={isSubmitting}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-gray-200 hover:border-gray-300 rounded-xl transition-all hover:bg-gray-50 font-medium text-gray-700"
+                className="w-full flex items-center justify-center gap-3 px-4 py-3.5 bg-white border-2 border-gray-200 hover:border-gray-300 rounded-2xl transition-all hover:bg-gray-50 hover:shadow-md font-semibold text-gray-700 group active:scale-[0.98]"
               >
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -5118,7 +5140,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
                   <div className="w-full border-t border-gray-200"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-gray-500">or use email</span>
+                  <span className="px-4 bg-white/95 text-gray-400 font-medium">or continue with email</span>
                 </div>
               </div>
             </>
@@ -5126,18 +5148,18 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
 
           {/* Reset Mode */}
           {mode === 'reset' && (
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Email *</label>
+            <div className="group">
+              <label className="block text-sm font-semibold text-gray-700 mb-2.5">Email *</label>
               <input 
                 type="email" 
                 value={form.email} 
                 onChange={(e) => { setForm({ ...form, email: e.target.value }); setErrors({ ...errors, email: '' }); setAuthError(''); }}
-                className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-red-100 focus:border-red-500 ${
-                  errors.email ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-gray-300'
+                className={`w-full px-4 py-3.5 border-2 rounded-2xl transition-all duration-200 focus:ring-4 focus:ring-red-100 focus:border-[#E63946] bg-gray-50/50 focus:bg-white ${
+                  errors.email ? 'border-rose-400 bg-rose-50 ring-4 ring-rose-100' : 'border-gray-200 hover:border-gray-300 group-hover:border-gray-300'
                 }`}
                 placeholder="john@example.com"
               />
-              {errors.email && <p className="text-rose-500 text-xs mt-1.5 flex items-center gap-1"><span>⚠</span>{errors.email}</p>}
+              {errors.email && <p className="text-rose-500 text-xs mt-2 flex items-center gap-1.5 font-medium"><span>⚠</span>{errors.email}</p>}
             </div>
           )}
 
@@ -5146,65 +5168,65 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
             <>
               {/* Name (signup only) */}
               {mode === 'signup' && (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Full name *</label>
+                <div className="group">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2.5">Full name *</label>
                   <input 
                     type="text" 
                     value={form.name} 
                     onChange={(e) => { setForm({ ...form, name: e.target.value }); setErrors({ ...errors, name: '' }); }}
-                    className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-red-100 focus:border-red-500 ${
-                      errors.name ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-gray-300'
+                    className={`w-full px-4 py-3.5 border-2 rounded-2xl transition-all duration-200 focus:ring-4 focus:ring-red-100 focus:border-[#E63946] bg-gray-50/50 focus:bg-white ${
+                      errors.name ? 'border-rose-400 bg-rose-50 ring-4 ring-rose-100' : 'border-gray-200 hover:border-gray-300 group-hover:border-gray-300'
                     }`}
                     placeholder="John Doe"
                   />
-                  {errors.name && <p className="text-rose-500 text-xs mt-1.5 flex items-center gap-1"><span>⚠</span>{errors.name}</p>}
+                  {errors.name && <p className="text-rose-500 text-xs mt-2 flex items-center gap-1.5 font-medium"><span>⚠</span>{errors.name}</p>}
                 </div>
               )}
 
               {/* Email */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Email *</label>
+              <div className="group">
+                <label className="block text-sm font-semibold text-gray-700 mb-2.5">Email *</label>
                 <input 
                   type="email" 
                   value={form.email} 
                   onChange={(e) => { setForm({ ...form, email: e.target.value }); setErrors({ ...errors, email: '' }); setAuthError(''); }}
-                  className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-red-100 focus:border-red-500 ${
-                    errors.email ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-gray-300'
+                  className={`w-full px-4 py-3.5 border-2 rounded-2xl transition-all duration-200 focus:ring-4 focus:ring-red-100 focus:border-[#E63946] bg-gray-50/50 focus:bg-white ${
+                    errors.email ? 'border-rose-400 bg-rose-50 ring-4 ring-rose-100' : 'border-gray-200 hover:border-gray-300 group-hover:border-gray-300'
                   }`}
                   placeholder="john@example.com"
                 />
-                {errors.email && <p className="text-rose-500 text-xs mt-1.5 flex items-center gap-1"><span>⚠</span>{errors.email}</p>}
+                {errors.email && <p className="text-rose-500 text-xs mt-2 flex items-center gap-1.5 font-medium"><span>⚠</span>{errors.email}</p>}
               </div>
 
               {/* Password */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Password *</label>
+              <div className="group">
+                <label className="block text-sm font-semibold text-gray-700 mb-2.5">Password *</label>
                 <input 
                   type="password" 
                   value={form.password} 
                   onChange={(e) => { setForm({ ...form, password: e.target.value }); setErrors({ ...errors, password: '' }); setAuthError(''); }}
-                  className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-red-100 focus:border-red-500 ${
-                    errors.password ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-gray-300'
+                  className={`w-full px-4 py-3.5 border-2 rounded-2xl transition-all duration-200 focus:ring-4 focus:ring-red-100 focus:border-[#E63946] bg-gray-50/50 focus:bg-white ${
+                    errors.password ? 'border-rose-400 bg-rose-50 ring-4 ring-rose-100' : 'border-gray-200 hover:border-gray-300 group-hover:border-gray-300'
                   }`}
                   placeholder="••••••••"
                 />
-                {errors.password && <p className="text-rose-500 text-xs mt-1.5 flex items-center gap-1"><span>⚠</span>{errors.password}</p>}
+                {errors.password && <p className="text-rose-500 text-xs mt-2 flex items-center gap-1.5 font-medium"><span>⚠</span>{errors.password}</p>}
               </div>
 
               {/* Confirm Password (signup only) */}
               {mode === 'signup' && (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Confirm Password *</label>
+                <div className="group">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2.5">Confirm Password *</label>
                   <input 
                     type="password" 
                     value={form.confirmPassword} 
                     onChange={(e) => { setForm({ ...form, confirmPassword: e.target.value }); setErrors({ ...errors, confirmPassword: '' }); }}
-                    className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-red-100 focus:border-red-500 ${
-                      errors.confirmPassword ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-gray-300'
+                    className={`w-full px-4 py-3.5 border-2 rounded-2xl transition-all duration-200 focus:ring-4 focus:ring-red-100 focus:border-[#E63946] bg-gray-50/50 focus:bg-white ${
+                      errors.confirmPassword ? 'border-rose-400 bg-rose-50 ring-4 ring-rose-100' : 'border-gray-200 hover:border-gray-300 group-hover:border-gray-300'
                     }`}
                     placeholder="••••••••"
                   />
-                  {errors.confirmPassword && <p className="text-rose-500 text-xs mt-1.5 flex items-center gap-1"><span>⚠</span>{errors.confirmPassword}</p>}
+                  {errors.confirmPassword && <p className="text-rose-500 text-xs mt-2 flex items-center gap-1.5 font-medium"><span>⚠</span>{errors.confirmPassword}</p>}
                 </div>
               )}
 
@@ -5237,7 +5259,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
 
           {/* Turnstile Captcha Widget */}
           {captchaEnabled && (mode === 'signin' || mode === 'signup' || mode === 'reset') && (
-            <div className="flex flex-col items-center">
+            <div className="flex flex-col items-center py-2">
               <TurnstileWidget
                 siteKey={turnstileSiteKey}
                 onVerify={handleCaptchaVerify}
@@ -5246,7 +5268,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
                 refreshTrigger={captchaRefresh}
               />
               {captchaError && (
-                <p className="text-rose-500 text-xs mt-2 flex items-center gap-1">
+                <p className="text-rose-500 text-xs mt-2 flex items-center gap-1.5 font-medium">
                   <span>⚠</span>{captchaError}
                 </p>
               )}
@@ -5258,36 +5280,38 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
             id="phone-sign-in-button"
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className={`w-full font-bold py-3 rounded-xl transition-all relative ${
+            className={`w-full font-bold py-4 rounded-2xl transition-all duration-300 relative overflow-hidden group ${
               isSubmitting 
-                ? 'bg-[#E63946] cursor-not-allowed' 
-                : 'bg-gradient-to-r from-red-500 to-red-500 hover:from-[#E63946] hover:to-[#c5303c] text-white shadow-lg hover:shadow-xl hover:shadow-red-500/25'
+                ? 'bg-[#E63946] cursor-not-allowed opacity-80' 
+                : 'bg-gradient-to-r from-[#E63946] to-[#c5303c] hover:from-[#c5303c] hover:to-[#E63946] text-white shadow-lg hover:shadow-xl hover:shadow-red-500/30 active:scale-[0.98]'
             }`}
           >
+            {/* Shine effect */}
+            <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
             {isSubmitting ? (
               <>
                 <span className="opacity-0">Submit</span>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 </div>
               </>
             ) : (
-              <>
+              <span className="relative z-10 flex items-center justify-center gap-2">
                 {mode === 'signin' && 'Sign In'}
                 {mode === 'signup' && 'Create Account'}
                 {mode === 'reset' && 'Send Reset Link'}
-              </>
+              </span>
             )}
           </button>
 
           {/* Toggle Mode */}
-          <div className="text-center text-sm text-gray-600">
+          <div className="text-center text-sm text-gray-600 pt-2">
             {mode === 'signin' && (
               <>
                 Don't have an account?{' '}
                 <button 
                   onClick={() => { setMode('signup'); setAuthError(''); }} 
-                  className="text-[#E63946] hover:text-[#c5303c] font-semibold"
+                  className="text-[#E63946] hover:text-[#c5303c] font-semibold transition-colors hover:underline underline-offset-2"
                 >
                   Sign up
                 </button>
@@ -5298,7 +5322,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
                 Already have an account?{' '}
                 <button 
                   onClick={() => { setMode('signin'); setAuthError(''); }} 
-                  className="text-[#E63946] hover:text-[#c5303c] font-semibold"
+                  className="text-[#E63946] hover:text-[#c5303c] font-semibold transition-colors hover:underline underline-offset-2"
                 >
                   Sign in
                 </button>
@@ -5307,17 +5331,20 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
             {mode === 'reset' && (
               <button 
                 onClick={() => { setMode('signin'); setAuthError(''); setResetSent(false); }} 
-                className="text-[#E63946] hover:text-[#c5303c] font-semibold"
+                className="text-[#E63946] hover:text-[#c5303c] font-semibold transition-colors hover:underline underline-offset-2 inline-flex items-center gap-1"
               >
-                ← Back to sign in
+                <span>←</span> Back to sign in
               </button>
             )}
           </div>
         </div>
 
         {/* Footer */}
-        <p className="text-xs text-gray-400 text-center mt-6">
-          By continuing, you agree to our <button className="text-[#E63946] hover:underline">Terms of Service</button> and <button className="text-[#E63946] hover:underline">Privacy Policy</button>
+        <p className="text-xs text-gray-400 text-center mt-8 pb-2">
+          By continuing, you agree to our{' '}
+          <button className="text-[#E63946] hover:text-[#c5303c] hover:underline underline-offset-2 transition-colors font-medium">Terms of Service</button>
+          {' '}and{' '}
+          <button className="text-[#E63946] hover:text-[#c5303c] hover:underline underline-offset-2 transition-colors font-medium">Privacy Policy</button>
         </p>
       </div>
     </div>
@@ -5338,9 +5365,12 @@ function BottomNav({ currentView, setCurrentView, currentUser, userType, unreadM
   const visibleItems = navItems.filter(item => item && (item.show === undefined || item.show));
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#1D3557] to-[#2d4a6f] backdrop-blur-xl px-2 py-2 z-20 md:hidden safe-area-bottom shadow-[0_-4px_20px_rgba(15,23,42,0.2)] transition-all duration-300" role="navigation" aria-label="Main navigation">
+    <nav className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#1D3557] via-[#1D3557] to-[#2d4a6f]/95 backdrop-blur-xl px-3 py-2.5 z-20 md:hidden safe-area-bottom shadow-[0_-8px_30px_rgba(15,23,42,0.35)] border-t border-white/10 transition-all duration-300" role="navigation" aria-label="Main navigation">
+      {/* Decorative top glow line */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-0.5 bg-gradient-to-r from-transparent via-red-500/40 to-transparent" />
+      
       <div
-        className="grid gap-2 max-w-md mx-auto"
+        className="grid gap-1 max-w-lg mx-auto"
         style={{ gridTemplateColumns: `repeat(${visibleItems.length}, minmax(0, 1fr))` }}
       >
         {visibleItems.map(item => {
@@ -5355,7 +5385,7 @@ function BottomNav({ currentView, setCurrentView, currentUser, userType, unreadM
                 key={item.id}
                 type="button"
                 onClick={() => setCurrentView(item.id)}
-                className={`relative flex flex-col items-center gap-1 py-1 px-1 rounded-xl transition-all duration-300 active:scale-95 ${
+                className={`relative flex flex-col items-center gap-0.5 py-1 px-1 rounded-2xl transition-all duration-300 active:scale-90 ${
                   isActive
                     ? 'text-white'
                     : 'text-white/80 hover:text-white'
@@ -5363,15 +5393,15 @@ function BottomNav({ currentView, setCurrentView, currentUser, userType, unreadM
                 aria-current={isActive ? 'page' : undefined}
                 aria-label={item.label}
               >
-                <span className={`p-3 rounded-2xl transition-all duration-300 shadow-lg ${
+                <span className={`p-3.5 rounded-2xl transition-all duration-300 shadow-lg ${
                   isActive 
-                    ? 'bg-[#E63946] shadow-red-500/50 -translate-y-2 scale-110 ring-2 ring-red-300' 
-                    : 'bg-[#E63946]/90 hover:bg-[#E63946] hover:-translate-y-1'
+                    ? 'bg-gradient-to-br from-[#E63946] to-[#c5303c] shadow-red-500/60 -translate-y-3 scale-110 ring-2 ring-red-300/50' 
+                    : 'bg-gradient-to-br from-[#E63946] to-[#c5303c]/90 hover:from-[#E63946] hover:to-[#c5303c] hover:-translate-y-1.5 hover:shadow-red-500/40'
                 }`}>
-                  <Icon className="w-7 h-7 text-white" strokeWidth={2.5} />
+                  <Icon className="w-6 h-6 text-white drop-shadow-sm" strokeWidth={2.5} />
                 </span>
-                <span className="text-[11px] font-bold">{item.label}</span>
-                {isActive && <span className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-[#E63946]" />}
+                <span className={`text-[10px] font-bold transition-all ${isActive ? 'opacity-100' : 'opacity-80'}`}>{item.label}</span>
+                {isActive && <span className="absolute -bottom-0.5 w-6 h-1 rounded-full bg-gradient-to-r from-[#E63946] to-[#c5303c] shadow-sm shadow-red-500/50" />}
               </button>
             );
           }
@@ -5385,32 +5415,38 @@ function BottomNav({ currentView, setCurrentView, currentUser, userType, unreadM
               type="button"
               disabled={disabled}
               onClick={() => !disabled && setCurrentView(item.id)}
-              className={`relative flex flex-col items-center gap-1 py-2 px-1 rounded-xl transition-all duration-300 ${
-                disabled ? 'opacity-35 cursor-not-allowed' : 'active:scale-95'
+              className={`relative flex flex-col items-center gap-0.5 py-2 px-1 rounded-2xl transition-all duration-300 ${
+                disabled ? 'opacity-30 cursor-not-allowed' : 'active:scale-90'
               } ${
                 isActive
-                  ? 'text-white font-semibold bg-[#1D3557]/80 shadow-lg ring-2 ring-red-300'
-                  : 'text-white/50 hover:text-white/80'
+                  ? 'text-white'
+                  : 'text-white/40 hover:text-white/70'
               }`}
               aria-current={isActive ? 'page' : undefined}
               aria-disabled={disabled}
               aria-label={item.label}
               tabIndex={0}
             >
-              <span className={`relative transition-all duration-300 ${isActive ? 'scale-110 -translate-y-0.5' : ''}`}
+              {/* Active background glow */}
+              {isActive && (
+                <span className="absolute inset-1 bg-gradient-to-b from-white/10 to-transparent rounded-xl" />
+              )}
+              <span className={`relative transition-all duration-300 ${isActive ? 'scale-110 -translate-y-1' : ''}`}
                 title={item.id === 'messages' && item.preview ? item.preview : undefined}
               >
-                <Icon className="w-7 h-7" strokeWidth={isActive ? 2.5 : 1.75} />
+                <Icon className={`w-6 h-6 transition-all ${isActive ? 'drop-shadow-[0_2px_4px_rgba(230,57,70,0.5)]' : ''}`} strokeWidth={isActive ? 2.5 : 1.75} />
                 {showBadge && (
-                  <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] bg-[#E63946] text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-lg animate-bounce">
+                  <span className="absolute -top-2 -right-2.5 min-w-[20px] h-[20px] bg-gradient-to-br from-[#E63946] to-[#c5303c] text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-lg shadow-red-500/50 animate-bounce ring-2 ring-[#1D3557]">
                     {item.badge > 99 ? '99+' : item.badge}
                   </span>
                 )}
                 {showDot && (
-                  <span className="absolute -top-1.5 -right-2 w-3 h-3 bg-[#E63946] rounded-full shadow-lg animate-pulse" />
+                  <span className="absolute -top-1 -right-1.5 w-3 h-3 bg-gradient-to-br from-[#E63946] to-[#c5303c] rounded-full shadow-lg shadow-red-500/50 animate-pulse ring-2 ring-[#1D3557]" />
                 )}
               </span>
-              <span className={`text-[11px] transition-all ${isActive ? 'font-semibold' : 'font-medium'}`}>{item.label}</span>
+              <span className={`text-[10px] transition-all ${isActive ? 'font-bold' : 'font-medium opacity-70'}`}>{item.label}</span>
+              {/* Active indicator dot */}
+              {isActive && <span className="absolute -bottom-0 w-4 h-1 rounded-full bg-gradient-to-r from-[#E63946] to-[#c5303c] shadow-sm shadow-red-500/50" />}
             </button>
           );
         })}

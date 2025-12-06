@@ -830,23 +830,6 @@ export default function BrowseView({
                 Search Rooms
               </button>
               <button
-                onClick={() => {
-                  if (!searchLocation || searchLocation.trim() === '') {
-                    alert('Enter a location to subscribe.');
-                    return;
-                  }
-                  if (!currentUser) {
-                    onRequireAuth && onRequireAuth('renter');
-                    return;
-                  }
-                  subscribeToArea && subscribeToArea(currentUser.id, searchLocation.trim());
-                }}
-                className="bg-white border-2 border-red-200 text-[#E63946] px-4 py-2.5 rounded-xl hover:bg-red-50 hover:border-red-300 transition font-semibold text-sm flex items-center gap-2"
-              >
-                <Bell className="w-4 h-4" />
-                Subscribe
-              </button>
-              <button
                 type="button"
                 onClick={saveCurrentSearch}
                 className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all active:scale-95 flex items-center gap-2"
