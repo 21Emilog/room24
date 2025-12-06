@@ -106,7 +106,7 @@ export default function MessagesView({
   if (isMobile) {
     if (selectedConversation) {
       return (
-        <div className="fixed inset-0 top-0 bottom-[60px] z-10 bg-white dark:bg-gray-900">
+        <div className="fixed inset-0 top-0 bottom-[60px] z-30 bg-white dark:bg-gray-900">
           <ChatWindow
             conversation={selectedConversation}
             currentUserId={currentUser.id}
