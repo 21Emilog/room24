@@ -1008,22 +1008,25 @@ const filteredListings = listings
       {/* Back to Top Button */}
       <BackToTop />
       
-      <Header
-        currentUser={currentUser ? {
-          ...currentUser,
-          name: userProfile?.displayName || currentUser.displayName || 'User',
-          type: userType || 'renter',
-          photo: userProfile?.photoURL || currentUser.photoURL || null
-        } : null}
-        previewAsRenter={previewAsRenter}
-        setPreviewAsRenter={setPreviewAsRenter}
-        openAuthModal={openAuthModal}
-        handleSignOut={handleSignOut}
-        setCurrentView={setCurrentView}
-        unreadCount={unreadCount}
-        onOpenNotifications={() => setShowNotificationsPanel(true)}
-        unreadMessageCount={unreadMessageCount}
-      />
+
+      {currentView !== 'messages' && (
+        <Header
+          currentUser={currentUser ? {
+            ...currentUser,
+            name: userProfile?.displayName || currentUser.displayName || 'User',
+            type: userType || 'renter',
+            photo: userProfile?.photoURL || currentUser.photoURL || null
+          } : null}
+          previewAsRenter={previewAsRenter}
+          setPreviewAsRenter={setPreviewAsRenter}
+          openAuthModal={openAuthModal}
+          handleSignOut={handleSignOut}
+          setCurrentView={setCurrentView}
+          unreadCount={unreadCount}
+          onOpenNotifications={() => setShowNotificationsPanel(true)}
+          unreadMessageCount={unreadMessageCount}
+        />
+      )}
 
       {currentView === 'browse' && (
         <div className="px-4 sm:px-6 lg:px-8 mt-4 lg:hidden">
