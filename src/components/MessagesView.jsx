@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { MessageSquare, ArrowLeft } from 'lucide-react';
+import { MessageSquare, ArrowLeft, Sparkles, Search } from 'lucide-react';
 import ConversationList from './ConversationList';
 import ChatWindow from './ChatWindow';
 import { 
@@ -20,6 +20,7 @@ export default function MessagesView({
   const [loading, setLoading] = useState(true);
   const [unreadCounts, setUnreadCounts] = useState({});
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Handle responsive layout
   useEffect(() => {
@@ -101,6 +102,20 @@ export default function MessagesView({
   };
 
   const isLandlord = userType === 'landlord';
+  
+  // Filter conversations by search
+  const filteredConversations = conversations.filter(convo => {
+    if (!searchQuery.trim()) return true;
+    const otherUser = convo.landlord_id === currentUser?.id ? convo.renter : convo.landlord;
+    const searchLower = searchQuery.toLowerCase();
+    return (
+      otherUser?.display_name?.toLowerCase().includes(searchLower) ||
+      convo.listing?.title?.toLowerCase().includes(searchLower) ||
+      convo.listing?.location?.toLowerCase().includes(searchLower)
+    );
+  });
+
+  const totalUnread = Object.values(unreadCounts).reduce((sum, c) => sum + c, 0);
 
   // Mobile: show either list or chat
   if (isMobile) {
@@ -118,47 +133,79 @@ export default function MessagesView({
     }
 
     return (
-      <div className="min-h-[calc(100vh-140px)] pb-20 bg-gradient-to-br from-red-50 via-rose-50 to-red-50 dark:bg-gray-900 transition-all duration-300 animate-fadein">
-        {/* Header */}
-        <div className="sticky top-0 z-20 flex items-center gap-3 p-5 bg-white/90 dark:bg-gray-800/90 border-b border-gray-200 dark:border-gray-700 shadow-sm backdrop-blur-lg">
-          {onBack && (
-            <button
-              onClick={onBack}
-              className="p-2 hover:bg-red-100 dark:hover:bg-red-900 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-400"
-              aria-label="Back to main navigation"
-            >
-              <ArrowLeft className="w-5 h-5 text-red-500" />
-            </button>
-          )}
-          <div className="flex items-center gap-2">
-            <MessageSquare className="w-7 h-7 text-red-500" />
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Messages</h1>
+      <div className="min-h-[calc(100vh-140px)] pb-20 bg-gradient-to-b from-slate-50 to-gray-100 dark:from-gray-900 dark:to-gray-900 transition-all duration-300">
+        {/* Premium Header */}
+        <div className="sticky top-0 z-20 bg-gradient-to-r from-[#1D3557] to-[#2d4a6f] text-white shadow-lg">
+          <div className="flex items-center gap-3 p-4">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="p-2 hover:bg-white/10 rounded-xl transition-colors"
+                aria-label="Back"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+            )}
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                  <MessageSquare className="w-5 h-5" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold">Messages</h1>
+                  {totalUnread > 0 && (
+                    <p className="text-xs text-white/70">{totalUnread} unread message{totalUnread !== 1 ? 's' : ''}</p>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
+          
+          {/* Search Bar */}
+          {conversations.length > 0 && (
+            <div className="px-4 pb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
+                <input
+                  type="text"
+                  placeholder="Search conversations..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 text-sm focus:outline-none focus:ring-2 focus:ring-white/30"
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {(!loading && conversations.length === 0) ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center animate-fadein">
-            <div className="w-24 h-24 mb-4">
-              <svg viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="8" y="24" width="80" height="56" rx="16" fill="#F3F4F6" />
-                <rect x="20" y="36" width="56" height="32" rx="8" fill="#E63946" fillOpacity="0.08" />
-                <circle cx="48" cy="52" r="8" fill="#E63946" fillOpacity="0.15" />
-                <rect x="32" y="68" width="32" height="4" rx="2" fill="#E63946" fillOpacity="0.12" />
-              </svg>
+          <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+            <div className="w-32 h-32 mb-6 relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-red-100 to-rose-100 rounded-full animate-pulse" />
+              <div className="absolute inset-4 bg-white rounded-full shadow-lg flex items-center justify-center">
+                <MessageSquare className="w-12 h-12 text-red-400" />
+              </div>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">No conversations yet</h3>
-            <p className="text-gray-500 dark:text-gray-400 text-sm max-w-xs mb-2">Start a chat with a landlord or renter to see your messages here.</p>
-            <p className="text-xs text-gray-400">Tip: Tap a listing and use "Message in App" to start chatting!</p>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No conversations yet</h3>
+            <p className="text-gray-500 dark:text-gray-400 text-sm max-w-xs mb-4">
+              Start chatting with landlords or renters about listings
+            </p>
+            <div className="flex items-center gap-2 text-xs text-gray-400 bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-full">
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              <span>Tip: Tap "Message" on any listing to start!</span>
+            </div>
           </div>
         ) : (
-          <ConversationList
-            conversations={conversations}
-            currentUserId={currentUser.id}
-            onSelectConversation={handleSelectConversation}
-            selectedConversationId={selectedConversation?.id}
-            unreadCounts={unreadCounts}
-            loading={loading}
-          />
+          <div className="bg-white dark:bg-gray-800 mt-2 mx-2 rounded-2xl shadow-sm overflow-hidden">
+            <ConversationList
+              conversations={filteredConversations}
+              currentUserId={currentUser.id}
+              onSelectConversation={handleSelectConversation}
+              selectedConversationId={selectedConversation?.id}
+              unreadCounts={unreadCounts}
+              loading={loading}
+            />
+          </div>
         )}
       </div>
     );
@@ -166,30 +213,53 @@ export default function MessagesView({
 
   // Desktop: side-by-side layout
   return (
-    <div className="flex h-[calc(100vh-120px)] bg-gradient-to-br from-red-50 via-rose-50 to-red-50 dark:bg-gray-900 animate-fadein">
+    <div className="flex h-[calc(100vh-120px)] bg-gradient-to-br from-slate-100 to-gray-100 dark:from-gray-900 dark:to-gray-900 rounded-2xl overflow-hidden shadow-xl mx-4 my-4">
       {/* Conversation List Panel */}
-      <div className="w-96 flex-shrink-0 bg-white/95 dark:bg-gray-800/95 border-r border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col shadow-xl rounded-r-3xl">
+      <div className="w-[380px] flex-shrink-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center gap-3 p-5 border-b border-gray-200 dark:border-gray-700 bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg">
-          {onBack && (
-            <button
-              onClick={onBack}
-              className="p-2 hover:bg-red-100 dark:hover:bg-red-900 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-400"
-              aria-label="Back to main navigation"
-            >
-              <ArrowLeft className="w-5 h-5 text-red-500" />
-            </button>
-          )}
-          <div className="flex items-center gap-2">
-            <MessageSquare className="w-7 h-7 text-red-500" />
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Messages</h1>
+        <div className="bg-gradient-to-r from-[#1D3557] to-[#2d4a6f] text-white p-5">
+          <div className="flex items-center gap-3 mb-4">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="p-2 hover:bg-white/10 rounded-xl transition-colors"
+                aria-label="Back"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+            )}
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                <MessageSquare className="w-6 h-6" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold">Messages</h1>
+                {totalUnread > 0 ? (
+                  <p className="text-xs text-white/70">{totalUnread} unread</p>
+                ) : (
+                  <p className="text-xs text-white/70">{conversations.length} conversation{conversations.length !== 1 ? 's' : ''}</p>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
+            <input
+              type="text"
+              placeholder="Search conversations..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 text-sm focus:outline-none focus:ring-2 focus:ring-white/30"
+            />
           </div>
         </div>
 
         {/* List */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar">
+        <div className="flex-1 overflow-y-auto">
           <ConversationList
-            conversations={conversations}
+            conversations={filteredConversations}
             currentUserId={currentUser.id}
             onSelectConversation={handleSelectConversation}
             selectedConversationId={selectedConversation?.id}
@@ -200,7 +270,7 @@ export default function MessagesView({
       </div>
 
       {/* Chat Panel */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col bg-gray-50 dark:bg-gray-900">
         {selectedConversation ? (
           <ChatWindow
             conversation={selectedConversation}
@@ -209,17 +279,19 @@ export default function MessagesView({
             isLandlord={isLandlord && selectedConversation.landlord_id === currentUser.id}
           />
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-center p-12 bg-gray-50/80 dark:bg-gray-900 animate-fadein">
-            <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-6 shadow-lg">
-              <MessageSquare className="w-12 h-12 text-gray-400 dark:text-gray-500" />
+          <div className="flex-1 flex flex-col items-center justify-center text-center p-12">
+            <div className="w-32 h-32 mb-6 relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-full" />
+              <div className="absolute inset-4 bg-white dark:bg-gray-700 rounded-full shadow-inner flex items-center justify-center">
+                <MessageSquare className="w-12 h-12 text-gray-300 dark:text-gray-500" />
+              </div>
             </div>
-            <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
               Select a conversation
             </h3>
-            <p className="text-gray-500 dark:text-gray-400 text-base max-w-md mb-2">
+            <p className="text-gray-500 dark:text-gray-400 text-base max-w-sm">
               Choose a conversation from the list to start chatting
             </p>
-            <p className="text-xs text-gray-400">Tip: Message a landlord or renter from a listing to start a chat.</p>
           </div>
         )}
       </div>

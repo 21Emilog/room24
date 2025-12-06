@@ -285,37 +285,40 @@ export default function ChatWindow({
       )}
 
       {/* Header */}
-      <div className="flex-shrink-0 flex items-center gap-3 p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+      <div className="flex-shrink-0 flex items-center gap-3 p-4 bg-gradient-to-r from-red-500 via-rose-500 to-red-600 shadow-lg">
         <button
           onClick={onBack}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+          className="p-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl transition-all duration-200 hover:scale-105"
           aria-label="Back to conversations"
         >
-          <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+          <ArrowLeft className="w-5 h-5 text-white" />
         </button>
         
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          {otherUser?.photo_url ? (
-            <img 
-              src={otherUser.photo_url} 
-              alt={otherUser.display_name} 
-              className="w-10 h-10 rounded-full object-cover"
-            />
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
-              <span className="text-red-600 dark:text-red-300 font-semibold">
-                {otherUser?.display_name?.[0]?.toUpperCase() || '?'}
-              </span>
-            </div>
-          )}
+          <div className="relative">
+            {otherUser?.photo_url ? (
+              <img 
+                src={otherUser.photo_url} 
+                alt={otherUser.display_name} 
+                className="w-11 h-11 rounded-xl object-cover border-2 border-white/30 shadow-lg"
+              />
+            ) : (
+              <div className="w-11 h-11 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 border-white/30">
+                <span className="text-white font-bold text-lg">
+                  {otherUser?.display_name?.[0]?.toUpperCase() || '?'}
+                </span>
+              </div>
+            )}
+            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-400 border-2 border-white rounded-full" />
+          </div>
           
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+            <h3 className="font-bold text-white truncate">
               {otherUser?.display_name || 'Unknown User'}
             </h3>
             {listing && (
-              <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                Re: {listing.title} • R{listing.price?.toLocaleString()}/mo
+              <p className="text-sm text-white/80 truncate">
+                {listing.title} • R{listing.price?.toLocaleString()}/mo
               </p>
             )}
           </div>
@@ -325,10 +328,10 @@ export default function ChatWindow({
         <div className="relative">
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+            className="p-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl transition-all duration-200 hover:scale-105"
             aria-label="More options"
           >
-            <MoreVertical className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+            <MoreVertical className="w-5 h-5 text-white" />
           </button>
           
           {showMenu && (
@@ -337,16 +340,16 @@ export default function ChatWindow({
                 className="fixed inset-0 z-10" 
                 onClick={() => setShowMenu(false)}
               />
-              <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-20 overflow-hidden">
+              <div className="absolute right-0 top-full mt-2 w-52 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 z-20 overflow-hidden">
                 <button
                   onClick={() => {
                     setShowMenu(false);
                     setShowReportModal(true);
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-3.5 text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                 >
-                  <Flag className="w-4 h-4" />
-                  <span className="font-medium">Report Spam</span>
+                  <Flag className="w-5 h-5" />
+                  <span className="font-semibold">Report User</span>
                 </button>
               </div>
             </>
@@ -356,35 +359,43 @@ export default function ChatWindow({
 
       {/* Listing Preview (if available) */}
       {listing && (
-        <div className="flex-shrink-0 flex items-center gap-3 p-3 bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-900/30">
+        <div className="flex-shrink-0 flex items-center gap-3 p-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-b border-amber-200/50 dark:border-amber-800/30">
           {listing.photos?.[0] && (
             <img 
               src={listing.photos[0]} 
               alt={listing.title}
-              className="w-12 h-12 rounded-lg object-cover"
+              className="w-14 h-14 rounded-xl object-cover shadow-md"
             />
           )}
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+            <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
               {listing.title}
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-              {listing.location}
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate flex items-center gap-1">
+              📍 {listing.location}
             </p>
+          </div>
+          <div className="text-right">
+            <p className="text-sm font-bold text-red-500">R{listing.price?.toLocaleString()}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">per month</p>
           </div>
         </div>
       )}
 
       {/* Messages */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 space-y-3 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
         {loading ? (
-          <div className="flex items-center justify-center h-32">
-            <div className="w-8 h-8 border-3 border-red-500 border-t-transparent rounded-full animate-spin" />
+          <div className="flex flex-col items-center justify-center h-32 gap-3">
+            <div className="w-10 h-10 border-3 border-red-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm text-gray-500 dark:text-gray-400">Loading messages...</p>
           </div>
         ) : messages.length === 0 ? (
-          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-            <p>No messages yet.</p>
-            <p className="text-sm mt-1">Start the conversation!</p>
+          <div className="text-center py-12">
+            <div className="w-20 h-20 bg-gradient-to-br from-red-100 to-rose-100 dark:from-red-900/30 dark:to-rose-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Send className="w-8 h-8 text-red-500" />
+            </div>
+            <p className="font-semibold text-gray-900 dark:text-white mb-1">Start the conversation!</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Send a message to connect with {otherUser?.display_name || 'the user'}.</p>
           </div>
         ) : (
           messages.map((msg, idx) => {
@@ -397,11 +408,15 @@ export default function ChatWindow({
               : msg.sender_profile || (msg.sender_id === conversation?.renter_id ? conversation?.renter : conversation?.landlord);
 
             return (
-              <div key={msg.id} className="mb-2">
+              <div key={msg.id} className="mb-1">
                 {showTime && (
-                  <p className="text-xs text-center text-gray-400 dark:text-gray-500 mb-2">
-                    {formatMessageTime(msg.created_at)}
-                  </p>
+                  <div className="flex items-center justify-center gap-3 my-4">
+                    <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
+                    <span className="text-xs font-medium text-gray-400 dark:text-gray-500 px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded-full">
+                      {formatMessageTime(msg.created_at)}
+                    </span>
+                    <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
+                  </div>
                 )}
                 <div className={`flex items-end gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}>
                   {!isMe && (
@@ -409,29 +424,34 @@ export default function ChatWindow({
                       {showSender && (
                         <>
                           {sender?.photo_url ? (
-                            <img src={sender.photo_url} alt={sender.display_name} className="w-7 h-7 rounded-full object-cover mb-0.5 shadow" />
+                            <img src={sender.photo_url} alt={sender.display_name} className="w-8 h-8 rounded-xl object-cover mb-0.5 shadow-md" />
                           ) : (
                             <div
-                              className="w-7 h-7 rounded-full flex items-center justify-center mb-0.5 shadow"
+                              className="w-8 h-8 rounded-xl flex items-center justify-center mb-0.5 shadow-md"
                               style={{ background: getColorFromId(sender?.id) }}
                             >
-                              <span className="text-white font-semibold text-xs">{sender?.display_name?.[0]?.toUpperCase() || '?'}</span>
+                              <span className="text-white font-bold text-xs">{sender?.display_name?.[0]?.toUpperCase() || '?'}</span>
                             </div>
                           )}
-                          <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium max-w-[70px] truncate text-center">{sender?.display_name}</span>
+                          <span className="text-[10px] text-gray-500 dark:text-gray-400 font-semibold max-w-[70px] truncate text-center">{sender?.display_name}</span>
                         </>
                       )}
                     </div>
                   )}
                   <div
-                    className={`relative max-w-[75%] px-4 py-2 rounded-2xl shadow-sm transition-all ${
+                    className={`relative max-w-[75%] px-4 py-2.5 transition-all duration-200 ${
                       isMe
-                        ? 'bg-gradient-to-br from-red-400 to-red-600 text-white rounded-br-md ml-auto'
-                        : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-bl-md'
-                    }`}
+                        ? 'bg-gradient-to-br from-red-500 via-rose-500 to-red-600 text-white rounded-2xl rounded-br-md shadow-lg shadow-red-500/20'
+                        : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-2xl rounded-bl-md shadow-md border border-gray-100 dark:border-gray-600'
+                    } ${msg._optimistic ? 'opacity-70' : ''}`}
                     style={{ wordBreak: 'break-word' }}
                   >
                     <p className="whitespace-pre-wrap break-words leading-relaxed">{msg.content}</p>
+                    {msg._optimistic && (
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow">
+                        <div className="w-2 h-2 border border-red-500 border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -443,19 +463,21 @@ export default function ChatWindow({
 
       {/* Quick Replies (for landlords) */}
       {isLandlord && quickReplies.length > 0 && (
-        <div className="border-t border-gray-200 dark:border-gray-700">
+        <div className="border-t border-gray-200 dark:border-gray-700 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20">
           <button
             onClick={() => setShowQuickReplies(!showQuickReplies)}
-            className="flex items-center justify-between w-full px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="flex items-center justify-between w-full px-4 py-3 text-sm font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-100/50 dark:hover:bg-amber-900/30 transition-colors"
           >
             <span className="flex items-center gap-2">
-              <Zap className="w-4 h-4 text-amber-500" />
+              <div className="p-1 bg-amber-400 rounded-lg">
+                <Zap className="w-3.5 h-3.5 text-white" />
+              </div>
               Quick Replies
             </span>
             {showQuickReplies ? (
-              <ChevronDown className="w-4 h-4" />
+              <ChevronDown className="w-5 h-5" />
             ) : (
-              <ChevronUp className="w-4 h-4" />
+              <ChevronUp className="w-5 h-5" />
             )}
           </button>
           {showQuickReplies && (
@@ -464,7 +486,7 @@ export default function ChatWindow({
                 <button
                   key={idx}
                   onClick={() => handleQuickReply(reply)}
-                  className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors truncate max-w-[200px]"
+                  className="px-3.5 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl border border-amber-200 dark:border-amber-800/50 hover:border-amber-400 dark:hover:border-amber-600 hover:shadow-md transition-all duration-200 truncate max-w-[200px]"
                 >
                   {reply.substring(0, 40)}{reply.length > 40 ? '...' : ''}
                 </button>
@@ -476,24 +498,26 @@ export default function ChatWindow({
 
       {/* Input */}
       <div className="flex-shrink-0 p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 safe-area-bottom">
-        <div className="flex items-end gap-2">
-          <textarea
-            ref={inputRef}
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type a message..."
-            rows={1}
-            className="flex-1 resize-none px-4 py-3 bg-gray-100 dark:bg-gray-700 border-0 rounded-2xl focus:ring-2 focus:ring-red-500 focus:outline-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-            style={{ maxHeight: '120px' }}
-          />
+        <div className="flex items-end gap-3">
+          <div className="flex-1 relative">
+            <textarea
+              ref={inputRef}
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type a message..."
+              rows={1}
+              className="w-full resize-none px-5 py-3.5 bg-gray-100 dark:bg-gray-700 border-2 border-transparent rounded-2xl focus:border-red-500 focus:bg-white dark:focus:bg-gray-600 focus:ring-0 focus:outline-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200"
+              style={{ maxHeight: '120px' }}
+            />
+          </div>
           <button
             onClick={handleSend}
             disabled={!newMessage.trim() || sending}
-            className={`p-3 rounded-full transition-all ${
+            className={`p-4 rounded-2xl transition-all duration-200 ${
               newMessage.trim() && !sending
-                ? 'bg-red-500 hover:bg-red-600 text-white shadow-lg hover:shadow-xl'
-                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                ? 'bg-gradient-to-br from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 hover:scale-105 active:scale-95'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
             }`}
             aria-label="Send message"
           >

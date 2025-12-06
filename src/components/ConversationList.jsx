@@ -1,5 +1,5 @@
 import React from 'react';
-import { MessageSquare, Home } from 'lucide-react';
+import { MessageSquare, Home, Clock, ChevronRight } from 'lucide-react';
 
 function formatRelativeTime(dateString) {
   if (!dateString) return '';
@@ -10,10 +10,10 @@ function formatRelativeTime(dateString) {
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffMins < 1) return 'Now';
+  if (diffMins < 60) return `${diffMins}m`;
+  if (diffHours < 24) return `${diffHours}h`;
+  if (diffDays < 7) return `${diffDays}d`;
   return date.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' });
 }
 
@@ -27,13 +27,14 @@ export default function ConversationList({
 }) {
   if (loading) {
     return (
-      <div className="flex flex-col gap-3 p-4">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="animate-pulse flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl">
-            <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full" />
-            <div className="flex-1 space-y-2">
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
-              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+      <div className="flex flex-col gap-2 p-3">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="animate-pulse flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-2xl">
+            <div className="w-14 h-14 bg-gray-200 dark:bg-gray-600 rounded-2xl" />
+            <div className="flex-1 space-y-2.5">
+              <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded-lg w-2/3" />
+              <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded-lg w-1/2" />
+              <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded-lg w-3/4" />
             </div>
           </div>
         ))}
@@ -43,11 +44,11 @@ export default function ConversationList({
 
   if (!conversations || conversations.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 text-center">
-        <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
-          <MessageSquare className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+      <div className="flex flex-col items-center justify-center p-10 text-center">
+        <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-full flex items-center justify-center mb-5 shadow-inner">
+          <MessageSquare className="w-9 h-9 text-gray-400 dark:text-gray-500" />
         </div>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
           No messages yet
         </h3>
         <p className="text-gray-500 dark:text-gray-400 text-sm max-w-xs">
@@ -58,20 +59,25 @@ export default function ConversationList({
   }
 
   return (
-    <div className="flex flex-col divide-y divide-gray-100 dark:divide-gray-700">
+    <div className="flex flex-col p-2 gap-1">
       {conversations.map((convo) => {
         const isLandlord = convo.landlord_id === currentUserId;
         const otherUser = isLandlord ? convo.renter : convo.landlord;
         const listing = convo.listing;
         const unreadCount = unreadCounts[convo.id] || 0;
         const isSelected = selectedConversationId === convo.id;
+        const hasUnread = unreadCount > 0;
 
         return (
           <button
             key={convo.id}
             onClick={() => onSelectConversation(convo)}
-            className={`flex items-center gap-3 p-4 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 ${
-              isSelected ? 'bg-red-50 dark:bg-red-900/20' : ''
+            className={`group flex items-center gap-3 p-3 text-left rounded-2xl transition-all duration-200 ${
+              isSelected 
+                ? 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-lg shadow-red-500/25 scale-[1.02]' 
+                : hasUnread
+                  ? 'bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'
             }`}
           >
             {/* Avatar */}
@@ -80,17 +86,25 @@ export default function ConversationList({
                 <img
                   src={otherUser.photo_url}
                   alt={otherUser.display_name}
-                  className="w-12 h-12 rounded-full object-cover"
+                  className={`w-14 h-14 rounded-2xl object-cover border-2 transition-all ${
+                    isSelected ? 'border-white/30' : 'border-transparent'
+                  }`}
                 />
               ) : (
-                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
-                  <span className="text-red-600 dark:text-red-300 font-semibold text-lg">
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
+                  isSelected 
+                    ? 'bg-white/20' 
+                    : 'bg-gradient-to-br from-red-100 to-rose-100 dark:from-red-900/50 dark:to-rose-900/50'
+                }`}>
+                  <span className={`font-bold text-xl ${
+                    isSelected ? 'text-white' : 'text-red-500 dark:text-red-400'
+                  }`}>
                     {otherUser?.display_name?.[0]?.toUpperCase() || '?'}
                   </span>
                 </div>
               )}
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+              {hasUnread && !isSelected && (
+                <span className="absolute -top-1 -right-1 min-w-[22px] h-[22px] px-1.5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg animate-pulse">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
@@ -98,59 +112,59 @@ export default function ConversationList({
 
             {/* Content */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center justify-between gap-2 mb-0.5">
                 <h4 className={`font-semibold truncate ${
-                  unreadCount > 0 
-                    ? 'text-gray-900 dark:text-white' 
-                    : 'text-gray-700 dark:text-gray-300'
+                  isSelected 
+                    ? 'text-white' 
+                    : hasUnread 
+                      ? 'text-gray-900 dark:text-white' 
+                      : 'text-gray-700 dark:text-gray-300'
                 }`}>
-                  {otherUser?.display_name
-                    || (otherUser?.id
-                      ? `Deleted User (${otherUser.id.slice(0, 6)}...)`
-                      : 'Unknown User')}
+                  {otherUser?.display_name || 'Unknown User'}
                 </h4>
-                <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">
-                  {formatRelativeTime(convo.last_message_at)}
-                </span>
+                <div className={`flex items-center gap-1 flex-shrink-0 ${
+                  isSelected ? 'text-white/70' : 'text-gray-400 dark:text-gray-500'
+                }`}>
+                  <Clock className="w-3 h-3" />
+                  <span className="text-xs">{formatRelativeTime(convo.last_message_at)}</span>
+                </div>
               </div>
 
               {/* Listing info */}
               {listing && (
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <Home className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 flex-shrink-0" />
-                  <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                    {listing.title}
-                  </p>
+                <div className={`flex items-center gap-1.5 mb-1 ${
+                  isSelected ? 'text-white/80' : 'text-gray-500 dark:text-gray-400'
+                }`}>
+                  <Home className="w-3.5 h-3.5 flex-shrink-0" />
+                  <p className="text-sm truncate">{listing.title}</p>
                 </div>
               )}
 
-              {/* Role indicator */}
-              <div className="flex items-center gap-2 mt-1">
-                <span className={`text-xs px-2 py-0.5 rounded-full ${
-                  isLandlord 
-                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                    : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+              {/* Tags row */}
+              <div className="flex items-center gap-2">
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                  isSelected 
+                    ? 'bg-white/20 text-white' 
+                    : isLandlord 
+                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                      : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
                 }`}>
-                  {isLandlord ? 'You: Landlord' : 'You: Renter'}
+                  {isLandlord ? 'Landlord' : 'Renter'}
                 </span>
                 {listing?.price && (
-                  <span className="text-xs text-gray-400 dark:text-gray-500">
+                  <span className={`text-xs font-medium ${
+                    isSelected ? 'text-white/70' : 'text-gray-400 dark:text-gray-500'
+                  }`}>
                     R{listing.price.toLocaleString()}/mo
                   </span>
                 )}
               </div>
             </div>
 
-            {/* Listing thumbnail */}
-            {listing?.photos?.[0] && (
-              <div className="flex-shrink-0 hidden sm:block">
-                <img
-                  src={listing.photos[0]}
-                  alt={listing.title}
-                  className="w-14 h-14 rounded-lg object-cover"
-                />
-              </div>
-            )}
+            {/* Arrow */}
+            <ChevronRight className={`w-5 h-5 flex-shrink-0 transition-transform group-hover:translate-x-1 ${
+              isSelected ? 'text-white/50' : 'text-gray-300 dark:text-gray-600'
+            }`} />
           </button>
         );
       })}
