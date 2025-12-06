@@ -622,9 +622,9 @@ export default function ListingDetailModal({ listing, landlord, onClose, current
             </form>
           </div>
           {landlord && (
-            <div className="bg-gradient-to-br from-red-50 via-red-50 to-red-50 rounded-2xl p-5 mb-4 border border-red-200">
+            <div className="bg-white rounded-2xl p-5 mb-4 border-2 border-red-200 shadow-sm">
               <div className="flex items-center justify-between mb-4">
-                <h4 className="font-bold text-gray-800">Landlord Information</h4>
+                <h4 className="font-bold text-gray-900">Landlord Information</h4>
                 <button
                   onClick={() => setShowContact(!showContact)}
                   className="text-[#c5303c] hover:text-[#a52833] text-sm font-semibold px-3 py-1.5 rounded-lg hover:bg-red-100 transition-colors"
@@ -636,12 +636,12 @@ export default function ListingDetailModal({ listing, landlord, onClose, current
                 {landlord.photo ? (
                   <img src={landlord.photo} alt={landlord.name} className="w-14 h-14 rounded-xl object-cover mr-3 ring-2 ring-red-200" />
                 ) : (
-                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-red-500 to-[#c5303c] flex items-center justify-center mr-3">
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-red-500 to-[#c5303c] flex items-center justify-center mr-3 shadow-md">
                     <User className="w-7 h-7 text-white" />
                   </div>
                 )}
                 <div>
-                  <p className="font-bold text-gray-800 flex items-center gap-2">
+                  <p className="font-bold text-gray-900 text-lg flex items-center gap-2">
                     {landlord.name}
                     {(landlord.verified || landlord.idNumber) && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-[#E63946] to-[#c5303c] text-white text-[10px] font-bold shadow-sm">
@@ -649,7 +649,7 @@ export default function ListingDetailModal({ listing, landlord, onClose, current
                       </span>
                     )}
                   </p>
-                  <p className="text-xs text-gray-500">Property Owner</p>
+                  <p className="text-sm text-gray-600 font-medium">Property Owner</p>
                 </div>
               </div>
               {showContact && (
