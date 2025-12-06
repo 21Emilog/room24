@@ -83,6 +83,11 @@ export default function ChatWindow({
   }, [conversation.id, currentUserId]);
 
 
+  // Only auto-scroll if user is at (or near) the bottom, or if a new message is sent by the user
+  const lastMessageCount = useRef(0);
+  const lastScrollTop = useRef(0);
+  const scrollContainerRef = useRef(null);
+
   // Fetch sender profiles for all messages (if not present)
   useEffect(() => {
     async function enrichMessages() {
@@ -100,8 +105,20 @@ export default function ChatWindow({
       }));
     }
     enrichMessages();
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+
+    // Only scroll if user is at bottom or new message is from self
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
+    const newMsg = messages[messages.length - 1];
+    const sentByMe = newMsg && newMsg.sender_id === currentUserId;
+    if (messages.length > lastMessageCount.current && (isAtBottom || sentByMe)) {
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 50);
+    }
+    lastMessageCount.current = messages.length;
+  }, [messages, currentUserId]);
 
   const handleSend = async () => {
     if (!newMessage.trim() || sending) return;
@@ -348,7 +365,7 @@ export default function ChatWindow({
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
         {loading ? (
           <div className="flex items-center justify-center h-32">
             <div className="w-8 h-8 border-3 border-red-500 border-t-transparent rounded-full animate-spin" />
