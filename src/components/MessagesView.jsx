@@ -135,14 +135,30 @@ export default function MessagesView({
           </div>
         </div>
 
-        <ConversationList
-          conversations={conversations}
-          currentUserId={currentUser.id}
-          onSelectConversation={handleSelectConversation}
-          selectedConversationId={selectedConversation?.id}
-          unreadCounts={unreadCounts}
-          loading={loading}
-        />
+        {(!loading && conversations.length === 0) ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-24 h-24 mb-4">
+              <svg viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="8" y="24" width="80" height="56" rx="16" fill="#F3F4F6" />
+                <rect x="20" y="36" width="56" height="32" rx="8" fill="#E63946" fillOpacity="0.08" />
+                <circle cx="48" cy="52" r="8" fill="#E63946" fillOpacity="0.15" />
+                <rect x="32" y="68" width="32" height="4" rx="2" fill="#E63946" fillOpacity="0.12" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">No conversations yet</h3>
+            <p className="text-gray-500 dark:text-gray-400 text-sm max-w-xs mb-2">Start a chat with a landlord or renter to see your messages here.</p>
+            <p className="text-xs text-gray-400">Tip: Tap a listing and use "Message in App" to start chatting!</p>
+          </div>
+        ) : (
+          <ConversationList
+            conversations={conversations}
+            currentUserId={currentUser.id}
+            onSelectConversation={handleSelectConversation}
+            selectedConversationId={selectedConversation?.id}
+            unreadCounts={unreadCounts}
+            loading={loading}
+          />
+        )}
       </div>
     );
   }

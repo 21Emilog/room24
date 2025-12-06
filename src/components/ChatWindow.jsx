@@ -20,6 +20,17 @@ function formatMessageTime(dateString) {
          date.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' });
 }
 
+function getColorFromId(id) {
+  if (!id) return '#E63946';
+  // Simple hash to pick a color
+  const colors = ['#E63946', '#1D3557', '#457B9D', '#A8DADC', '#F1FAEE', '#F9C74F', '#90BE6D', '#43AA8B', '#577590'];
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+}
+
 export default function ChatWindow({ 
   conversation, 
   currentUserId, 
@@ -400,8 +411,11 @@ export default function ChatWindow({
                           {sender?.photo_url ? (
                             <img src={sender.photo_url} alt={sender.display_name} className="w-7 h-7 rounded-full object-cover mb-0.5 shadow" />
                           ) : (
-                            <div className="w-7 h-7 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center mb-0.5">
-                              <span className="text-red-600 dark:text-red-300 font-semibold text-xs">{sender?.display_name?.[0]?.toUpperCase() || '?'}</span>
+                            <div
+                              className="w-7 h-7 rounded-full flex items-center justify-center mb-0.5 shadow"
+                              style={{ background: getColorFromId(sender?.id) }}
+                            >
+                              <span className="text-white font-semibold text-xs">{sender?.display_name?.[0]?.toUpperCase() || '?'}</span>
                             </div>
                           )}
                           <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium max-w-[70px] truncate text-center">{sender?.display_name}</span>
@@ -409,6 +423,17 @@ export default function ChatWindow({
                       )}
                     </div>
                   )}
+                  // Helper: get a color from a string (sender id)
+                  function getColorFromId(id) {
+                    if (!id) return '#E63946';
+                    // Simple hash to pick a color
+                    const colors = ['#E63946', '#1D3557', '#457B9D', '#A8DADC', '#F1FAEE', '#F9C74F', '#90BE6D', '#43AA8B', '#577590'];
+                    let hash = 0;
+                    for (let i = 0; i < id.length; i++) {
+                      hash = id.charCodeAt(i) + ((hash << 5) - hash);
+                    }
+                    return colors[Math.abs(hash) % colors.length];
+                  }
                   <div
                     className={`relative max-w-[75%] px-4 py-2 rounded-2xl shadow-sm transition-all ${
                       isMe
