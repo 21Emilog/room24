@@ -211,10 +211,7 @@ export async function ensureProfileRecord(userId) {
 export async function syncProfileToSupabase(userId, profileData = {}) {
   if (!userId) return false;
 
-  await ensureProfileRecord(userId);
-
   const payload = {
-    id: userId,
     display_name: profileData.displayName || profileData.name || '',
     email: profileData.email || '',
     phone: profileData.phone || '',
@@ -227,13 +224,39 @@ export async function syncProfileToSupabase(userId, profileData = {}) {
     updated_at: new Date().toISOString(),
   };
 
-  const { error } = await supabase
+  // First, check if profile exists
+  const { data: existing, error: fetchError } = await supabase
     .from('profiles')
-    .upsert(payload, { onConflict: 'id' });
+    .select('id')
+    .eq('id', userId)
+    .maybeSingle();
 
-  if (error) {
-    console.error('syncProfileToSupabase failed:', error);
-    throw error;
+  if (fetchError) {
+    console.error('Error checking profile:', fetchError);
+    throw fetchError;
+  }
+
+  if (existing) {
+    // Update existing profile
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update(payload)
+      .eq('id', userId);
+
+    if (updateError) {
+      console.error('syncProfileToSupabase update failed:', updateError);
+      throw updateError;
+    }
+  } else {
+    // Insert new profile
+    const { error: insertError } = await supabase
+      .from('profiles')
+      .insert({ id: userId, ...payload });
+
+    if (insertError) {
+      console.error('syncProfileToSupabase insert failed:', insertError);
+      throw insertError;
+    }
   }
 
   return true;
