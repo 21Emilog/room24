@@ -48,7 +48,7 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
   return (
     <div
       onClick={onClick}
-      className={`bg-white dark:bg-gray-800 rounded-2xl shadow-sm hover:shadow-xl dark:shadow-gray-900/30 transition-all duration-300 cursor-pointer overflow-hidden border border-gray-100 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-500/50 hover:-translate-y-1 group w-full max-w-sm ${listing.premium ? 'ring-2 ring-amber-400 ring-offset-2 dark:ring-offset-gray-900' : ''}`}
+      className={`bg-white dark:bg-gray-800 rounded-3xl shadow-md hover:shadow-2xl dark:shadow-gray-900/50 transition-all duration-500 ease-out cursor-pointer overflow-hidden border border-gray-100 dark:border-gray-700 hover:border-red-400 dark:hover:border-red-500/50 hover:-translate-y-2 hover:scale-[1.02] group w-full max-w-sm ${listing.premium ? 'ring-2 ring-amber-400 ring-offset-4 dark:ring-offset-gray-900 shadow-amber-500/20' : ''}`}
       role="article"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(); } }}
@@ -76,16 +76,16 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
             onError={() => setImageError(true)}
           />
           {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500" />
           
           {/* Favorite button */}
           {onToggleFavorite && (
             <button
               onClick={handleFavoriteClick}
-              className={`absolute top-3 left-3 rounded-xl p-2.5 shadow-lg transition-all duration-300 hover:scale-110 active:scale-95 z-10 ${
+              className={`absolute top-3 left-3 rounded-2xl p-3 shadow-xl transition-all duration-300 hover:scale-110 active:scale-90 z-10 ${
                 isFavorite 
-                  ? 'bg-rose-500 hover:bg-rose-600' 
-                  : 'bg-white/95 backdrop-blur-sm hover:bg-white'
+                  ? 'bg-gradient-to-br from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 shadow-rose-500/40' 
+                  : 'bg-white/95 backdrop-blur-md hover:bg-white shadow-black/10'
               }`}
               aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
               aria-pressed={isFavorite}
@@ -93,8 +93,8 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
               <Heart
                 className={`w-5 h-5 transition-all duration-300 ${
                   isFavorite 
-                    ? 'fill-white text-white' 
-                    : 'text-gray-600 hover:text-rose-500'
+                    ? 'fill-white text-white animate-pulse' 
+                    : 'text-gray-600 group-hover:text-rose-500'
                 }`}
               />
             </button>
@@ -253,11 +253,12 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
         )}
         
         {/* CTA Button */}
-        <button className="w-full bg-gradient-to-r from-[#E63946] to-[#E63946] hover:from-[#E63946] hover:to-[#c5303c] text-white py-3 rounded-xl font-semibold text-sm transition-all duration-200 shadow-md hover:shadow-lg hover:shadow-red-500/25 active:scale-[0.98] flex items-center justify-center gap-2 group/btn">
-          <span>View Details</span>
-          <svg className="w-4 h-4 transform group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+        <button className="w-full bg-gradient-to-r from-[#E63946] via-rose-500 to-[#E63946] hover:from-[#c5303c] hover:via-red-600 hover:to-[#c5303c] text-white py-3.5 rounded-2xl font-bold text-sm transition-all duration-300 shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 active:scale-[0.97] flex items-center justify-center gap-2 group/btn relative overflow-hidden">
+          <span className="relative z-10">View Details</span>
+          <svg className="w-4 h-4 transform group-hover/btn:translate-x-1.5 transition-transform duration-300 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
           </svg>
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-700" />
         </button>
       </div>
     </div>

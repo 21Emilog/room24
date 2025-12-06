@@ -105,7 +105,7 @@ export default function Header({
   ].filter(link => link.show);
 
   return (
-    <header className="sticky top-0 z-30 bg-gradient-to-r from-[#1D3557] via-[#1D3557] to-[#2d4a6f] text-white shadow-lg safe-area-top">
+    <header className="sticky top-0 z-30 bg-gradient-to-r from-[#1D3557] via-[#1D3557] to-[#2d4a6f] text-white shadow-xl shadow-blue-900/20 safe-area-top backdrop-blur-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -129,12 +129,12 @@ export default function Header({
                 <button
                   key={link.id}
                   onClick={() => setCurrentView(link.id)}
-                  className="relative flex items-center gap-2 px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-xl font-medium text-sm transition-all duration-200"
+                  className="relative flex items-center gap-2 px-4 py-2.5 text-white/80 hover:text-white hover:bg-white/10 rounded-xl font-medium text-sm transition-all duration-300 group"
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-4 h-4 group-hover:scale-110 transition-transform" />
                   {link.label}
                   {link.badge > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-red-500 to-rose-600 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg shadow-red-500/50 animate-pulse">
                       {link.badge > 9 ? '9+' : link.badge}
                     </span>
                   )}
@@ -207,42 +207,50 @@ export default function Header({
 
                 {/* Dropdown Menu */}
                 {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 animate-fadeIn z-50">
-                    <div className="px-4 py-3 border-b border-gray-100">
-                      <p className="text-sm font-semibold text-gray-900 truncate">{currentUser.name}</p>
-                      <p className="text-xs text-gray-500 capitalize">{currentUser.type || 'Member'}</p>
+                  <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 py-2 animate-fadeIn z-50 overflow-hidden">
+                    <div className="px-5 py-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700">
+                      <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{currentUser.name}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 capitalize mt-0.5">{currentUser.type || 'Member'}</p>
                     </div>
-                    <div className="py-1">
+                    <div className="py-2">
                       <button
                         onClick={() => { setCurrentView('profile'); setShowUserMenu(false); }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        className="w-full flex items-center gap-3 px-5 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group"
                       >
-                        <User className="w-4 h-4 text-gray-400" />
+                        <div className="p-2 bg-gray-100 dark:bg-gray-600 group-hover:bg-red-100 dark:group-hover:bg-red-900/30 rounded-lg transition-colors">
+                          <User className="w-4 h-4 text-gray-500 dark:text-gray-400 group-hover:text-red-500 dark:group-hover:text-red-400" />
+                        </div>
                         My Profile
                       </button>
                       {isLandlord && !previewAsRenter && (
                         <button
                           onClick={() => { setCurrentView('my-listings'); setShowUserMenu(false); }}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          className="w-full flex items-center gap-3 px-5 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group"
                         >
-                          <MapPin className="w-4 h-4 text-gray-400" />
+                          <div className="p-2 bg-gray-100 dark:bg-gray-600 group-hover:bg-red-100 dark:group-hover:bg-red-900/30 rounded-lg transition-colors">
+                            <MapPin className="w-4 h-4 text-gray-500 dark:text-gray-400 group-hover:text-red-500 dark:group-hover:text-red-400" />
+                          </div>
                           My Listings
                         </button>
                       )}
                       <button
                         onClick={() => { setCurrentView('favorites'); setShowUserMenu(false); }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        className="w-full flex items-center gap-3 px-5 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group"
                       >
-                        <Heart className="w-4 h-4 text-gray-400" />
+                        <div className="p-2 bg-gray-100 dark:bg-gray-600 group-hover:bg-red-100 dark:group-hover:bg-red-900/30 rounded-lg transition-colors">
+                          <Heart className="w-4 h-4 text-gray-500 dark:text-gray-400 group-hover:text-red-500 dark:group-hover:text-red-400" />
+                        </div>
                         Saved Rooms
                       </button>
                     </div>
-                    <div className="border-t border-gray-100 pt-1">
+                    <div className="border-t border-gray-100 dark:border-gray-700 pt-2">
                       <button
                         onClick={() => { handleSignOut(); setShowUserMenu(false); }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[#E63946] hover:bg-red-50 transition-colors"
+                        className="w-full flex items-center gap-3 px-5 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                       >
-                        <LogOut className="w-4 h-4" />
+                        <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                          <LogOut className="w-4 h-4" />
+                        </div>
                         Sign Out
                       </button>
                     </div>
@@ -250,16 +258,16 @@ export default function Header({
                 )}
               </div>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <button
                   onClick={() => openAuthModal('renter', 'signin')}
-                  className="hidden sm:block px-4 py-2 text-white/80 hover:text-white font-medium text-sm transition-colors"
+                  className="hidden sm:block px-5 py-2.5 text-white/90 hover:text-white font-semibold text-sm transition-all hover:bg-white/10 rounded-xl"
                 >
                   Sign In
                 </button>
                 <button
                   onClick={() => openAuthModal('landlord', 'signup')}
-                  className="px-4 py-2.5 bg-[#E63946] hover:bg-[#c5303c] text-white font-semibold text-sm rounded-xl shadow-lg shadow-red-500/30 hover:shadow-red-500/50 transition-all duration-200 hover:scale-105 active:scale-100"
+                  className="px-5 py-2.5 bg-gradient-to-r from-[#E63946] to-rose-600 hover:from-[#c5303c] hover:to-rose-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-red-500/40 hover:shadow-xl hover:shadow-red-500/50 transition-all duration-300 hover:scale-105 active:scale-100"
                 >
                   List Room
                 </button>

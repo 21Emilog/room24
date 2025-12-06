@@ -422,81 +422,89 @@ export default function BrowseView({
         )}
 
         {/* Main Desktop Content */}
-        <div className="bg-gradient-to-b from-gray-50 to-white min-h-screen">
+        <div className="bg-gradient-to-b from-gray-50 via-white to-gray-50 min-h-screen">
           <div className="max-w-7xl mx-auto px-6 py-8">
             {/* Search Bar - Desktop */}
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-8">
-              <div className="flex flex-wrap lg:flex-nowrap gap-4 items-end">
-                <div className="flex-1 min-w-[200px]">
-                  <label className="text-sm font-semibold text-gray-700 mb-2 block" htmlFor="browse-location-search">Location</label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" aria-hidden="true" />
+            <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 p-8 mb-10 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-red-50 to-transparent rounded-bl-full" />
+              <div className="relative">
+                <div className="flex flex-wrap lg:flex-nowrap gap-4 items-end">
+                  <div className="flex-1 min-w-[200px]">
+                    <label className="text-sm font-bold text-gray-800 mb-2 block flex items-center gap-2" htmlFor="browse-location-search">
+                      <MapPin className="w-4 h-4 text-red-500" />
+                      Location
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="browse-location-search"
+                        type="text"
+                        placeholder="e.g. Sandton, Cape Town, Midrand..."
+                        value={searchLocation}
+                        onChange={e => setSearchLocation(e.target.value)}
+                        className="w-full pl-4 pr-4 py-4 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-[#E63946]/20 focus:border-[#E63946] text-gray-800 shadow-sm transition-all duration-300 placeholder-gray-400 font-medium"
+                        aria-label="Search by location"
+                        autoComplete="off"
+                      />
+                    </div>
+                  </div>
+                  <div className="w-40">
+                    <label className="text-sm font-bold text-gray-800 mb-2 block" htmlFor="min-price-input">Min Price</label>
                     <input
-                      id="browse-location-search"
-                      type="text"
-                      placeholder="e.g. Sandton, Cape Town, Midrand..."
-                      value={searchLocation}
-                      onChange={e => setSearchLocation(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-[#E63946]/30 focus:border-[#E63946] text-gray-800 shadow-sm transition-all duration-200 placeholder-gray-400"
-                      aria-label="Search by location"
-                      autoComplete="off"
+                      id="min-price-input"
+                      type="number"
+                      min="0"
+                      step="100"
+                      value={priceRange[0]}
+                      onChange={e => setPriceRange([parseInt(e.target.value) || 0, priceRange[1]])}
+                      className="w-full py-4 px-4 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-[#E63946]/20 focus:border-[#E63946] text-gray-800 font-semibold transition-all"
+                      placeholder="R0"
+                      aria-label="Minimum price"
                     />
                   </div>
-                </div>
-                <div className="w-36">
-                  <label className="text-sm font-semibold text-gray-700 mb-2 block" htmlFor="min-price-input">Min Price</label>
-                  <input
-                    id="min-price-input"
-                    type="number"
-                    min="0"
-                    step="100"
-                    value={priceRange[0]}
-                    onChange={e => setPriceRange([parseInt(e.target.value) || 0, priceRange[1]])}
-                    className="w-full py-3 px-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#E63946] text-gray-800"
-                    placeholder="R0"
-                    aria-label="Minimum price"
-                  />
-                </div>
-                <div className="w-36">
-                  <label className="text-sm font-semibold text-gray-700 mb-2 block" htmlFor="max-price-input">Max Price</label>
-                  <input
-                    id="max-price-input"
-                    type="number"
-                    min="0"
-                    step="100"
-                    value={priceRange[1]}
-                    onChange={e => setPriceRange([priceRange[0], parseInt(e.target.value) || 10000])}
-                    className="w-full py-3 px-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#E63946] text-gray-800"
-                    placeholder="R10,000"
-                    aria-label="Maximum price"
-                  />
-                </div>
-                <div className="w-40">
-                  <label className="text-sm font-semibold text-gray-700 mb-2 block">Sort By</label>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="w-full py-3 px-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#E63946] text-gray-800"
+                  <div className="w-40">
+                    <label className="text-sm font-bold text-gray-800 mb-2 block" htmlFor="max-price-input">Max Price</label>
+                    <input
+                      id="max-price-input"
+                      type="number"
+                      min="0"
+                      step="100"
+                      value={priceRange[1]}
+                      onChange={e => setPriceRange([priceRange[0], parseInt(e.target.value) || 10000])}
+                      className="w-full py-4 px-4 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-[#E63946]/20 focus:border-[#E63946] text-gray-800 font-semibold transition-all"
+                      placeholder="R10,000"
+                      aria-label="Maximum price"
+                    />
+                  </div>
+                  <div className="w-44">
+                    <label className="text-sm font-bold text-gray-800 mb-2 block">Sort By</label>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="w-full py-4 px-4 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-[#E63946]/20 focus:border-[#E63946] text-gray-800 font-semibold transition-all appearance-none bg-white cursor-pointer"
+                    >
+                      <option value="newest">Newest First</option>
+                      <option value="cheapest">Lowest Price</option>
+                      <option value="expensive">Highest Price</option>
+                    </select>
+                  </div>
+                  <button
+                    onClick={() => addRecentSearch(searchLocation)}
+                    className="bg-gradient-to-r from-[#E63946] via-rose-500 to-[#E63946] hover:from-[#c5303c] hover:via-red-600 hover:to-[#c5303c] text-white font-bold px-10 py-4 rounded-2xl transition-all duration-300 shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 hover:scale-105 active:scale-100 flex items-center gap-2 focus:outline-none focus:ring-4 focus:ring-[#E63946]/30"
+                    aria-label="Search rooms"
+                    tabIndex={0}
                   >
-                    <option value="newest">Newest First</option>
-                    <option value="cheapest">Lowest Price</option>
-                    <option value="expensive">Highest Price</option>
-                  </select>
+                    <Search className="w-5 h-5" aria-hidden="true" />
+                    Search
+                  </button>
                 </div>
-                <button
-                  onClick={() => addRecentSearch(searchLocation)}
-                  className="bg-[#E63946] hover:bg-[#c5303c] text-white font-bold px-8 py-3 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-[#E63946]/40"
-                  aria-label="Search rooms"
-                  tabIndex={0}
-                >
-                  <Search className="w-5 h-5" aria-hidden="true" />
-                  Search
-                </button>
               </div>
               
               {/* Quick Filters */}
-              <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-100">
-                <span className="text-sm text-gray-500 mr-2">Popular:</span>
+              <div className="flex flex-wrap gap-2 mt-6 pt-6 border-t border-gray-100">
+                <span className="text-sm font-semibold text-gray-600 mr-3 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-500" />
+                  Popular:
+                </span>
                 {['Sandton', 'Soweto', 'Pretoria', 'Cape Town', 'Durban', 'Midrand'].map(area => (
                   <button
                     key={area}

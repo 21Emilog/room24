@@ -15,28 +15,35 @@ export default function Footer({ onOpenPrivacy, onOpenAbout, onInstallApp }) {
   );
 
   return (
-    <footer className="bg-gradient-to-b from-gray-900 to-gray-950 text-gray-300 mt-auto">
+    <footer className="bg-gradient-to-b from-gray-900 via-gray-900 to-gray-950 text-gray-300 mt-auto relative overflow-hidden">
+      {/* Decorative elements */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-red-500/5 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
+      
       {/* Main Footer Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 relative">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-10">
           {/* Brand Column */}
           <div className="lg:col-span-2">
-            <div className="flex items-center gap-2 mb-4">
-              <Logo />
-              <span className="text-2xl font-extrabold text-[#1D3557]">
-                Rent<span className="text-[#E63946]">Mzansi</span>
+            <div className="flex items-center gap-3 mb-5">
+              <div className="p-2 bg-gradient-to-br from-red-500 to-rose-600 rounded-xl shadow-lg shadow-red-500/30">
+                <Logo />
+              </div>
+              <span className="text-2xl font-extrabold">
+                <span className="text-white">Rent</span>
+                <span className="text-[#E63946]">Mzansi</span>
               </span>
             </div>
-            <p className="text-gray-400 text-sm leading-relaxed mb-4 max-w-md">
+            <p className="text-gray-400 text-sm leading-relaxed mb-6 max-w-md">
               Find your perfect room in South Africa. Connect directly with verified landlords, 
               no middleman fees. Safe, simple, and completely free for renters.
             </p>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <button
                 onClick={onInstallApp}
-                className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#E63946] hover:bg-[#c5303c] text-white font-semibold text-sm rounded-xl transition-all shadow-lg hover:shadow-xl"
+                className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-[#E63946] to-rose-600 hover:from-[#c5303c] hover:to-rose-700 text-white font-bold text-sm rounded-xl transition-all shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 hover:scale-105 active:scale-100"
               >
-                <Download className="w-4 h-4" />
+                <Download className="w-5 h-5" />
                 Install App
               </button>
             </div>
@@ -44,35 +51,46 @@ export default function Footer({ onOpenPrivacy, onOpenAbout, onInstallApp }) {
 
           {/* Quick Links */}
           <div>
-            <h4 className="text-white font-semibold mb-4 text-sm uppercase tracking-wider">Quick Links</h4>
-            <ul className="space-y-3">
+            <h4 className="text-white font-bold mb-5 text-sm uppercase tracking-wider flex items-center gap-2">
+              <div className="w-1 h-5 bg-gradient-to-b from-red-500 to-rose-600 rounded-full" />
+              Quick Links
+            </h4>
+            <ul className="space-y-4">
               <li>
-                <button className="text-gray-400 hover:text-[#E63946] transition-colors text-sm flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
+                <button className="text-gray-400 hover:text-white transition-all text-sm flex items-center gap-3 group">
+                  <div className="p-2 bg-gray-800 group-hover:bg-red-500/20 rounded-lg transition-colors">
+                    <MapPin className="w-4 h-4 group-hover:text-red-400" />
+                  </div>
                   Browse Rooms
                 </button>
               </li>
               <li>
-                <button className="text-gray-400 hover:text-[#E63946] transition-colors text-sm flex items-center gap-2">
-                  <Heart className="w-4 h-4" />
+                <button className="text-gray-400 hover:text-white transition-all text-sm flex items-center gap-3 group">
+                  <div className="p-2 bg-gray-800 group-hover:bg-red-500/20 rounded-lg transition-colors">
+                    <Heart className="w-4 h-4 group-hover:text-red-400" />
+                  </div>
                   Saved Listings
                 </button>
               </li>
               <li>
                 <button 
                   onClick={onOpenPrivacy}
-                  className="text-gray-400 hover:text-[#E63946] transition-colors text-sm flex items-center gap-2"
+                  className="text-gray-400 hover:text-white transition-all text-sm flex items-center gap-3 group"
                 >
-                  <Shield className="w-4 h-4" />
+                  <div className="p-2 bg-gray-800 group-hover:bg-red-500/20 rounded-lg transition-colors">
+                    <Shield className="w-4 h-4 group-hover:text-red-400" />
+                  </div>
                   Privacy Policy
                 </button>
               </li>
               <li>
                 <button 
                   onClick={onOpenAbout}
-                  className="text-gray-400 hover:text-[#E63946] transition-colors text-sm flex items-center gap-2"
+                  className="text-gray-400 hover:text-white transition-all text-sm flex items-center gap-3 group"
                 >
-                  <Info className="w-4 h-4" />
+                  <div className="p-2 bg-gray-800 group-hover:bg-red-500/20 rounded-lg transition-colors">
+                    <Info className="w-4 h-4 group-hover:text-red-400" />
+                  </div>
                   About Us
                 </button>
               </li>
@@ -81,14 +99,19 @@ export default function Footer({ onOpenPrivacy, onOpenAbout, onInstallApp }) {
 
           {/* Contact */}
           <div>
-            <h4 className="text-white font-semibold mb-4 text-sm uppercase tracking-wider">Contact</h4>
-            <ul className="space-y-3">
+            <h4 className="text-white font-bold mb-5 text-sm uppercase tracking-wider flex items-center gap-2">
+              <div className="w-1 h-5 bg-gradient-to-b from-red-500 to-rose-600 rounded-full" />
+              Contact
+            </h4>
+            <ul className="space-y-4">
               <li>
                 <a 
                   href="mailto:support@rentmzansi.co.za" 
-                  className="text-gray-400 hover:text-[#E63946] transition-colors text-sm flex items-center gap-2"
+                  className="text-gray-400 hover:text-white transition-all text-sm flex items-center gap-3 group"
                 >
-                  <Mail className="w-4 h-4" />
+                  <div className="p-2 bg-gray-800 group-hover:bg-red-500/20 rounded-lg transition-colors">
+                    <Mail className="w-4 h-4 group-hover:text-red-400" />
+                  </div>
                   support@rentmzansi.co.za
                 </a>
               </li>
@@ -97,9 +120,11 @@ export default function Footer({ onOpenPrivacy, onOpenAbout, onInstallApp }) {
                   href="https://rentmzansi.com" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-[#E63946] transition-colors text-sm flex items-center gap-2"
+                  className="text-gray-400 hover:text-white transition-all text-sm flex items-center gap-3 group"
                 >
-                  <ExternalLink className="w-4 h-4" />
+                  <div className="p-2 bg-gray-800 group-hover:bg-red-500/20 rounded-lg transition-colors">
+                    <ExternalLink className="w-4 h-4 group-hover:text-red-400" />
+                  </div>
                   rentmzansi.com
                 </a>
               </li>
@@ -108,22 +133,28 @@ export default function Footer({ onOpenPrivacy, onOpenAbout, onInstallApp }) {
         </div>
 
         {/* Trust Badges */}
-        <div className="flex flex-wrap items-center justify-center gap-6 py-6 border-t border-gray-800">
-          <div className="flex items-center gap-2 text-gray-500 text-xs">
-            <Shield className="w-4 h-4 text-[#E63946]" />
-            <span>Verified Landlords</span>
+        <div className="flex flex-wrap items-center justify-center gap-8 py-8 border-t border-gray-800/50">
+          <div className="flex items-center gap-3 bg-gray-800/50 px-5 py-3 rounded-xl">
+            <div className="p-2 bg-red-500/20 rounded-lg">
+              <Shield className="w-5 h-5 text-[#E63946]" />
+            </div>
+            <span className="text-gray-300 text-sm font-medium">Verified Landlords</span>
           </div>
-          <div className="flex items-center gap-2 text-gray-500 text-xs">
-            <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-            <span>Secure Platform</span>
+          <div className="flex items-center gap-3 bg-gray-800/50 px-5 py-3 rounded-xl">
+            <div className="p-2 bg-emerald-500/20 rounded-lg">
+              <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+            <span className="text-gray-300 text-sm font-medium">Secure Platform</span>
           </div>
-          <div className="flex items-center gap-2 text-gray-500 text-xs">
-            <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>No Hidden Fees</span>
+          <div className="flex items-center gap-3 bg-gray-800/50 px-5 py-3 rounded-xl">
+            <div className="p-2 bg-amber-500/20 rounded-lg">
+              <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <span className="text-gray-300 text-sm font-medium">No Hidden Fees</span>
           </div>
         </div>
       </div>
