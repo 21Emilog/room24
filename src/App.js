@@ -4965,13 +4965,6 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
       if (!form.name || form.name.trim().length < 2) {
         newErrors.name = 'Name must be at least 2 characters';
       }
-      
-      // Landlords must provide phone number
-      if (form.type === 'landlord') {
-        if (!form.phone || form.phone.trim().length < 10) {
-          newErrors.phone = 'Phone number is required for landlords (min 10 digits)';
-        }
-      }
     }
     
     if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
@@ -5007,7 +5000,8 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
     
     try {
       if (mode === 'signup') {
-        await authFunctions.signUp(form.email, form.password, form.name, form.type, form.phone, captchaToken);
+        // Everyone signs up as renter by default, they can change to landlord in profile settings
+        await authFunctions.signUp(form.email, form.password, form.name, 'renter', '', captchaToken);
         onSuccess?.();
         onClose();
       } else if (mode === 'signin') {
@@ -5225,60 +5219,18 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
                 </div>
               )}
 
-              {/* User Type (signup only) */}
+              {/* Info message for landlords */}
               {mode === 'signup' && (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">I am a</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setForm({ ...form, type: 'renter' })}
-                      className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${
-                        form.type === 'renter' 
-                          ? 'border-red-500 bg-gradient-to-br from-red-50 to-red-50 text-[#c5303c] shadow-md' 
-                          : 'border-gray-200 hover:border-gray-300 text-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      <Search className={`w-5 h-5 ${form.type === 'renter' ? 'text-red-500' : ''}`} />
-                      <span className="text-xs font-semibold">Looking for a room</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setForm({ ...form, type: 'landlord' })}
-                      className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${
-                        form.type === 'landlord' 
-                          ? 'border-rose-500 bg-gradient-to-br from-rose-50 to-pink-50 text-rose-700 shadow-md' 
-                          : 'border-gray-200 hover:border-gray-300 text-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      <Home className={`w-5 h-5 ${form.type === 'landlord' ? 'text-rose-500' : ''}`} />
-                      <span className="text-xs font-semibold">Listing rooms</span>
-                    </button>
+                <div className="p-4 bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-xl">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <Home className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-amber-800">Want to list rooms?</p>
+                      <p className="text-xs text-amber-700 mt-0.5">After signing up, go to your <strong>Profile</strong> and change your account role to <strong>Landlord</strong> to start posting listings.</p>
+                    </div>
                   </div>
-                </div>
-              )}
-
-              {/* Phone Number (required for landlords) */}
-              {mode === 'signup' && form.type === 'landlord' && (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Phone Number <span className="text-red-500">*</span>
-                    <span className="text-xs font-normal text-gray-500 ml-1">(required for landlords)</span>
-                  </label>
-                  <div className="relative">
-                    <Phone className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
-                    <input 
-                      type="tel" 
-                      value={form.phone} 
-                      onChange={(e) => { setForm({ ...form, phone: e.target.value }); setErrors({ ...errors, phone: '' }); }}
-                      className={`w-full pl-11 pr-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-red-100 focus:border-red-500 ${
-                        errors.phone ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                      placeholder="e.g., 071 234 5678"
-                    />
-                  </div>
-                  {errors.phone && <p className="text-rose-500 text-xs mt-1.5 flex items-center gap-1"><span>⚠</span>{errors.phone}</p>}
-                  <p className="text-xs text-gray-500 mt-1">Renters will use this to contact you about listings</p>
                 </div>
               )}
 
