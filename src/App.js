@@ -120,7 +120,7 @@ export default function RentalPlatform() {
 
   // Auth functions to pass to AuthModal - Uses Supabase
   const authFunctions = {
-    signUp: async (email, password, displayName, userTypeParam = 'renter', captchaToken = '') => {
+    signUp: async (email, password, displayName, userTypeParam = 'renter', phone = '', captchaToken = '') => {
       const user = await signUpWithEmail(email, password, captchaToken);
       
       // Create user profile data
@@ -128,7 +128,7 @@ export default function RentalPlatform() {
         email: user.email,
         displayName: displayName || '',
         userType: userTypeParam,
-        phone: '',
+        phone: phone || '',
         photoURL: '',
         createdAt: new Date().toISOString(),
         landlordComplete: userTypeParam === 'renter',
@@ -4954,6 +4954,13 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
       if (!form.name || form.name.trim().length < 2) {
         newErrors.name = 'Name must be at least 2 characters';
       }
+      
+      // Landlords must provide phone number
+      if (form.type === 'landlord') {
+        if (!form.phone || form.phone.trim().length < 10) {
+          newErrors.phone = 'Phone number is required for landlords (min 10 digits)';
+        }
+      }
     }
     
     if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
@@ -4989,7 +4996,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
     
     try {
       if (mode === 'signup') {
-        await authFunctions.signUp(form.email, form.password, form.name, form.type, captchaToken);
+        await authFunctions.signUp(form.email, form.password, form.name, form.type, form.phone, captchaToken);
         onSuccess?.();
         onClose();
       } else if (mode === 'signin') {
@@ -5237,6 +5244,30 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
                       <span className="text-xs font-semibold">Listing rooms</span>
                     </button>
                   </div>
+                </div>
+              )}
+
+              {/* Phone Number (required for landlords) */}
+              {mode === 'signup' && form.type === 'landlord' && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Phone Number <span className="text-red-500">*</span>
+                    <span className="text-xs font-normal text-gray-500 ml-1">(required for landlords)</span>
+                  </label>
+                  <div className="relative">
+                    <Phone className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
+                    <input 
+                      type="tel" 
+                      value={form.phone} 
+                      onChange={(e) => { setForm({ ...form, phone: e.target.value }); setErrors({ ...errors, phone: '' }); }}
+                      className={`w-full pl-11 pr-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-red-100 focus:border-red-500 ${
+                        errors.phone ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                      placeholder="e.g., 071 234 5678"
+                    />
+                  </div>
+                  {errors.phone && <p className="text-rose-500 text-xs mt-1.5 flex items-center gap-1"><span>⚠</span>{errors.phone}</p>}
+                  <p className="text-xs text-gray-500 mt-1">Renters will use this to contact you about listings</p>
                 </div>
               )}
 
