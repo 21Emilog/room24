@@ -1,10 +1,16 @@
 // Supabase client for RentMzansi
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://xohczphzosfgdlgwrlrw.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhvaGN6cGh6b3NmZ2RsZ3dybHJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2MTE1NDQsImV4cCI6MjA4MDE4NzU0NH0.AlW0ul9nwusOjEM36ERhN5XYsj0FzDHBBjufwd0rRYM';
+// Load from environment variables (set in Vercel/Netlify dashboard)
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
+const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Validate that environment variables are set
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Missing Supabase environment variables. Please set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY');
+}
+
+export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '');
 
 // ===========================
 // AUTHENTICATION FUNCTIONS

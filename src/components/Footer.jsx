@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Heart, Shield, Mail, ExternalLink, Info, MapPin, Send, CheckCircle } from 'lucide-react';
+import { Heart, Shield, Mail, ExternalLink, Info, MapPin, Send, CheckCircle, Facebook, Instagram, Twitter, Linkedin } from 'lucide-react';
 
 export default function Footer({ onOpenPrivacy, onOpenAbout, onInstallApp }) {
   const currentYear = new Date().getFullYear();
