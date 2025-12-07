@@ -1134,7 +1134,7 @@ export default function BrowseView({
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12 justify-items-center">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12 justify-items-center stagger-animation">
                 {(paymentFilter ? listings.filter(l => l.paymentMethod === paymentFilter) : listings).map((listing, idx) => (
                   <React.Fragment key={listing.id}>
                     <ListingCard
@@ -1142,6 +1142,7 @@ export default function BrowseView({
                       onClick={() => onSelectListing(listing)}
                       isFavorite={favorites.includes(listing.id)}
                       onToggleFavorite={toggleFavorite}
+                      index={idx}
                     />
                     {(idx + 1) % 8 === 0 && idx !== listings.length - 1 && (
                       <div className="sm:col-span-2 lg:col-span-3 xl:col-span-4">

@@ -1,8 +1,19 @@
-import React from 'react';
-import { Heart, Shield, Mail, Download, ExternalLink, Info, MapPin } from 'lucide-react';
+import React, { useState } from 'react';
+import { Heart, Shield, Mail, ExternalLink, Info, MapPin, Send, CheckCircle } from 'lucide-react';
 
 export default function Footer({ onOpenPrivacy, onOpenAbout, onInstallApp }) {
   const currentYear = new Date().getFullYear();
+  const [email, setEmail] = useState('');
+  const [subscribed, setSubscribed] = useState(false);
+
+  const handleSubscribe = (e) => {
+    e.preventDefault();
+    if (email && email.includes('@')) {
+      setSubscribed(true);
+      setEmail('');
+      setTimeout(() => setSubscribed(false), 5000);
+    }
+  };
 
   // Inline SVG logo component
   const Logo = () => (
@@ -38,14 +49,74 @@ export default function Footer({ onOpenPrivacy, onOpenAbout, onInstallApp }) {
               Find your perfect room in South Africa. Connect directly with verified landlords, 
               no middleman fees. Safe, simple, and completely free for renters.
             </p>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={onInstallApp}
-                className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-[#E63946] to-rose-600 hover:from-[#c5303c] hover:to-rose-700 text-white font-bold text-sm rounded-xl transition-all shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 hover:scale-105 active:scale-100"
+
+            {/* Newsletter Signup */}
+            <div className="mb-6">
+              <p className="text-white text-sm font-medium mb-3">Get notified about new rooms</p>
+              {subscribed ? (
+                <div className="flex items-center gap-2 text-emerald-400 bg-emerald-500/10 px-4 py-3 rounded-xl animate-fadein">
+                  <CheckCircle className="w-5 h-5" />
+                  <span className="text-sm font-medium">Thanks! You're subscribed.</span>
+                </div>
+              ) : (
+                <form onSubmit={handleSubscribe} className="flex gap-2">
+                  <input
+                    type="email"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="flex-1 bg-gray-800 border border-gray-700 text-white placeholder-gray-500 px-4 py-3 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+                    required
+                  />
+                  <button
+                    type="submit"
+                    className="p-3 bg-gradient-to-r from-[#E63946] to-rose-600 hover:from-[#c5303c] hover:to-rose-700 text-white rounded-xl transition-all shadow-lg shadow-red-500/30 hover:shadow-xl hover:scale-105 active:scale-95"
+                    aria-label="Subscribe"
+                  >
+                    <Send className="w-5 h-5" />
+                  </button>
+                </form>
+              )}
+            </div>
+
+            {/* Social Links */}
+            <div className="flex items-center gap-3">
+              <a 
+                href="https://facebook.com/rentmzansi" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="p-3 bg-gray-800 hover:bg-blue-600 rounded-xl transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-blue-500/30"
+                aria-label="Facebook"
               >
-                <Download className="w-5 h-5" />
-                Install App
-              </button>
+                <Facebook className="w-5 h-5" />
+              </a>
+              <a 
+                href="https://instagram.com/rentmzansi" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="p-3 bg-gray-800 hover:bg-gradient-to-br hover:from-purple-600 hover:to-pink-500 rounded-xl transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-pink-500/30"
+                aria-label="Instagram"
+              >
+                <Instagram className="w-5 h-5" />
+              </a>
+              <a 
+                href="https://twitter.com/rentmzansi" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="p-3 bg-gray-800 hover:bg-sky-500 rounded-xl transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-sky-500/30"
+                aria-label="Twitter"
+              >
+                <Twitter className="w-5 h-5" />
+              </a>
+              <a 
+                href="https://linkedin.com/company/rentmzansi" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="p-3 bg-gray-800 hover:bg-blue-700 rounded-xl transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-blue-700/30"
+                aria-label="LinkedIn"
+              >
+                <Linkedin className="w-5 h-5" />
+              </a>
             </div>
           </div>
 

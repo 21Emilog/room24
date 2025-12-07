@@ -63,6 +63,29 @@ const LazyModalBoundary = ({ children, label }) => (
   </Suspense>
 );
 
+// Page transition wrapper for smooth view changes
+const PageTransition = ({ children, viewKey }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  
+  useEffect(() => {
+    setIsVisible(false);
+    const timer = setTimeout(() => setIsVisible(true), 50);
+    return () => clearTimeout(timer);
+  }, [viewKey]);
+
+  return (
+    <div 
+      className={`transition-all duration-300 ease-out ${
+        isVisible 
+          ? 'opacity-100 translate-y-0' 
+          : 'opacity-0 translate-y-2'
+      }`}
+    >
+      {children}
+    </div>
+  );
+};
+
 export default function RentalPlatform() {
   const [currentView, setCurrentView] = useState('browse');
   const [userType, setUserType] = useState(null);
@@ -1143,6 +1166,7 @@ const filteredListings = listings
           openAuthModal={openAuthModal}
           handleSignOut={handleSignOut}
           setCurrentView={setCurrentView}
+          currentView={currentView}
           unreadCount={unreadCount}
           onOpenNotifications={() => setShowNotificationsPanel(true)}
           unreadMessageCount={unreadMessageCount}
@@ -1286,6 +1310,7 @@ const filteredListings = listings
       )}
 
       <div id="main-content" className="max-w-7xl mx-auto pb-24 px-4 sm:px-6 lg:px-8" role="main">
+        <PageTransition viewKey={currentView}>
         {currentView === 'setup-profile' && (
           <ProfileSetupView onSubmit={handleProfileSetup} userType={userType} />
         )}
@@ -1452,7 +1477,7 @@ const filteredListings = listings
           />
         )}
 
-
+        </PageTransition>
       </div>
 
       {selectedListing && (
