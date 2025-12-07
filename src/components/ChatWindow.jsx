@@ -1,8 +1,28 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Send, ArrowLeft, Zap, ChevronDown, ChevronUp, MoreVertical, Flag, Ban, X, Image, Paperclip, Loader2, Building2, UserPlus, Check } from 'lucide-react';
-import { getMessages, sendMessage, markMessagesAsRead, subscribeToMessages, getQuickReplies, reportUser } from '../chat';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Send, ArrowLeft, Zap, ChevronDown, ChevronUp, MoreVertical, Flag, X, Image, Paperclip, Loader2, Building2, UserPlus, Check, Smile, Reply, Heart, Ban } from 'lucide-react';
+import { 
+  getMessages, 
+  sendMessage, 
+  markMessagesAsRead, 
+  subscribeToMessages, 
+  getQuickReplies, 
+  reportUser,
+  setTyping,
+  subscribeToTyping,
+  addReaction,
+  removeReaction,
+  subscribeToReactions,
+  getUserPresence,
+  subscribeToPresence,
+  updatePresence,
+  sendReply,
+  REACTION_EMOJIS
+} from '../chat';
 import { supabase } from '../supabase';
 import { getLandlordProperties, addTenant } from '../tenantManagement';
+
+// Emoji picker data
+const QUICK_EMOJIS = ['😀', '😂', '❤️', '👍', '🔥', '😍', '🙏', '💯', '🎉', '😊', '🤔', '👀'];
 
 function formatMessageTime(dateString) {
   const date = new Date(dateString);
@@ -19,6 +39,12 @@ function formatMessageTime(dateString) {
   }
   return date.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' }) + ' ' +
          date.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatSeenTime(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' });
 }
 
 function getColorFromId(id) {
@@ -56,6 +82,16 @@ export default function ChatWindow({
   const [loadingProperties, setLoadingProperties] = useState(false);
   const [invitingToProperty, setInvitingToProperty] = useState(null);
   const [inviteSuccess, setInviteSuccess] = useState(null);
+  
+  // NEW: Enhanced messaging features
+  const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
+  const [otherUserOnline, setOtherUserOnline] = useState(false);
+  const [otherUserLastSeen, setOtherUserLastSeen] = useState(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [showReactionPicker, setShowReactionPicker] = useState(null); // message id
+  const [messageReactions, setMessageReactions] = useState({}); // { messageId: [reactions] }
+  const [longPressTimer, setLongPressTimer] = useState(null);
   
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -255,12 +291,151 @@ export default function ChatWindow({
     lastMessageCount.current = messages.length;
   }, [messages, currentUserId]);
 
+  // ===========================
+  // NEW: Typing indicator
+  // ===========================
+  const typingTimeoutRef = useRef(null);
+
+  // Subscribe to typing indicators
+  useEffect(() => {
+    if (!conversation?.id || !currentUserId) return;
+
+    const unsubscribe = subscribeToTyping(conversation.id, currentUserId, (typingUsers) => {
+      setIsOtherUserTyping(typingUsers.length > 0);
+    });
+
+    return unsubscribe;
+  }, [conversation?.id, currentUserId]);
+
+  // Handle typing status
+  const handleTyping = useCallback(() => {
+    if (!conversation?.id || !currentUserId) return;
+
+    // Set typing
+    setTyping(conversation.id, currentUserId, true);
+
+    // Clear previous timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Stop typing after 3 seconds of inactivity
+    typingTimeoutRef.current = setTimeout(() => {
+      setTyping(conversation.id, currentUserId, false);
+    }, 3000);
+  }, [conversation?.id, currentUserId]);
+
+  // Clear typing on unmount
+  useEffect(() => {
+    return () => {
+      if (conversation?.id && currentUserId) {
+        setTyping(conversation.id, currentUserId, false);
+      }
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, [conversation?.id, currentUserId]);
+
+  // ===========================
+  // NEW: Online presence
+  // ===========================
+  useEffect(() => {
+    if (!otherUser?.id) return;
+
+    // Get initial presence
+    getUserPresence(otherUser.id).then(presence => {
+      if (presence) {
+        setOtherUserOnline(presence.is_online);
+        setOtherUserLastSeen(presence.last_seen);
+      }
+    });
+
+    // Subscribe to presence changes
+    const unsubscribe = subscribeToPresence(otherUser.id, (presence) => {
+      setOtherUserOnline(presence?.is_online || false);
+      setOtherUserLastSeen(presence?.last_seen);
+    });
+
+    // Update own presence
+    updatePresence(currentUserId, true, conversation.id);
+
+    return () => {
+      unsubscribe();
+      // Set offline when leaving
+      updatePresence(currentUserId, false, null);
+    };
+  }, [otherUser?.id, currentUserId, conversation?.id]);
+
+  // ===========================
+  // NEW: Reactions
+  // ===========================
+  useEffect(() => {
+    if (!conversation?.id) return;
+
+    const unsubscribe = subscribeToReactions(conversation.id, () => {
+      // Refresh reactions for all messages
+      messages.forEach(async (msg) => {
+        if (msg._optimistic) return;
+        const { data } = await supabase
+          .from('message_reactions')
+          .select('*')
+          .eq('message_id', msg.id);
+        if (data) {
+          setMessageReactions(prev => ({ ...prev, [msg.id]: data }));
+        }
+      });
+    });
+
+    return unsubscribe;
+  }, [conversation?.id, messages]);
+
+  const handleReaction = async (messageId, emoji) => {
+    const existing = messageReactions[messageId]?.find(
+      r => r.user_id === currentUserId && r.emoji === emoji
+    );
+
+    try {
+      if (existing) {
+        await removeReaction(messageId, currentUserId, emoji);
+        setMessageReactions(prev => ({
+          ...prev,
+          [messageId]: (prev[messageId] || []).filter(r => r.id !== existing.id)
+        }));
+      } else {
+        const reaction = await addReaction(messageId, currentUserId, emoji);
+        setMessageReactions(prev => ({
+          ...prev,
+          [messageId]: [...(prev[messageId] || []), reaction]
+        }));
+      }
+    } catch (err) {
+      console.error('Reaction error:', err);
+    }
+    setShowReactionPicker(null);
+  };
+
+  // ===========================
+  // NEW: Reply to message
+  // ===========================
+  const handleReply = (message) => {
+    setReplyingTo(message);
+    inputRef.current?.focus();
+  };
+
+  const cancelReply = () => {
+    setReplyingTo(null);
+  };
+
   const handleSend = async () => {
     if (!newMessage.trim() || sending) return;
 
     const content = newMessage.trim();
     setNewMessage('');
     setSending(true);
+    
+    // Clear typing indicator
+    setTyping(conversation.id, currentUserId, false);
 
     // Add optimistic message with temporary ID
     const tempId = 'temp-' + Date.now();
@@ -271,14 +446,22 @@ export default function ChatWindow({
       content: content,
       created_at: new Date().toISOString(),
       read: false,
-      _optimistic: true
+      reply_to_id: replyingTo?.id || null,
+      _optimistic: true,
+      _replyTo: replyingTo // Keep reference for UI
     };
     setMessages(prev => [...prev, optimisticMessage]);
+    setReplyingTo(null);
 
     try {
-      const sent = await sendMessage(conversation.id, currentUserId, content);
+      let sent;
+      if (replyingTo) {
+        sent = await sendReply(conversation.id, currentUserId, content, replyingTo.id);
+      } else {
+        sent = await sendMessage(conversation.id, currentUserId, content);
+      }
       // Replace optimistic message with real one
-      setMessages(prev => prev.map(m => m.id === tempId ? sent : m));
+      setMessages(prev => prev.map(m => m.id === tempId ? { ...sent, _replyTo: optimisticMessage._replyTo } : m));
     } catch (error) {
       console.error('Failed to send message:', error);
       // Remove optimistic message and restore input on error
@@ -504,18 +687,37 @@ export default function ChatWindow({
                 </span>
               </div>
             )}
-            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-emerald-400 border-2 border-white rounded-full shadow-md" />
+            {/* Online/Offline indicator */}
+            <div className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 border-2 border-white rounded-full shadow-md transition-colors ${
+              otherUserOnline ? 'bg-emerald-400' : 'bg-gray-400'
+            }`} />
           </div>
           
           <div className="flex-1 min-w-0">
             <h3 className="font-bold text-white truncate">
               {otherUser?.display_name || 'Unknown User'}
             </h3>
-            {listing && (
+            {/* Status: typing, online, or listing info */}
+            {isOtherUserTyping ? (
+              <p className="text-sm text-white flex items-center gap-1.5">
+                <span className="flex gap-0.5">
+                  <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </span>
+                <span className="font-medium">typing...</span>
+              </p>
+            ) : otherUserOnline ? (
+              <p className="text-sm text-emerald-200 font-medium">Online</p>
+            ) : listing ? (
               <p className="text-sm text-white/80 truncate">
                 {listing.title} • R{listing.price?.toLocaleString()}/mo
               </p>
-            )}
+            ) : otherUserLastSeen ? (
+              <p className="text-sm text-white/60">
+                Last seen {new Date(otherUserLastSeen).toLocaleDateString()}
+              </p>
+            ) : null}
           </div>
         </div>
 
@@ -650,57 +852,155 @@ export default function ChatWindow({
                       )}
                     </div>
                   )}
-                  {/* Check if message is an image */}
-                  {msg.content?.startsWith('[Image]') ? (
-                    <div className={`relative max-w-[75%] transition-all duration-300 group ${msg._optimistic ? 'opacity-70 scale-[0.98]' : 'hover:scale-[1.01]'}`}>
-                      <img 
-                        src={msg.content.replace('[Image] ', '')} 
-                        alt="Shared image"
-                        className={`rounded-2xl max-w-full max-h-[300px] object-cover shadow-lg cursor-pointer hover:shadow-xl transition-all ${
-                          isMe ? 'rounded-br-sm' : 'rounded-bl-sm'
-                        }`}
-                        onClick={() => window.open(msg.content.replace('[Image] ', ''), '_blank')}
-                      />
+                  
+                  {/* Message with reactions and reply */}
+                  <div className={`relative max-w-[75%] ${isMe ? 'order-1' : ''}`}>
+                    {/* Reply preview */}
+                    {(msg.reply_to_id || msg._replyTo) && (
+                      <div className={`mb-1 px-3 py-1.5 rounded-lg text-xs truncate ${
+                        isMe 
+                          ? 'bg-white/20 text-white/80' 
+                          : 'bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
+                      }`}>
+                        <Reply className="w-3 h-3 inline mr-1" />
+                        {msg._replyTo?.content?.substring(0, 50) || 'Replying to message...'}
+                      </div>
+                    )}
+                    
+                    {/* Check if message is an image */}
+                    {msg.content?.startsWith('[Image]') ? (
+                      <div 
+                        className={`relative transition-all duration-300 group ${msg._optimistic ? 'opacity-70 scale-[0.98]' : 'hover:scale-[1.01]'}`}
+                        onDoubleClick={() => !msg._optimistic && handleReaction(msg.id, '❤️')}
+                      >
+                        <img 
+                          src={msg.content.replace('[Image] ', '')} 
+                          alt="Shared content"
+                          className={`rounded-2xl max-w-full max-h-[300px] object-cover shadow-lg cursor-pointer hover:shadow-xl transition-all ${
+                            isMe ? 'rounded-br-sm' : 'rounded-bl-sm'
+                          }`}
+                          onClick={() => window.open(msg.content.replace('[Image] ', ''), '_blank')}
+                        />
+                        {isMe && !msg._optimistic && (
+                          <div className="absolute bottom-2 right-2 bg-black/50 backdrop-blur-sm rounded-full px-2 py-0.5 flex items-center gap-1">
+                            <span className="text-[10px] text-white/90 font-medium">Sent</span>
+                            <svg className="w-3 h-3 text-white/90" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                        )}
+                        {msg._optimistic && (
+                          <div className="absolute bottom-2 right-2 bg-black/50 backdrop-blur-sm rounded-full p-1.5">
+                            <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          </div>
+                        )}
+                        
+                        {/* Action buttons for images */}
+                        {!msg._optimistic && (
+                          <div className={`absolute top-2 ${isMe ? 'left-2' : 'right-2'} opacity-0 group-hover:opacity-100 transition-opacity flex gap-1`}>
+                            <button
+                              onClick={() => handleReply(msg)}
+                              className="p-1.5 bg-black/50 backdrop-blur-sm rounded-full hover:bg-black/70"
+                            >
+                              <Reply className="w-3.5 h-3.5 text-white" />
+                            </button>
+                            <button
+                              onClick={() => setShowReactionPicker(showReactionPicker === msg.id ? null : msg.id)}
+                              className="p-1.5 bg-black/50 backdrop-blur-sm rounded-full hover:bg-black/70"
+                            >
+                              <Heart className="w-3.5 h-3.5 text-white" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                    <div
+                      className={`relative px-4 py-3 transition-all duration-300 group ${
+                        isMe
+                          ? 'bg-gradient-to-br from-[#E63946] via-rose-500 to-[#c5303c] text-white rounded-2xl rounded-br-sm shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30'
+                          : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-2xl rounded-bl-sm shadow-md hover:shadow-lg border border-gray-100 dark:border-gray-600'
+                      } ${msg._optimistic ? 'opacity-70 scale-[0.98]' : 'hover:scale-[1.01]'}`}
+                      style={{ wordBreak: 'break-word' }}
+                      onDoubleClick={() => !msg._optimistic && handleReaction(msg.id, '❤️')}
+                    >
+                      <p className="whitespace-pre-wrap break-words leading-relaxed text-[15px]">{msg.content}</p>
+                      
+                      {/* Delivered indicator for sent messages */}
                       {isMe && !msg._optimistic && (
-                        <div className="absolute bottom-2 right-2 bg-black/50 backdrop-blur-sm rounded-full px-2 py-0.5 flex items-center gap-1">
-                          <span className="text-[10px] text-white/90 font-medium">Sent</span>
-                          <svg className="w-3 h-3 text-white/90" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <div className="flex items-center justify-end gap-1 mt-1 -mb-1">
+                          <span className="text-[10px] text-white/60 font-medium">Sent</span>
+                          <svg className="w-3 h-3 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                           </svg>
                         </div>
                       )}
                       {msg._optimistic && (
-                        <div className="absolute bottom-2 right-2 bg-black/50 backdrop-blur-sm rounded-full p-1.5">
-                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <div className="absolute -bottom-1.5 -right-1.5 w-5 h-5 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-md ring-2 ring-red-100 dark:ring-red-900">
+                          <div className="w-2.5 h-2.5 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
+                        </div>
+                      )}
+                      
+                      {/* Action buttons on hover */}
+                      {!msg._optimistic && (
+                        <div className={`absolute -top-3 ${isMe ? '-left-12' : '-right-12'} opacity-0 group-hover:opacity-100 transition-opacity flex gap-1`}>
+                          <button
+                            onClick={() => handleReply(msg)}
+                            className="p-1.5 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 shadow-md"
+                            title="Reply"
+                          >
+                            <Reply className="w-3.5 h-3.5 text-gray-600 dark:text-gray-300" />
+                          </button>
+                          <button
+                            onClick={() => setShowReactionPicker(showReactionPicker === msg.id ? null : msg.id)}
+                            className="p-1.5 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 shadow-md"
+                            title="React"
+                          >
+                            <Smile className="w-3.5 h-3.5 text-gray-600 dark:text-gray-300" />
+                          </button>
                         </div>
                       )}
                     </div>
-                  ) : (
-                  <div
-                    className={`relative max-w-[75%] px-4 py-3 transition-all duration-300 group ${
-                      isMe
-                        ? 'bg-gradient-to-br from-[#E63946] via-rose-500 to-[#c5303c] text-white rounded-2xl rounded-br-sm shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30'
-                        : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-2xl rounded-bl-sm shadow-md hover:shadow-lg border border-gray-100 dark:border-gray-600'
-                    } ${msg._optimistic ? 'opacity-70 scale-[0.98]' : 'hover:scale-[1.01]'}`}
-                    style={{ wordBreak: 'break-word' }}
-                  >
-                    <p className="whitespace-pre-wrap break-words leading-relaxed text-[15px]">{msg.content}</p>
-                    {/* Delivered indicator for sent messages */}
-                    {isMe && !msg._optimistic && (
-                      <div className="flex items-center justify-end gap-1 mt-1 -mb-1">
-                        <span className="text-[10px] text-white/60 font-medium">Sent</span>
-                        <svg className="w-3 h-3 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
+                    )}
+                    
+                    {/* Reactions display */}
+                    {messageReactions[msg.id]?.length > 0 && (
+                      <div className={`flex gap-0.5 mt-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                        {Object.entries(
+                          messageReactions[msg.id].reduce((acc, r) => {
+                            acc[r.emoji] = (acc[r.emoji] || 0) + 1;
+                            return acc;
+                          }, {})
+                        ).map(([emoji, count]) => (
+                          <button
+                            key={emoji}
+                            onClick={() => handleReaction(msg.id, emoji)}
+                            className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-full text-xs flex items-center gap-0.5 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors shadow-sm"
+                          >
+                            <span>{emoji}</span>
+                            {count > 1 && <span className="text-gray-600 dark:text-gray-300">{count}</span>}
+                          </button>
+                        ))}
                       </div>
                     )}
-                    {msg._optimistic && (
-                      <div className="absolute -bottom-1.5 -right-1.5 w-5 h-5 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-md ring-2 ring-red-100 dark:ring-red-900">
-                        <div className="w-2.5 h-2.5 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
-                      </div>
+                    
+                    {/* Reaction picker */}
+                    {showReactionPicker === msg.id && (
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setShowReactionPicker(null)} />
+                        <div className={`absolute ${isMe ? 'right-0' : 'left-0'} -top-12 bg-white dark:bg-gray-800 rounded-full shadow-xl border border-gray-200 dark:border-gray-700 px-2 py-1.5 flex gap-1 z-20`}>
+                          {REACTION_EMOJIS.map(emoji => (
+                            <button
+                              key={emoji}
+                              onClick={() => handleReaction(msg.id, emoji)}
+                              className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-lg transition-transform hover:scale-125"
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
+                      </>
                     )}
                   </div>
-                  )}
                 </div>
               </div>
             );
@@ -753,8 +1053,56 @@ export default function ChatWindow({
         className="hidden"
       />
 
+      {/* Reply Preview */}
+      {replyingTo && (
+        <div className="flex-shrink-0 px-4 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-t border-blue-100 dark:border-blue-800">
+          <div className="flex items-center gap-3">
+            <div className="w-1 h-10 bg-blue-500 rounded-full" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                <Reply className="w-3 h-3" />
+                Replying to message
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-300 truncate">
+                {replyingTo.content?.substring(0, 60)}{replyingTo.content?.length > 60 ? '...' : ''}
+              </p>
+            </div>
+            <button
+              onClick={cancelReply}
+              className="p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-full transition-colors"
+            >
+              <X className="w-4 h-4 text-gray-500" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Input */}
       <div className="flex-shrink-0 p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 safe-area-bottom shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+        {/* Emoji Picker */}
+        {showEmojiPicker && (
+          <>
+            <div className="fixed inset-0 z-10" onClick={() => setShowEmojiPicker(false)} />
+            <div className="absolute bottom-20 left-4 right-4 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-3 z-20">
+              <div className="grid grid-cols-6 gap-2">
+                {QUICK_EMOJIS.map(emoji => (
+                  <button
+                    key={emoji}
+                    onClick={() => {
+                      setNewMessage(prev => prev + emoji);
+                      setShowEmojiPicker(false);
+                      inputRef.current?.focus();
+                    }}
+                    className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-2xl transition-transform hover:scale-110"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+        
         <div className="flex items-end gap-2">
           {/* Attachment Button */}
           <div className="relative">
@@ -800,14 +1148,30 @@ export default function ChatWindow({
             )}
           </div>
 
+          {/* Emoji Button */}
+          <button
+            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            className={`p-3.5 rounded-2xl transition-all duration-200 ${
+              showEmojiPicker 
+                ? 'bg-amber-500 text-white shadow-lg' 
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+            }`}
+            aria-label="Add emoji"
+          >
+            <Smile className="w-5 h-5" />
+          </button>
+
           {/* Message Input */}
           <div className="flex-1 relative group">
             <textarea
               ref={inputRef}
               value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
+              onChange={(e) => {
+                setNewMessage(e.target.value);
+                handleTyping();
+              }}
               onKeyDown={handleKeyDown}
-              placeholder="Type a message..."
+              placeholder={replyingTo ? "Type your reply..." : "Type a message..."}
               rows={1}
               className="w-full resize-none px-5 py-4 bg-gray-100 dark:bg-gray-700 border-2 border-transparent rounded-2xl focus:border-[#E63946] focus:bg-white dark:focus:bg-gray-600 focus:ring-4 focus:ring-red-100 dark:focus:ring-red-900/30 focus:outline-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200 shadow-inner"
               style={{ maxHeight: '120px' }}

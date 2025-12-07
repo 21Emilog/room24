@@ -403,3 +403,268 @@ export async function reportUser({ reportedUserId, reportedById, conversationId,
   }
   return data;
 }
+
+// ===========================
+// MESSAGE REACTIONS
+// ===========================
+
+const REACTION_EMOJIS = ['❤️', '👍', '😂', '😮', '😢', '🔥'];
+
+export { REACTION_EMOJIS };
+
+/**
+ * Add a reaction to a message
+ */
+export async function addReaction(messageId, userId, emoji) {
+  const { data, error } = await supabase
+    .from('message_reactions')
+    .upsert({
+      message_id: messageId,
+      user_id: userId,
+      emoji,
+    }, { onConflict: 'message_id,user_id,emoji' })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error adding reaction:', error);
+    throw error;
+  }
+  return data;
+}
+
+/**
+ * Remove a reaction from a message
+ */
+export async function removeReaction(messageId, userId, emoji) {
+  const { error } = await supabase
+    .from('message_reactions')
+    .delete()
+    .eq('message_id', messageId)
+    .eq('user_id', userId)
+    .eq('emoji', emoji);
+
+  if (error) {
+    console.error('Error removing reaction:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get reactions for a message
+ */
+export async function getMessageReactions(messageId) {
+  const { data, error } = await supabase
+    .from('message_reactions')
+    .select('*')
+    .eq('message_id', messageId);
+
+  if (error) {
+    console.error('Error fetching reactions:', error);
+    return [];
+  }
+  return data || [];
+}
+
+/**
+ * Subscribe to reactions for messages in a conversation
+ */
+export function subscribeToReactions(conversationId, onReaction) {
+  const channel = supabase
+    .channel(`reactions-${conversationId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'message_reactions',
+      },
+      (payload) => {
+        onReaction(payload);
+      }
+    )
+    .subscribe();
+
+  return () => supabase.removeChannel(channel);
+}
+
+// ===========================
+// TYPING INDICATORS
+// ===========================
+
+/**
+ * Set typing status for a user in a conversation
+ */
+export async function setTyping(conversationId, userId, isTyping) {
+  if (isTyping) {
+    const { error } = await supabase
+      .from('typing_indicators')
+      .upsert({
+        conversation_id: conversationId,
+        user_id: userId,
+        started_at: new Date().toISOString(),
+      }, { onConflict: 'conversation_id,user_id' });
+
+    if (error && !error.message?.includes('duplicate')) {
+      console.error('Error setting typing:', error);
+    }
+  } else {
+    await supabase
+      .from('typing_indicators')
+      .delete()
+      .eq('conversation_id', conversationId)
+      .eq('user_id', userId);
+  }
+}
+
+/**
+ * Subscribe to typing indicators in a conversation
+ */
+export function subscribeToTyping(conversationId, currentUserId, onTypingChange) {
+  const channel = supabase
+    .channel(`typing-${conversationId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'typing_indicators',
+        filter: `conversation_id=eq.${conversationId}`,
+      },
+      async () => {
+        // Fetch current typing users (excluding self)
+        const { data } = await supabase
+          .from('typing_indicators')
+          .select('user_id')
+          .eq('conversation_id', conversationId)
+          .neq('user_id', currentUserId)
+          .gt('started_at', new Date(Date.now() - 10000).toISOString());
+        
+        onTypingChange(data?.map(t => t.user_id) || []);
+      }
+    )
+    .subscribe();
+
+  return () => supabase.removeChannel(channel);
+}
+
+// ===========================
+// USER PRESENCE / ONLINE STATUS
+// ===========================
+
+/**
+ * Update user's online presence
+ */
+export async function updatePresence(userId, isOnline, conversationId = null) {
+  const { error } = await supabase
+    .from('user_presence')
+    .upsert({
+      user_id: userId,
+      is_online: isOnline,
+      last_seen: new Date().toISOString(),
+      current_conversation_id: conversationId,
+    }, { onConflict: 'user_id' });
+
+  if (error) {
+    console.error('Error updating presence:', error);
+  }
+}
+
+/**
+ * Get user's presence/online status
+ */
+export async function getUserPresence(userId) {
+  const { data, error } = await supabase
+    .from('user_presence')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Error fetching presence:', error);
+    return null;
+  }
+  return data;
+}
+
+/**
+ * Subscribe to user presence changes
+ */
+export function subscribeToPresence(userId, onPresenceChange) {
+  const channel = supabase
+    .channel(`presence-${userId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'user_presence',
+        filter: `user_id=eq.${userId}`,
+      },
+      (payload) => {
+        onPresenceChange(payload.new);
+      }
+    )
+    .subscribe();
+
+  return () => supabase.removeChannel(channel);
+}
+
+// ===========================
+// READ RECEIPTS
+// ===========================
+
+/**
+ * Mark messages as read with timestamp
+ */
+export async function markMessagesAsReadWithTimestamp(conversationId, userId) {
+  const now = new Date().toISOString();
+  
+  const { error } = await supabase
+    .from('messages')
+    .update({ read: true, read_at: now })
+    .eq('conversation_id', conversationId)
+    .neq('sender_id', userId)
+    .is('read_at', null);
+
+  if (error) {
+    console.error('Error marking messages as read:', error);
+  }
+  
+  return now;
+}
+
+// ===========================
+// MESSAGE REPLIES
+// ===========================
+
+/**
+ * Send a reply to a specific message
+ */
+export async function sendReply(conversationId, senderId, content, replyToId) {
+  const { data, error } = await supabase
+    .from('messages')
+    .insert({
+      conversation_id: conversationId,
+      sender_id: senderId,
+      content: content.trim(),
+      reply_to_id: replyToId,
+      read: false,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error sending reply:', error);
+    throw error;
+  }
+
+  // Update conversation's last_message_at
+  await supabase
+    .from('conversations')
+    .update({ last_message_at: new Date().toISOString() })
+    .eq('id', conversationId);
+
+  return data;
+}
+
