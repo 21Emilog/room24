@@ -247,14 +247,17 @@ function PropertyCard({ property, isOwner, tenantInfo, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="w-full bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-200 dark:border-gray-700 hover:border-[#c5303c] hover:shadow-lg transition-all text-left"
+      className="group w-full bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 hover:border-[#c5303c]/50 hover:shadow-xl hover:shadow-[#c5303c]/10 transition-all duration-300 text-left relative overflow-hidden"
     >
-      <div className="flex items-center justify-between">
+      {/* Hover gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-r from-[#c5303c]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+      
+      <div className="relative flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300 ${
             isOwner 
-              ? 'bg-gradient-to-br from-[#c5303c] to-[#E63946]' 
-              : 'bg-gradient-to-br from-blue-500 to-blue-600'
+              ? 'bg-gradient-to-br from-[#c5303c] to-[#E63946] shadow-red-500/30' 
+              : 'bg-gradient-to-br from-blue-500 to-blue-600 shadow-blue-500/30'
           }`}>
             {isOwner ? (
               <Crown className="w-6 h-6 text-white" />
@@ -263,18 +266,19 @@ function PropertyCard({ property, isOwner, tenantInfo, onClick }) {
             )}
           </div>
           <div>
-            <h3 className="font-semibold text-gray-800 dark:text-gray-200">{property.name}</h3>
+            <h3 className="font-semibold text-gray-800 dark:text-gray-200 group-hover:text-[#c5303c] transition-colors">{property.name}</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               {property.address || 'No address set'}
             </p>
             {tenantInfo && (
-              <p className="text-xs text-green-600 font-medium mt-1">
+              <p className="text-xs font-semibold mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 text-green-700 dark:text-green-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
                 {tenantInfo.room_number ? `Room ${tenantInfo.room_number}` : 'Active Tenant'}
               </p>
             )}
           </div>
         </div>
-        <ChevronRight className="w-5 h-5 text-gray-400" />
+        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-[#c5303c] group-hover:translate-x-1 transition-all" />
       </div>
     </button>
   );
@@ -308,38 +312,41 @@ function JoinWithCodeCard({ currentUser, showToast, onJoined }) {
   };
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-2xl p-4 border border-blue-200 dark:border-blue-700">
+    <div className="bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 dark:from-indigo-900/20 dark:via-blue-900/20 dark:to-purple-900/20 rounded-2xl p-4 border border-indigo-100 dark:border-indigo-800 shadow-sm">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between"
+        className="w-full flex items-center justify-between group"
       >
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center">
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30 group-hover:scale-110 transition-transform">
             <Link2 className="w-5 h-5 text-white" />
           </div>
           <div className="text-left">
-            <h3 className="font-semibold text-gray-800 dark:text-gray-200">Join with Code</h3>
+            <h3 className="font-semibold text-gray-800 dark:text-gray-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Join with Code</h3>
             <p className="text-xs text-gray-500 dark:text-gray-400">Got an invite code from your landlord?</p>
           </div>
         </div>
-        <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform ${expanded ? 'rotate-90' : ''}`} />
+        <div className={`p-2 rounded-lg bg-white/50 dark:bg-gray-800/50 transition-all ${expanded ? 'rotate-90 bg-indigo-100 dark:bg-indigo-900/30' : 'group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/30'}`}>
+          <ChevronRight className={`w-5 h-5 text-indigo-500 transition-transform ${expanded ? 'rotate-0' : ''}`} />
+        </div>
       </button>
 
       {expanded && (
-        <div className="mt-4 pt-4 border-t border-blue-200 dark:border-blue-700">
+        <div className="mt-4 pt-4 border-t border-indigo-100 dark:border-indigo-800 animate-slideDown">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Enter your 6-character invite code:</p>
           <div className="flex gap-2">
             <input
               type="text"
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 6))}
               placeholder="XXXXXX"
-              className="flex-1 min-w-0 px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-mono text-center text-lg tracking-widest"
+              className="flex-1 min-w-0 px-4 py-3 rounded-xl border-2 border-indigo-200 dark:border-indigo-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-mono text-center text-xl tracking-[0.3em] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 transition-all placeholder:text-gray-300 dark:placeholder:text-gray-600"
               maxLength={6}
             />
             <button
               onClick={handleJoin}
               disabled={joining || code.length < 6}
-              className="flex-shrink-0 px-4 py-2 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-shrink-0 px-5 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-indigo-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none hover:scale-105 active:scale-95"
             >
               {joining ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Join'}
             </button>
@@ -382,20 +389,28 @@ function AddPropertyView({ currentUser, showToast, onBack, onCreated }) {
   };
 
   return (
-    <div className="pb-24">
+    <div className="pb-24 bg-gradient-to-b from-slate-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 min-h-screen">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 p-4">
-        <div className="flex items-center gap-3">
-          <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
-            <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+      <div className="sticky top-0 z-10 bg-gradient-to-r from-[#c5303c] via-rose-500 to-[#E63946] p-4 text-white shadow-xl relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_3s_infinite]" style={{ animationTimingFunction: 'ease-in-out' }} />
+        <div className="relative flex items-center gap-3">
+          <button onClick={onBack} className="p-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl transition-all hover:scale-105">
+            <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-lg font-bold text-gray-800 dark:text-gray-200">Add Property</h1>
+          <div className="flex-1">
+            <h1 className="text-lg font-bold">Add Property</h1>
+            <p className="text-sm text-white/70">Create a new property group</p>
+          </div>
+          <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+            <Building2 className="w-5 h-5" />
+          </div>
         </div>
       </div>
 
       <div className="p-4 space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+            <Building2 className="w-4 h-4 text-[#c5303c]" />
             Property Name *
           </label>
           <input
@@ -403,12 +418,13 @@ function AddPropertyView({ currentUser, showToast, onBack, onCreated }) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g., Hillbrow Apartments"
-            className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200"
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-[#c5303c]/50 focus:border-[#c5303c] transition-all"
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+            <Home className="w-4 h-4 text-blue-500" />
             Address
           </label>
           <input
@@ -416,12 +432,13 @@ function AddPropertyView({ currentUser, showToast, onBack, onCreated }) {
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             placeholder="e.g., 123 Main Street, Johannesburg"
-            className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200"
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+            <MessageCircle className="w-4 h-4 text-green-500" />
             Description
           </label>
           <textarea
@@ -429,7 +446,7 @@ function AddPropertyView({ currentUser, showToast, onBack, onCreated }) {
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Add any notes about this property..."
             rows={3}
-            className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 resize-none"
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 resize-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all"
           />
         </div>
 
@@ -581,28 +598,30 @@ function PropertyDetailView({
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={onOpenChat}
-            className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 hover:border-[#c5303c] transition-all flex items-center gap-3"
+            className="group relative bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-200 dark:border-gray-700 hover:border-blue-400 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 flex items-center gap-3 overflow-hidden"
           >
-            <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-              <MessageCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative w-11 h-11 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform">
+              <MessageCircle className="w-5 h-5 text-white" />
             </div>
-            <div className="text-left">
+            <div className="relative text-left">
               <p className="font-semibold text-gray-800 dark:text-gray-200 text-sm">Group Chat</p>
-              <p className="text-xs text-gray-500">Message everyone</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Message everyone</p>
             </div>
           </button>
 
           {isOwner && (
             <button
               onClick={() => setShowAddTenant(true)}
-              className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 hover:border-[#c5303c] transition-all flex items-center gap-3"
+              className="group relative bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-200 dark:border-gray-700 hover:border-green-400 hover:shadow-lg hover:shadow-green-500/10 transition-all duration-300 flex items-center gap-3 overflow-hidden"
             >
-              <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                <UserPlus className="w-5 h-5 text-green-600 dark:text-green-400" />
+              <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative w-11 h-11 rounded-xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg shadow-green-500/30 group-hover:scale-110 transition-transform">
+                <UserPlus className="w-5 h-5 text-white" />
               </div>
-              <div className="text-left">
+              <div className="relative text-left">
                 <p className="font-semibold text-gray-800 dark:text-gray-200 text-sm">Add Tenant</p>
-                <p className="text-xs text-gray-500">Search users</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Search users</p>
               </div>
             </button>
           )}
@@ -781,34 +800,34 @@ function TenantCard({ tenant, isOwner, isAdmin, showToast, onRefresh, currentUse
   const isSelf = tenant.tenant_id === currentUserId;
 
   return (
-    <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+    <div className="group flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-600 hover:shadow-md transition-all duration-200">
       {tenant.profile?.photo_url ? (
-        <img src={tenant.profile.photo_url} alt="" className="w-10 h-10 rounded-xl object-cover" />
+        <img src={tenant.profile.photo_url} alt="" className="w-11 h-11 rounded-xl object-cover border-2 border-white dark:border-gray-700 shadow-md group-hover:scale-105 transition-transform" />
       ) : (
-        <div className="w-10 h-10 rounded-xl bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-          <User className="w-5 h-5 text-gray-500" />
+        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-600 dark:to-gray-700 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+          <User className="w-5 h-5 text-gray-500 dark:text-gray-400" />
         </div>
       )}
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-gray-800 dark:text-gray-200 truncate flex items-center gap-1.5">
+        <p className="font-semibold text-gray-800 dark:text-gray-200 truncate flex items-center gap-1.5">
           {tenant.profile?.display_name || 'Unknown User'}
           {tenant.is_admin && (
-            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full text-[10px] font-bold">
+            <span className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900/40 dark:to-violet-900/40 text-purple-600 dark:text-purple-400 rounded-full text-[10px] font-bold shadow-sm">
               <ShieldCheck className="w-3 h-3" />
               Admin
             </span>
           )}
         </p>
-        <div className="flex items-center gap-2 text-xs text-gray-500">
-          {tenant.room_number && <span>Room {tenant.room_number}</span>}
-          <span className={`px-1.5 py-0.5 rounded-full ${
+        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          {tenant.room_number && <span className="font-medium">Room {tenant.room_number}</span>}
+          <span className={`px-2 py-0.5 rounded-full font-medium ${
             tenant.status === 'active' 
-              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
+              ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 dark:from-green-900/40 dark:to-emerald-900/40 dark:text-green-400' 
               : tenant.status === 'ended'
               ? 'bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-400'
-              : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+              : 'bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-700 dark:from-yellow-900/40 dark:to-amber-900/40 dark:text-yellow-400'
           }`}>
-            {tenant.status}
+            {tenant.status === 'active' ? '● Active' : tenant.status}
           </span>
         </div>
       </div>
@@ -885,17 +904,20 @@ function InvitationCard({ invitation, showToast, onCancel }) {
   };
 
   return (
-    <div className="flex items-center gap-3 p-2 bg-white dark:bg-gray-800 rounded-lg">
-      <div className="flex-1">
-        <p className="font-mono text-lg font-bold text-gray-800 dark:text-gray-200">{invitation.invite_code}</p>
-        <p className="text-xs text-gray-500">
-          {invitation.email || invitation.phone || 'General invite'}
+    <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
+      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center shadow-md">
+        <Link2 className="w-5 h-5 text-white" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-mono text-lg font-bold text-gray-800 dark:text-gray-200 tracking-wider">{invitation.invite_code}</p>
+        <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+          {invitation.email || invitation.phone || 'Anyone with code can join'}
         </p>
       </div>
-      <button onClick={copyCode} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-        {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-gray-500" />}
+      <button onClick={copyCode} className="p-2.5 bg-white dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-xl shadow-sm transition-colors">
+        {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-blue-500" />}
       </button>
-      <button onClick={onCancel} className="p-2 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg">
+      <button onClick={onCancel} className="p-2.5 bg-white dark:bg-gray-700 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-xl shadow-sm transition-colors">
         <X className="w-4 h-4 text-red-500" />
       </button>
     </div>
@@ -951,14 +973,24 @@ function AddTenantModal({ property, currentUser, showToast, onClose, onAdded }) 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/50">
-      <div className="bg-white dark:bg-gray-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md max-h-[80vh] overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-white dark:bg-gray-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md max-h-[85vh] overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out]">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200">Add Tenant</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl">
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
+        <div className="bg-gradient-to-r from-green-500 to-emerald-500 p-4 text-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <UserPlus className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold">Add Tenant</h2>
+                <p className="text-sm text-white/70">Search and add users</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         <div className="p-4 space-y-4">
@@ -1076,30 +1108,40 @@ function InviteModal({ property, currentUser, showToast, onClose, onCreated }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/50">
-      <div className="bg-white dark:bg-gray-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-white dark:bg-gray-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out]">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200">Invite Tenant</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl">
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
+        <div className="bg-gradient-to-r from-blue-500 to-indigo-500 p-4 text-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <Link2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold">Invite Tenant</h2>
+                <p className="text-sm text-white/70">Create a shareable code</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
-        <div className="p-4">
+        <div className="p-5">
           {!newInvite ? (
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-4">
-                <Share2 className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+            <div className="text-center py-4">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <Share2 className="w-10 h-10 text-blue-600 dark:text-blue-400" />
               </div>
-              <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">Create Invite Code</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">Create Invite Code</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-xs mx-auto">
                 Generate a 6-character code that tenants can use to join your property. The code expires in 7 days.
               </p>
               <button
                 onClick={handleCreate}
                 disabled={creating}
-                className="w-full py-3 bg-gradient-to-r from-[#c5303c] to-[#E63946] text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full py-3.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-blue-500/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
               >
                 {creating ? (
                   <>
@@ -1115,13 +1157,17 @@ function InviteModal({ property, currentUser, showToast, onClose, onCreated }) {
               </button>
             </div>
           ) : (
-            <div className="text-center">
-              <div className="bg-gray-100 dark:bg-gray-700 rounded-2xl p-6 mb-4">
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Invite Code</p>
-                <p className="font-mono text-3xl font-bold text-gray-800 dark:text-gray-200 tracking-widest">
+            <div className="text-center animate-fadein">
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-2xl p-6 mb-4 border border-green-100 dark:border-green-800">
+                <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg shadow-green-500/30">
+                  <Check className="w-6 h-6 text-white" />
+                </div>
+                <p className="text-xs text-green-600 dark:text-green-400 font-semibold mb-2">YOUR INVITE CODE</p>
+                <p className="font-mono text-4xl font-bold text-gray-800 dark:text-gray-200 tracking-[0.3em]">
                   {newInvite.invite_code}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-3 flex items-center justify-center gap-1">
+                  <Clock className="w-3 h-3" />
                   Expires in 7 days
                 </p>
               </div>
@@ -1129,14 +1175,14 @@ function InviteModal({ property, currentUser, showToast, onClose, onCreated }) {
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={copyCode}
-                  className="py-3 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-2"
+                  className="py-3.5 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-all flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
                 >
                   {copied ? <Check className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5" />}
                   {copied ? 'Copied!' : 'Copy'}
                 </button>
                 <button
                   onClick={shareCode}
-                  className="py-3 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+                  className="py-3.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-blue-500/30 transition-all flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
                 >
                   <Share2 className="w-5 h-5" />
                   Share
@@ -1145,7 +1191,7 @@ function InviteModal({ property, currentUser, showToast, onClose, onCreated }) {
 
               <button
                 onClick={onCreated}
-                className="w-full mt-4 py-3 bg-[#c5303c] text-white rounded-xl font-semibold"
+                className="w-full mt-4 py-3.5 bg-gradient-to-r from-[#c5303c] to-[#E63946] text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-red-500/30 transition-all hover:scale-[1.01] active:scale-[0.99]"
               >
                 Done
               </button>
@@ -1239,75 +1285,112 @@ function PropertyChatView({ property, currentUser, showToast, onBack }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-gray-100 dark:bg-gray-900">
+    <div className="fixed inset-0 z-50 flex flex-col bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
       {/* Header */}
-      <div className="flex-shrink-0 bg-gradient-to-r from-[#c5303c] to-[#E63946] p-4 text-white flex items-center gap-3">
-        <button onClick={onBack} className="p-2 hover:bg-white/20 rounded-xl transition-colors">
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div className="flex-1">
-          <h1 className="font-bold">{property.name}</h1>
-          <p className="text-sm opacity-80">
-            {(property.tenants?.length || 0) + 1} members
-            {property.admin_only_messages && <span className="ml-2">• Admin-only</span>}
-          </p>
+      <div className="flex-shrink-0 bg-gradient-to-r from-[#E63946] via-rose-500 to-[#E63946] p-4 text-white shadow-xl relative overflow-hidden">
+        {/* Animated shimmer */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_3s_infinite]" style={{ animationTimingFunction: 'ease-in-out' }} />
+        
+        <div className="relative flex items-center gap-3">
+          <button 
+            onClick={onBack} 
+            className="p-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl transition-all duration-200 hover:scale-110 active:scale-95 shadow-inner"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="w-11 h-11 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-inner ring-2 ring-white/10">
+              <Users className="w-5 h-5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="font-bold truncate">{property.name}</h1>
+              <p className="text-sm text-white/80 flex items-center gap-2">
+                <span>{(property.tenants?.length || 0) + 1} members</span>
+                {property.admin_only_messages && (
+                  <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs font-medium">Admin-only</span>
+                )}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+          <div className="flex flex-col items-center justify-center h-32 gap-3">
+            <div className="w-10 h-10 border-3 border-red-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm text-gray-500 dark:text-gray-400">Loading messages...</p>
           </div>
         ) : messages.length === 0 ? (
           <div className="text-center py-20">
-            <MessageCircle className="w-12 h-12 mx-auto text-gray-400 mb-3" />
-            <p className="text-gray-500 dark:text-gray-400">No messages yet</p>
-            <p className="text-sm text-gray-400">Start the conversation!</p>
+            <div className="w-20 h-20 bg-gradient-to-br from-red-100 to-rose-100 dark:from-red-900/30 dark:to-rose-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+              <MessageCircle className="w-10 h-10 text-red-400" />
+            </div>
+            <p className="font-semibold text-gray-900 dark:text-white mb-1">No messages yet</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Start the group conversation!</p>
           </div>
         ) : (
-          messages.map((msg) => {
+          messages.map((msg, idx) => {
             const isMe = msg.sender_id === currentUser.id;
             const isLandlord = msg.sender_id === property.landlord_id;
             const isAdmin = isSenderAdmin(msg);
+            const showAvatar = idx === 0 || messages[idx - 1]?.sender_id !== msg.sender_id;
+            const showTime = idx === messages.length - 1 || messages[idx + 1]?.sender_id !== msg.sender_id;
 
             return (
               <div
                 key={msg.id}
-                className={`flex gap-2 ${isMe ? 'flex-row-reverse' : ''}`}
+                className={`flex gap-2 ${isMe ? 'flex-row-reverse' : ''} ${!showAvatar ? 'mt-1' : ''}`}
               >
                 {!isMe && (
-                  <div className="flex-shrink-0">
-                    {msg.sender?.photo_url ? (
-                      <img src={msg.sender.photo_url} alt="" className="w-8 h-8 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
-                        <User className="w-4 h-4 text-gray-500" />
-                      </div>
+                  <div className="flex-shrink-0 w-9">
+                    {showAvatar && (
+                      msg.sender?.photo_url ? (
+                        <img src={msg.sender.photo_url} alt="" className="w-9 h-9 rounded-xl object-cover border-2 border-white dark:border-gray-800 shadow-md" />
+                      ) : (
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700 flex items-center justify-center shadow-md">
+                          <span className="text-sm font-bold text-gray-600 dark:text-gray-300">
+                            {msg.sender?.display_name?.[0]?.toUpperCase() || '?'}
+                          </span>
+                        </div>
+                      )
                     )}
                   </div>
                 )}
-                <div className={`max-w-[75%] ${isMe ? 'items-end' : 'items-start'}`}>
-                  {!isMe && (
-                    <p className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+                <div className={`max-w-[75%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                  {!isMe && showAvatar && (
+                    <p className="text-xs text-gray-500 mb-1 flex items-center gap-1.5 font-medium">
                       {msg.sender?.display_name || 'Unknown'}
-                      {isLandlord && <Crown className="w-3 h-3 text-yellow-500" title="Landlord" />}
-                      {isAdmin && !isLandlord && <ShieldCheck className="w-3 h-3 text-blue-500" title="Admin" />}
+                      {isLandlord && (
+                        <span className="flex items-center gap-0.5 text-yellow-600 dark:text-yellow-400">
+                          <Crown className="w-3 h-3" />
+                          <span className="text-[10px]">Owner</span>
+                        </span>
+                      )}
+                      {isAdmin && !isLandlord && (
+                        <span className="flex items-center gap-0.5 text-blue-600 dark:text-blue-400">
+                          <ShieldCheck className="w-3 h-3" />
+                          <span className="text-[10px]">Admin</span>
+                        </span>
+                      )}
                     </p>
                   )}
                   <div
-                    className={`px-4 py-2 rounded-2xl ${
+                    className={`px-4 py-2.5 shadow-sm ${
                       isMe
-                        ? 'bg-gradient-to-r from-[#c5303c] to-[#E63946] text-white rounded-tr-md'
-                        : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-tl-md'
+                        ? 'bg-gradient-to-r from-[#c5303c] to-[#E63946] text-white rounded-2xl rounded-tr-md'
+                        : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-2xl rounded-tl-md border border-gray-100 dark:border-gray-700'
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
                   </div>
-                  <p className="text-xs text-gray-400 mt-1">
-                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </p>
+                  {showTime && (
+                    <p className={`text-[10px] text-gray-400 mt-1 ${isMe ? 'mr-1' : 'ml-1'}`}>
+                      {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  )}
                 </div>
               </div>
             );
@@ -1318,30 +1401,32 @@ function PropertyChatView({ property, currentUser, showToast, onBack }) {
 
       {/* Input - or admin-only notice */}
       {canSend ? (
-        <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-              placeholder="Type a message..."
-              className="flex-1 px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-            />
+        <div className="flex-shrink-0 p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+          <div className="flex gap-3 items-end">
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+                placeholder="Type a message..."
+                className="w-full px-4 py-3.5 rounded-2xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all"
+              />
+            </div>
             <button
               onClick={handleSend}
               disabled={!newMessage.trim() || sending}
-              className="px-4 py-3 bg-gradient-to-r from-[#c5303c] to-[#E63946] text-white rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="p-3.5 bg-gradient-to-r from-[#c5303c] to-[#E63946] text-white rounded-2xl hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none hover:scale-105 active:scale-95"
             >
               {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
             </button>
           </div>
         </div>
       ) : (
-        <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border-t border-yellow-200 dark:border-yellow-700">
-          <div className="flex items-center gap-2 text-yellow-700 dark:text-yellow-400">
+        <div className="flex-shrink-0 p-4 bg-amber-50 dark:bg-amber-900/20 border-t border-amber-200 dark:border-amber-700">
+          <div className="flex items-center justify-center gap-2 text-amber-700 dark:text-amber-400">
             <MessageSquareOff className="w-5 h-5" />
-            <p className="text-sm">Only admins can send messages in this group</p>
+            <p className="text-sm font-medium">Only admins can send messages in this group</p>
           </div>
         </div>
       )}

@@ -124,10 +124,13 @@ export default function MessagesView({
     return (
       <div className="min-h-[calc(100vh-140px)] pb-20 bg-gradient-to-b from-slate-50 to-gray-100 dark:from-gray-900 dark:to-gray-900">
         {/* Tab Header */}
-        <div className="sticky top-0 z-20 bg-gradient-to-r from-[#1D3557] via-[#2d4a6f] to-[#1D3557] text-white shadow-xl">
-          <div className="flex items-center gap-3 p-4">
+        <div className="sticky top-0 z-20 bg-gradient-to-r from-[#1D3557] via-[#2d4a6f] to-[#1D3557] text-white shadow-xl overflow-hidden">
+          {/* Animated shine effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_3s_infinite]" style={{ animationTimingFunction: 'ease-in-out' }} />
+          
+          <div className="relative flex items-center gap-3 p-4">
             {onBack && (
-              <button onClick={onBack} className="p-2.5 hover:bg-white/15 rounded-xl transition-all">
+              <button onClick={onBack} className="p-2.5 hover:bg-white/15 rounded-xl transition-all hover:scale-105 active:scale-95">
                 <ArrowLeft className="w-5 h-5" />
               </button>
             )}
@@ -137,27 +140,31 @@ export default function MessagesView({
           </div>
           
           {/* Tab Switcher */}
-          <div className="flex px-4 pb-3 gap-2">
+          <div className="relative flex px-4 pb-3 gap-2">
             <button
               onClick={() => setActiveTab('messages')}
-              className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+              className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
                 activeTab === 'messages'
-                  ? 'bg-white text-[#1D3557]'
-                  : 'bg-white/10 text-white/80 hover:bg-white/20'
+                  ? 'bg-white text-[#1D3557] shadow-lg shadow-black/10 scale-[1.02]'
+                  : 'bg-white/10 text-white/80 hover:bg-white/20 hover:scale-[1.01]'
               }`}
             >
               <MessageSquare className="w-4 h-4" />
               Direct
               {totalUnread > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 text-xs bg-red-500 text-white rounded-full">{totalUnread}</span>
+                <span className={`ml-1 px-2 py-0.5 text-xs font-bold rounded-full animate-pulse ${
+                  activeTab === 'messages' 
+                    ? 'bg-red-500 text-white' 
+                    : 'bg-white text-red-500'
+                }`}>{totalUnread}</span>
               )}
             </button>
             <button
               onClick={() => setActiveTab('groups')}
-              className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+              className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
                 activeTab === 'groups'
-                  ? 'bg-white text-[#1D3557]'
-                  : 'bg-white/10 text-white/80 hover:bg-white/20'
+                  ? 'bg-white text-[#1D3557] shadow-lg shadow-black/10 scale-[1.02]'
+                  : 'bg-white/10 text-white/80 hover:bg-white/20 hover:scale-[1.01]'
               }`}
             >
               <Building2 className="w-4 h-4" />
@@ -218,24 +225,28 @@ export default function MessagesView({
           <div className="flex px-4 pb-3 gap-2">
             <button
               onClick={() => setActiveTab('messages')}
-              className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+              className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
                 activeTab === 'messages'
-                  ? 'bg-white text-[#1D3557]'
-                  : 'bg-white/10 text-white/80 hover:bg-white/20'
+                  ? 'bg-white text-[#1D3557] shadow-lg shadow-black/10 scale-[1.02]'
+                  : 'bg-white/10 text-white/80 hover:bg-white/20 hover:scale-[1.01]'
               }`}
             >
               <MessageSquare className="w-4 h-4" />
               Direct
               {totalUnread > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 text-xs bg-red-500 text-white rounded-full">{totalUnread}</span>
+                <span className={`ml-1 px-2 py-0.5 text-xs font-bold rounded-full animate-pulse ${
+                  activeTab === 'messages' 
+                    ? 'bg-red-500 text-white' 
+                    : 'bg-white text-red-500'
+                }`}>{totalUnread}</span>
               )}
             </button>
             <button
               onClick={() => setActiveTab('groups')}
-              className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+              className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
                 activeTab === 'groups'
-                  ? 'bg-white text-[#1D3557]'
-                  : 'bg-white/10 text-white/80 hover:bg-white/20'
+                  ? 'bg-white text-[#1D3557] shadow-lg shadow-black/10 scale-[1.02]'
+                  : 'bg-white/10 text-white/80 hover:bg-white/20 hover:scale-[1.01]'
               }`}
             >
               <Building2 className="w-4 h-4" />
