@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Building2, Users, Plus, Search, X, ChevronRight, MessageCircle, 
   UserPlus, Copy, Check, Trash2, Home, Send, ArrowLeft, MoreVertical, 
-  Crown, User, Clock, Link2, Share2, Loader2
+  Crown, User, Clock, Link2, Share2, Loader2, Shield, ShieldOff, 
+  MessageSquareOff, Settings, ShieldCheck
 } from 'lucide-react';
 
 import {
@@ -22,13 +23,16 @@ import {
   subscribeToPropertyMessages,
   searchUsers,
   getPropertyWithDetails,
+  setTenantAdmin,
+  setAdminOnlyMessages,
+  canSendPropertyMessage,
 } from '../tenantManagement';
 
 // ===========================
 // MAIN COMPONENT
 // ===========================
 
-export default function PropertyManagement({ currentUser, showToast, isLandlord }) {
+export default function PropertyManagement({ currentUser, showToast, isLandlord, embedded = false }) {
   const [view, setView] = useState('list'); // list, property-detail, chat, add-property
   const [properties, setProperties] = useState([]);
   const [tenantProperties, setTenantProperties] = useState([]);
@@ -78,17 +82,19 @@ export default function PropertyManagement({ currentUser, showToast, isLandlord 
   // Property List View
   if (view === 'list') {
     return (
-      <div className="pb-24">
-        {/* Header */}
-        <div className="sticky top-0 z-10 bg-gradient-to-r from-[#c5303c] to-[#E63946] p-4 text-white">
-          <h1 className="text-xl font-bold flex items-center gap-2">
-            <Building2 className="w-6 h-6" />
-            {isLandlord ? 'My Properties' : 'My Rentals'}
-          </h1>
-          <p className="text-sm opacity-80 mt-1">
-            {isLandlord ? 'Manage your tenants and property groups' : 'Properties where you are a tenant'}
-          </p>
-        </div>
+      <div className={embedded ? "" : "pb-24"}>
+        {/* Header - hidden when embedded */}
+        {!embedded && (
+          <div className="sticky top-0 z-10 bg-gradient-to-r from-[#c5303c] to-[#E63946] p-4 text-white">
+            <h1 className="text-xl font-bold flex items-center gap-2">
+              <Building2 className="w-6 h-6" />
+              {isLandlord ? 'My Properties' : 'My Rentals'}
+            </h1>
+            <p className="text-sm opacity-80 mt-1">
+              {isLandlord ? 'Manage your tenants and property groups' : 'Properties where you are a tenant'}
+            </p>
+          </div>
+        )}
 
         <div className="p-4 space-y-4">
           {/* Landlord's Properties */}
@@ -326,14 +332,14 @@ function JoinWithCodeCard({ currentUser, showToast, onJoined }) {
               type="text"
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 6))}
-              placeholder="Enter code"
-              className="flex-1 px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-mono text-center text-lg tracking-widest"
+              placeholder="XXXXXX"
+              className="flex-1 min-w-0 px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-mono text-center text-lg tracking-widest"
               maxLength={6}
             />
             <button
               onClick={handleJoin}
               disabled={joining || code.length < 6}
-              className="px-4 py-2 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-shrink-0 px-4 py-2 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {joining ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Join'}
             </button>
@@ -467,6 +473,9 @@ function PropertyDetailView({
   setShowInviteModal
 }) {
   const [deleting, setDeleting] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [adminOnlyMessages, setAdminOnlyMessagesState] = useState(property.admin_only_messages || false);
+  const [savingSettings, setSavingSettings] = useState(false);
 
   const handleDelete = async () => {
     if (!window.confirm('Are you sure you want to delete this property? All tenant records will be removed.')) {
@@ -484,6 +493,19 @@ function PropertyDetailView({
     setDeleting(false);
   };
 
+  const handleToggleAdminOnly = async () => {
+    setSavingSettings(true);
+    try {
+      const newValue = !adminOnlyMessages;
+      await setAdminOnlyMessages(property.id, newValue);
+      setAdminOnlyMessagesState(newValue);
+      showToast?.(newValue ? 'Only admins can send messages now' : 'All members can send messages', 'success');
+    } catch (err) {
+      showToast?.(err.message || 'Failed to update setting', 'error');
+    }
+    setSavingSettings(false);
+  };
+
   return (
     <div className="pb-24">
       {/* Header */}
@@ -497,12 +519,62 @@ function PropertyDetailView({
             <p className="text-sm opacity-80">{property.address || 'No address'}</p>
           </div>
           {isOwner && (
-            <button onClick={handleDelete} disabled={deleting} className="p-2 hover:bg-white/20 rounded-xl transition-colors">
-              <Trash2 className="w-5 h-5" />
-            </button>
+            <>
+              <button onClick={() => setShowSettings(!showSettings)} className="p-2 hover:bg-white/20 rounded-xl transition-colors">
+                <Settings className="w-5 h-5" />
+              </button>
+              <button onClick={handleDelete} disabled={deleting} className="p-2 hover:bg-white/20 rounded-xl transition-colors">
+                <Trash2 className="w-5 h-5" />
+              </button>
+            </>
           )}
         </div>
       </div>
+
+      {/* Admin Settings Panel */}
+      {showSettings && isOwner && (
+        <div className="mx-4 mt-4 bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-200 dark:border-gray-700 shadow-lg">
+          <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-[#c5303c]" />
+            Admin Settings
+          </h3>
+          
+          <div className="space-y-4">
+            {/* Admin-only messages toggle */}
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="font-medium text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                  <MessageSquareOff className="w-4 h-4 text-gray-500" />
+                  Admin-Only Messages
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Only admins (landlord and promoted tenants) can send messages in the group chat
+                </p>
+              </div>
+              <button
+                onClick={handleToggleAdminOnly}
+                disabled={savingSettings}
+                className={`relative w-12 h-6 rounded-full transition-colors ${
+                  adminOnlyMessages ? 'bg-[#c5303c]' : 'bg-gray-300 dark:bg-gray-600'
+                }`}
+              >
+                <span
+                  className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                    adminOnlyMessages ? 'translate-x-6' : ''
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                <Shield className="w-3 h-3 inline mr-1" />
+                As the landlord, you are always an admin. You can promote tenants to admin status from their profile card.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="p-4 space-y-4">
         {/* Quick Actions */}
@@ -658,9 +730,10 @@ function PropertyDetailView({
 // TENANT CARD
 // ===========================
 
-function TenantCard({ tenant, isOwner, showToast, onRefresh }) {
+function TenantCard({ tenant, isOwner, isAdmin, showToast, onRefresh, currentUserId }) {
   const [showMenu, setShowMenu] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [togglingAdmin, setTogglingAdmin] = useState(false);
 
   const handleRemove = async () => {
     if (!window.confirm(`Remove ${tenant.profile?.display_name || 'this tenant'}?`)) return;
@@ -689,6 +762,24 @@ function TenantCard({ tenant, isOwner, showToast, onRefresh }) {
     setShowMenu(false);
   };
 
+  const handleToggleAdmin = async () => {
+    setTogglingAdmin(true);
+    try {
+      await setTenantAdmin(tenant.id, !tenant.is_admin);
+      showToast?.(tenant.is_admin ? 'Admin rights removed' : 'Promoted to admin', 'success');
+      onRefresh?.();
+    } catch (err) {
+      showToast?.(err.message || 'Failed to update admin status', 'error');
+    }
+    setTogglingAdmin(false);
+    setShowMenu(false);
+  };
+
+  // Only landlord or admins can manage tenants
+  const canManage = isOwner || isAdmin;
+  // Can't manage yourself
+  const isSelf = tenant.tenant_id === currentUserId;
+
   return (
     <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
       {tenant.profile?.photo_url ? (
@@ -699,8 +790,14 @@ function TenantCard({ tenant, isOwner, showToast, onRefresh }) {
         </div>
       )}
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-gray-800 dark:text-gray-200 truncate">
+        <p className="font-medium text-gray-800 dark:text-gray-200 truncate flex items-center gap-1.5">
           {tenant.profile?.display_name || 'Unknown User'}
+          {tenant.is_admin && (
+            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full text-[10px] font-bold">
+              <ShieldCheck className="w-3 h-3" />
+              Admin
+            </span>
+          )}
         </p>
         <div className="flex items-center gap-2 text-xs text-gray-500">
           {tenant.room_number && <span>Room {tenant.room_number}</span>}
@@ -716,7 +813,7 @@ function TenantCard({ tenant, isOwner, showToast, onRefresh }) {
         </div>
       </div>
 
-      {isOwner && (
+      {canManage && !isSelf && (
         <div className="relative">
           <button
             onClick={() => setShowMenu(!showMenu)}
@@ -728,7 +825,27 @@ function TenantCard({ tenant, isOwner, showToast, onRefresh }) {
           {showMenu && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-              <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-1 z-20 min-w-[140px]">
+              <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-1 z-20 min-w-[160px]">
+                {/* Promote/Demote Admin - only landlord can do this */}
+                {isOwner && tenant.status === 'active' && (
+                  <button
+                    onClick={handleToggleAdmin}
+                    disabled={togglingAdmin}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                  >
+                    {tenant.is_admin ? (
+                      <>
+                        <ShieldOff className="w-4 h-4 text-gray-500" />
+                        {togglingAdmin ? 'Removing...' : 'Remove Admin'}
+                      </>
+                    ) : (
+                      <>
+                        <ShieldCheck className="w-4 h-4 text-purple-500" />
+                        {togglingAdmin ? 'Promoting...' : 'Make Admin'}
+                      </>
+                    )}
+                  </button>
+                )}
                 {tenant.status === 'active' && (
                   <button
                     onClick={handleEndLease}
@@ -1049,7 +1166,17 @@ function PropertyChatView({ property, currentUser, showToast, onBack }) {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [canSend, setCanSend] = useState(true);
   const messagesEndRef = useRef(null);
+
+  // Check if user can send messages (admin-only mode check)
+  useEffect(() => {
+    const checkSendPermission = async () => {
+      const allowed = await canSendPropertyMessage(property.id, currentUser.id);
+      setCanSend(allowed);
+    };
+    checkSendPermission();
+  }, [property.id, currentUser.id, property.admin_only_messages]);
 
   // Load messages
   useEffect(() => {
@@ -1083,7 +1210,7 @@ function PropertyChatView({ property, currentUser, showToast, onBack }) {
   }, [messages]);
 
   const handleSend = async () => {
-    if (!newMessage.trim() || sending) return;
+    if (!newMessage.trim() || sending || !canSend) return;
 
     const content = newMessage.trim();
     setNewMessage('');
@@ -1102,6 +1229,15 @@ function PropertyChatView({ property, currentUser, showToast, onBack }) {
     setSending(false);
   };
 
+  // Check if a message sender is an admin
+  const isSenderAdmin = (msg) => {
+    // Landlord is always admin
+    if (msg.sender_id === property.landlord_id) return true;
+    // Check if sender is in tenants list and is_admin
+    const tenant = property.tenants?.find(t => t.user_id === msg.sender_id);
+    return tenant?.is_admin || false;
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900">
       {/* Header */}
@@ -1113,6 +1249,7 @@ function PropertyChatView({ property, currentUser, showToast, onBack }) {
           <h1 className="font-bold">{property.name}</h1>
           <p className="text-sm opacity-80">
             {(property.tenants?.length || 0) + 1} members
+            {property.admin_only_messages && <span className="ml-2">• Admin-only</span>}
           </p>
         </div>
       </div>
@@ -1133,6 +1270,7 @@ function PropertyChatView({ property, currentUser, showToast, onBack }) {
           messages.map((msg) => {
             const isMe = msg.sender_id === currentUser.id;
             const isLandlord = msg.sender_id === property.landlord_id;
+            const isAdmin = isSenderAdmin(msg);
 
             return (
               <div
@@ -1154,7 +1292,8 @@ function PropertyChatView({ property, currentUser, showToast, onBack }) {
                   {!isMe && (
                     <p className="text-xs text-gray-500 mb-1 flex items-center gap-1">
                       {msg.sender?.display_name || 'Unknown'}
-                      {isLandlord && <Crown className="w-3 h-3 text-yellow-500" />}
+                      {isLandlord && <Crown className="w-3 h-3 text-yellow-500" title="Landlord" />}
+                      {isAdmin && !isLandlord && <ShieldCheck className="w-3 h-3 text-blue-500" title="Admin" />}
                     </p>
                   )}
                   <div
@@ -1177,26 +1316,35 @@ function PropertyChatView({ property, currentUser, showToast, onBack }) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-            placeholder="Type a message..."
-            className="flex-1 px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-          />
-          <button
-            onClick={handleSend}
-            disabled={!newMessage.trim() || sending}
-            className="px-4 py-3 bg-gradient-to-r from-[#c5303c] to-[#E63946] text-white rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-          </button>
+      {/* Input - or admin-only notice */}
+      {canSend ? (
+        <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+              placeholder="Type a message..."
+              className="flex-1 px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+            />
+            <button
+              onClick={handleSend}
+              disabled={!newMessage.trim() || sending}
+              className="px-4 py-3 bg-gradient-to-r from-[#c5303c] to-[#E63946] text-white rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border-t border-yellow-200 dark:border-yellow-700">
+          <div className="flex items-center gap-2 text-yellow-700 dark:text-yellow-400">
+            <MessageSquareOff className="w-5 h-5" />
+            <p className="text-sm">Only admins can send messages in this group</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

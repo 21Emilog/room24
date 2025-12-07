@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS properties (
   address TEXT,
   description TEXT,
   listing_id UUID REFERENCES listings(id) ON DELETE SET NULL, -- Optional link to a listing
+  -- Admin settings for group chat
+  admin_only_messages BOOLEAN DEFAULT false, -- If true, only admins can send messages
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -21,6 +23,7 @@ CREATE TABLE IF NOT EXISTS tenants (
   landlord_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   status TEXT DEFAULT 'active' CHECK (status IN ('active', 'pending', 'ended')),
   -- pending = invited but not accepted, active = currently renting, ended = moved out
+  is_admin BOOLEAN DEFAULT false, -- Can be promoted to admin by landlord or other admins
   room_number TEXT, -- Optional room/unit identifier
   rent_amount DECIMAL(10, 2),
   lease_start DATE,

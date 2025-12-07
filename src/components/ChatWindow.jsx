@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, ArrowLeft, Zap, ChevronDown, ChevronUp, MoreVertical, Flag, Ban, X, Image, Paperclip, Loader2 } from 'lucide-react';
+import { Send, ArrowLeft, Zap, ChevronDown, ChevronUp, MoreVertical, Flag, Ban, X, Image, Paperclip, Loader2, Building2, UserPlus, Check } from 'lucide-react';
 import { getMessages, sendMessage, markMessagesAsRead, subscribeToMessages, getQuickReplies, reportUser } from '../chat';
 import { supabase } from '../supabase';
+import { getLandlordProperties, addTenant } from '../tenantManagement';
 
 function formatMessageTime(dateString) {
   const date = new Date(dateString);
@@ -49,12 +50,59 @@ export default function ChatWindow({
   const [reportSuccess, setReportSuccess] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
+  // Invite to property state
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [landlordProperties, setLandlordProperties] = useState([]);
+  const [loadingProperties, setLoadingProperties] = useState(false);
+  const [invitingToProperty, setInvitingToProperty] = useState(null);
+  const [inviteSuccess, setInviteSuccess] = useState(null);
+  
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
 
   const otherUser = isLandlord ? conversation.renter : conversation.landlord;
   const listing = conversation.listing;
+
+  // Load landlord's properties when invite modal opens
+  useEffect(() => {
+    if (showInviteModal && isLandlord && landlordProperties.length === 0) {
+      const loadProps = async () => {
+        setLoadingProperties(true);
+        try {
+          const props = await getLandlordProperties(currentUserId);
+          setLandlordProperties(props);
+        } catch (err) {
+          console.error('Failed to load properties:', err);
+        }
+        setLoadingProperties(false);
+      };
+      loadProps();
+    }
+  }, [showInviteModal, isLandlord, currentUserId, landlordProperties.length]);
+
+  // Handle inviting the other user to a property
+  const handleInviteToProperty = async (property) => {
+    if (!otherUser?.id) return;
+    setInvitingToProperty(property.id);
+    try {
+      await addTenant({
+        propertyId: property.id,
+        tenantId: otherUser.id,
+        landlordId: currentUserId,
+      });
+      setInviteSuccess(property.id);
+      // Auto close after success
+      setTimeout(() => {
+        setShowInviteModal(false);
+        setInviteSuccess(null);
+      }, 1500);
+    } catch (err) {
+      console.error('Failed to invite tenant:', err);
+      alert(err.message || 'Failed to add as tenant');
+    }
+    setInvitingToProperty(null);
+  };
 
   // Handle image upload
   const handleImageUpload = async (event) => {
@@ -360,6 +408,74 @@ export default function ChatWindow({
         </div>
       )}
 
+      {/* Invite to Property Modal */}
+      {showInviteModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-sm shadow-xl max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-[#c5303c]" />
+                Add to Property
+              </h3>
+              <button
+                onClick={() => setShowInviteModal(false)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            
+            <div className="p-4 overflow-y-auto flex-1">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Add <span className="font-semibold text-gray-800 dark:text-gray-200">{otherUser?.display_name}</span> as a tenant to one of your properties:
+              </p>
+              
+              {loadingProperties ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-8 h-8 animate-spin text-[#c5303c]" />
+                </div>
+              ) : landlordProperties.length === 0 ? (
+                <div className="text-center py-8">
+                  <Building2 className="w-12 h-12 mx-auto text-gray-400 mb-3" />
+                  <p className="text-gray-500 dark:text-gray-400">No properties yet</p>
+                  <p className="text-sm text-gray-400 mt-1">Create a property first in Messages → Properties tab</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {landlordProperties.map((property) => (
+                    <button
+                      key={property.id}
+                      onClick={() => handleInviteToProperty(property)}
+                      disabled={invitingToProperty === property.id || inviteSuccess === property.id}
+                      className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                        inviteSuccess === property.id
+                          ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-[#c5303c] hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                      }`}
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#c5303c] to-[#E63946] flex items-center justify-center flex-shrink-0">
+                        <Building2 className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="font-semibold text-gray-800 dark:text-gray-200">{property.name}</p>
+                        {property.address && (
+                          <p className="text-xs text-gray-500 truncate">{property.address}</p>
+                        )}
+                      </div>
+                      {invitingToProperty === property.id ? (
+                        <Loader2 className="w-5 h-5 animate-spin text-[#c5303c]" />
+                      ) : inviteSuccess === property.id ? (
+                        <Check className="w-5 h-5 text-green-600" />
+                      ) : null}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex-shrink-0 flex items-center gap-3 p-4 bg-gradient-to-r from-[#E63946] via-rose-500 to-[#E63946] shadow-xl relative overflow-hidden">
         {/* Animated background shimmer */}
@@ -419,7 +535,23 @@ export default function ChatWindow({
                 className="fixed inset-0 z-10" 
                 onClick={() => setShowMenu(false)}
               />
-              <div className="absolute right-0 top-full mt-2 w-52 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 z-20 overflow-hidden">
+              <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 z-20 overflow-hidden">
+                {/* Invite to Property option - only for landlords */}
+                {isLandlord && (
+                  <button
+                    onClick={() => {
+                      setShowMenu(false);
+                      setShowInviteModal(true);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors border-b border-gray-100 dark:border-gray-700"
+                  >
+                    <UserPlus className="w-5 h-5 text-green-600" />
+                    <div>
+                      <span className="font-semibold block">Add to Property</span>
+                      <span className="text-xs text-gray-500">Invite as tenant</span>
+                    </div>
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     setShowMenu(false);

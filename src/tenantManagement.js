@@ -236,6 +236,95 @@ export async function updateTenant(tenantRecordId, updates) {
 }
 
 // ===========================
+// ADMIN FUNCTIONS
+// ===========================
+
+/**
+ * Check if user is admin of a property (landlord or promoted admin)
+ */
+export async function isPropertyAdmin(propertyId, userId) {
+  // Check if user is landlord
+  const { data: property } = await supabase
+    .from('properties')
+    .select('landlord_id')
+    .eq('id', propertyId)
+    .maybeSingle();
+
+  if (property?.landlord_id === userId) {
+    return true;
+  }
+
+  // Check if user is promoted admin
+  const { data: tenant } = await supabase
+    .from('tenants')
+    .select('is_admin')
+    .eq('property_id', propertyId)
+    .eq('tenant_id', userId)
+    .eq('status', 'active')
+    .maybeSingle();
+
+  return tenant?.is_admin === true;
+}
+
+/**
+ * Promote or demote a tenant to/from admin
+ */
+export async function setTenantAdmin(tenantRecordId, isAdmin) {
+  const { data, error } = await supabase
+    .from('tenants')
+    .update({ is_admin: isAdmin, updated_at: new Date().toISOString() })
+    .eq('id', tenantRecordId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating tenant admin status:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+/**
+ * Toggle admin-only messages setting for a property
+ */
+export async function setAdminOnlyMessages(propertyId, adminOnly) {
+  const { data, error } = await supabase
+    .from('properties')
+    .update({ admin_only_messages: adminOnly, updated_at: new Date().toISOString() })
+    .eq('id', propertyId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating admin-only messages setting:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+/**
+ * Check if user can send messages in property chat
+ */
+export async function canSendPropertyMessage(propertyId, userId) {
+  // Get property settings
+  const { data: property } = await supabase
+    .from('properties')
+    .select('landlord_id, admin_only_messages')
+    .eq('id', propertyId)
+    .maybeSingle();
+
+  if (!property) return false;
+
+  // If admin_only_messages is off, anyone can send
+  if (!property.admin_only_messages) return true;
+
+  // If admin_only_messages is on, check if user is admin
+  return await isPropertyAdmin(propertyId, userId);
+}
+
+// ===========================
 // TENANT INVITATIONS
 // ===========================
 

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { MessageSquare, ArrowLeft, Sparkles, Search } from 'lucide-react';
+import { MessageSquare, ArrowLeft, Sparkles, Search, Building2 } from 'lucide-react';
 import ConversationList from './ConversationList';
 import ChatWindow from './ChatWindow';
+import PropertyManagement from './PropertyManagement';
 import { 
   getUserConversations, 
   getMessages, 
@@ -21,6 +22,7 @@ export default function MessagesView({
   const [unreadCounts, setUnreadCounts] = useState({});
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('messages'); // 'messages' or 'groups'
 
   // Handle responsive layout
   useEffect(() => {
@@ -117,6 +119,64 @@ export default function MessagesView({
 
   const totalUnread = Object.values(unreadCounts).reduce((sum, c) => sum + c, 0);
 
+  // If showing PropertyManagement (groups tab)
+  if (activeTab === 'groups') {
+    return (
+      <div className="min-h-[calc(100vh-140px)] pb-20 bg-gradient-to-b from-slate-50 to-gray-100 dark:from-gray-900 dark:to-gray-900">
+        {/* Tab Header */}
+        <div className="sticky top-0 z-20 bg-gradient-to-r from-[#1D3557] via-[#2d4a6f] to-[#1D3557] text-white shadow-xl">
+          <div className="flex items-center gap-3 p-4">
+            {onBack && (
+              <button onClick={onBack} className="p-2.5 hover:bg-white/15 rounded-xl transition-all">
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+            )}
+            <div className="flex-1">
+              <h1 className="text-xl font-bold tracking-tight">Messages</h1>
+            </div>
+          </div>
+          
+          {/* Tab Switcher */}
+          <div className="flex px-4 pb-3 gap-2">
+            <button
+              onClick={() => setActiveTab('messages')}
+              className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+                activeTab === 'messages'
+                  ? 'bg-white text-[#1D3557]'
+                  : 'bg-white/10 text-white/80 hover:bg-white/20'
+              }`}
+            >
+              <MessageSquare className="w-4 h-4" />
+              Direct
+              {totalUnread > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 text-xs bg-red-500 text-white rounded-full">{totalUnread}</span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('groups')}
+              className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+                activeTab === 'groups'
+                  ? 'bg-white text-[#1D3557]'
+                  : 'bg-white/10 text-white/80 hover:bg-white/20'
+              }`}
+            >
+              <Building2 className="w-4 h-4" />
+              {isLandlord ? 'My Properties' : 'My Rental'}
+            </button>
+          </div>
+        </div>
+
+        {/* Property Management Content */}
+        <PropertyManagement
+          currentUser={currentUser}
+          showToast={() => {}}
+          isLandlord={isLandlord}
+          embedded={true}
+        />
+      </div>
+    );
+  }
+
   // Mobile: show either list or chat
   if (isMobile) {
     if (selectedConversation) {
@@ -150,25 +210,41 @@ export default function MessagesView({
               </button>
             )}
             <div className="flex-1">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-inner ring-2 ring-white/10">
-                  <MessageSquare className="w-5 h-5" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold tracking-tight">Messages</h1>
-                  {totalUnread > 0 && (
-                    <p className="text-xs text-white/70 flex items-center gap-1.5">
-                      <span className="w-2 h-2 bg-red-400 rounded-full animate-pulse" />
-                      {totalUnread} unread message{totalUnread !== 1 ? 's' : ''}
-                    </p>
-                  )}
-                </div>
-              </div>
+              <h1 className="text-xl font-bold tracking-tight">Messages</h1>
             </div>
           </div>
           
-          {/* Search Bar */}
-          {conversations.length > 0 && (
+          {/* Tab Switcher */}
+          <div className="flex px-4 pb-3 gap-2">
+            <button
+              onClick={() => setActiveTab('messages')}
+              className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+                activeTab === 'messages'
+                  ? 'bg-white text-[#1D3557]'
+                  : 'bg-white/10 text-white/80 hover:bg-white/20'
+              }`}
+            >
+              <MessageSquare className="w-4 h-4" />
+              Direct
+              {totalUnread > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 text-xs bg-red-500 text-white rounded-full">{totalUnread}</span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('groups')}
+              className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+                activeTab === 'groups'
+                  ? 'bg-white text-[#1D3557]'
+                  : 'bg-white/10 text-white/80 hover:bg-white/20'
+              }`}
+            >
+              <Building2 className="w-4 h-4" />
+              {isLandlord ? 'Properties' : 'My Rental'}
+            </button>
+          </div>
+          
+          {/* Search Bar - only for direct messages */}
+          {conversations.length > 0 && activeTab === 'messages' && (
             <div className="px-4 pb-4">
               <div className="relative group">
                 <div className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center group-focus-within:bg-white/20 transition-colors">
