@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, Suspense } from 'react';
-import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone, Sparkles, TrendingUp, ShieldCheck, ChevronDown, ArrowLeft, RefreshCw, AlertCircle, Trash2, GitCompare, MessageSquare, Copy, MessageCircle } from 'lucide-react';
+import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone, Sparkles, TrendingUp, ShieldCheck, ChevronDown, ArrowLeft, RefreshCw, AlertCircle, Trash2, GitCompare, MessageSquare, Copy, MessageCircle, Building2 } from 'lucide-react';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import BrowseView from './components/BrowseView';
@@ -40,6 +40,7 @@ const AnalyticsConsentModal = React.lazy(() => import('./components/AnalyticsCon
 const NotificationsPanel = React.lazy(() => import('./components/NotificationsPanel'));
 const PhotoEditor = React.lazy(() => import('./components/PhotoEditor'));
 const MessagesView = React.lazy(() => import('./components/MessagesView'));
+const PropertyManagement = React.lazy(() => import('./components/PropertyManagement'));
 
 // Cloudflare Turnstile site key - set in Vercel env vars
 const TURNSTILE_SITE_KEY = process.env.REACT_APP_TURNSTILE_SITE_KEY || '';
@@ -1347,6 +1348,17 @@ const filteredListings = listings
               userType={userType}
               onBack={() => setCurrentView('browse')}
               initialConversation={null}
+            />
+          </LazyModalBoundary>
+        )}
+
+        {/* Properties / Tenant Management View */}
+        {currentView === 'properties' && currentUser && (
+          <LazyModalBoundary label="Loading properties...">
+            <PropertyManagement
+              currentUser={currentUser}
+              showToast={showToast}
+              isLandlord={userType === 'landlord'}
             />
           </LazyModalBoundary>
         )}
@@ -5426,8 +5438,10 @@ function BottomNav({ currentView, setCurrentView, currentUser, userType, unreadM
     { id: 'browse', label: 'Explore', icon: Search, activeColor: 'red' },
     isLandlord && { id: 'add', label: 'List', icon: PlusCircle, requiresAuth: true, activeColor: 'red', highlight: true },
     { id: 'messages', label: 'Messages', icon: MessageCircle, requiresAuth: true, activeColor: 'red', badge: unreadMessageCount, preview: '', notificationDot: unreadMessageCount > 0 },
+    { id: 'properties', label: 'Tenants', icon: Building2, requiresAuth: true, activeColor: 'red', show: isLandlord },
     { id: 'my-listings', label: 'My Rooms', icon: Home, requiresAuth: true, activeColor: 'navy', show: isLandlord },
     userType === 'renter' && { id: 'favorites', label: 'Saved', icon: Heart, activeColor: 'red' },
+    !isLandlord && { id: 'properties', label: 'My Rental', icon: Building2, requiresAuth: true, activeColor: 'blue' },
     { id: 'profile', label: 'Profile', icon: User, activeColor: 'navy' }
   ].filter(Boolean);
 
