@@ -528,45 +528,46 @@ export default function ChatWindow({
           >
             <MoreVertical className="w-5 h-5 text-white" />
           </button>
-          
-          {showMenu && (
-            <>
-              <div 
-                className="fixed inset-0 z-10" 
-                onClick={() => setShowMenu(false)}
-              />
-              <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 z-20 overflow-hidden">
-                {/* Invite to Property option - only for landlords */}
-                {isLandlord && (
-                  <button
-                    onClick={() => {
-                      setShowMenu(false);
-                      setShowInviteModal(true);
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors border-b border-gray-100 dark:border-gray-700"
-                  >
-                    <UserPlus className="w-5 h-5 text-green-600" />
-                    <div>
-                      <span className="font-semibold block">Add to Property</span>
-                      <span className="text-xs text-gray-500">Invite as tenant</span>
-                    </div>
-                  </button>
-                )}
-                <button
-                  onClick={() => {
-                    setShowMenu(false);
-                    setShowReportModal(true);
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-3.5 text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                >
-                  <Flag className="w-5 h-5" />
-                  <span className="font-semibold">Report User</span>
-                </button>
-              </div>
-            </>
-          )}
         </div>
       </div>
+
+      {/* Menu Dropdown - Rendered outside header to avoid clipping */}
+      {showMenu && (
+        <>
+          <div 
+            className="fixed inset-0 z-40" 
+            onClick={() => setShowMenu(false)}
+          />
+          <div className="fixed right-4 top-16 w-56 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
+            {/* Invite to Property option - only for landlords */}
+            {isLandlord && (
+              <button
+                onClick={() => {
+                  setShowMenu(false);
+                  setShowInviteModal(true);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors border-b border-gray-100 dark:border-gray-700"
+              >
+                <UserPlus className="w-5 h-5 text-green-600" />
+                <div>
+                  <span className="font-semibold block">Add to Property</span>
+                  <span className="text-xs text-gray-500">Invite as tenant</span>
+                </div>
+              </button>
+            )}
+            <button
+              onClick={() => {
+                setShowMenu(false);
+                setShowReportModal(true);
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3.5 text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            >
+              <Flag className="w-5 h-5" />
+              <span className="font-semibold">Report User</span>
+            </button>
+          </div>
+        </>
+      )}
 
       {/* Listing Preview (if available) */}
       {listing && (
