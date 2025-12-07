@@ -9,7 +9,8 @@ import BackToTop from './components/BackToTop';
 import TurnstileWidget from './components/TurnstileWidget';
 import { getNotifications, addNotification, checkAreaSubscriptions, subscribeToArea as subscribeToAreaEngine, unsubscribeFromArea, getAreaSubscriptions, getCompareList, clearCompareList, removeFromCompare, getLandlordQuickReplies, saveLandlordQuickReplies } from './utils/notificationEngine';
 import { loadListingTemplate, saveListingTemplate, clearListingTemplate } from './utils/listingTemplateStorage';
-import { getOrCreateConversation, getUnreadCount as getChatUnreadCount } from './chat';
+import { getOrCreateConversation, getUnreadCount as getChatUnreadCount, subscribeToNewMessages, getUserConversations } from './chat';
+import { requestNotificationPermission, showMessageNotification, shouldAskForPermission, markPermissionAsked } from './utils/pushNotifications';
 import { 
   fetchAllListings, 
   createListing, 
@@ -915,6 +916,73 @@ React.useEffect(() => {
   updateCount();
   const interval = setInterval(updateCount, 30000); // Update every 30 seconds
   return () => clearInterval(interval);
+}, [currentUser?.id]);
+
+// Subscribe to real-time messages and show push notifications
+React.useEffect(() => {
+  if (!currentUser?.id) return;
+
+  let unsubscribe = () => {};
+  let conversationIds = [];
+
+  const setupMessageSubscription = async () => {
+    try {
+      // Get user's conversations
+      const conversations = await getUserConversations(currentUser.id);
+      conversationIds = conversations.map(c => c.id);
+
+      if (conversationIds.length === 0) return;
+
+      // Subscribe to new messages
+      unsubscribe = subscribeToNewMessages(currentUser.id, conversationIds, async (message) => {
+        // Update unread count immediately
+        const count = await getChatUnreadCount(currentUser.id);
+        setUnreadMessageCount(count);
+
+        // Show push notification if app is in background
+        if (document.visibilityState === 'hidden' || document.hidden) {
+          // Try to get sender name
+          let senderName = 'Someone';
+          const conversation = conversations.find(c => c.id === message.conversation_id);
+          if (conversation) {
+            // Find the other participant
+            if (conversation.renter?.id === message.sender_id) {
+              senderName = conversation.renter?.display_name || 'Renter';
+            } else if (conversation.landlord?.id === message.sender_id) {
+              senderName = conversation.landlord?.display_name || 'Landlord';
+            }
+          }
+
+          showMessageNotification(message, senderName, (view) => setCurrentView(view));
+        }
+      });
+    } catch (err) {
+      console.error('Failed to setup message subscription:', err);
+    }
+  };
+
+  setupMessageSubscription();
+
+  return () => unsubscribe();
+}, [currentUser?.id]);
+
+// Request notification permission when user logs in
+React.useEffect(() => {
+  if (!currentUser?.id) return;
+
+  // Only ask if we haven't asked before and user is logged in
+  if (shouldAskForPermission()) {
+    // Wait a bit before asking to not be intrusive
+    const timer = setTimeout(async () => {
+      markPermissionAsked();
+      const granted = await requestNotificationPermission();
+      if (granted) {
+        console.log('Notification permission granted');
+      }
+    }, 10000); // Ask after 10 seconds
+
+    return () => clearTimeout(timer);
+  }
 }, [currentUser?.id]);
 
 const filteredListings = listings
