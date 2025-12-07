@@ -1239,9 +1239,9 @@ function PropertyChatView({ property, currentUser, showToast, onBack }) {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900">
+    <div className="fixed inset-0 z-50 flex flex-col bg-gray-100 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#c5303c] to-[#E63946] p-4 text-white flex items-center gap-3">
+      <div className="flex-shrink-0 bg-gradient-to-r from-[#c5303c] to-[#E63946] p-4 text-white flex items-center gap-3">
         <button onClick={onBack} className="p-2 hover:bg-white/20 rounded-xl transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </button>
