@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, ArrowLeft, Zap, ChevronDown, ChevronUp, MoreVertical, Flag, Ban, X } from 'lucide-react';
+import { Send, ArrowLeft, Zap, ChevronDown, ChevronUp, MoreVertical, Flag, Ban, X, Image, Paperclip, Loader2 } from 'lucide-react';
 import { getMessages, sendMessage, markMessagesAsRead, subscribeToMessages, getQuickReplies, reportUser } from '../chat';
 import { supabase } from '../supabase';
 
@@ -47,11 +47,87 @@ export default function ChatWindow({
   const [reportReason, setReportReason] = useState('');
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [reportSuccess, setReportSuccess] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const otherUser = isLandlord ? conversation.renter : conversation.landlord;
   const listing = conversation.listing;
+
+  // Handle image upload
+  const handleImageUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image must be less than 5MB');
+      return;
+    }
+
+    setUploadingImage(true);
+    setShowAttachMenu(false);
+
+    try {
+      // Create unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `chat/${conversation.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+      // Upload to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('chat-images')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) {
+        console.error('Upload error:', error);
+        // Try alternative bucket name
+        const { data: data2, error: error2 } = await supabase.storage
+          .from('listings')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+        
+        if (error2) throw error2;
+        
+        // Get public URL from listings bucket
+        const { data: urlData } = supabase.storage
+          .from('listings')
+          .getPublicUrl(fileName);
+        
+        // Send image as message
+        await sendMessage(conversation.id, currentUserId, `[Image] ${urlData.publicUrl}`);
+      } else {
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('chat-images')
+          .getPublicUrl(fileName);
+
+        // Send image as message
+        await sendMessage(conversation.id, currentUserId, `[Image] ${urlData.publicUrl}`);
+      }
+    } catch (error) {
+      console.error('Failed to upload image:', error);
+      alert('Failed to upload image. Please try again.');
+    } finally {
+      setUploadingImage(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
 
   // Load messages
   useEffect(() => {
@@ -441,6 +517,32 @@ export default function ChatWindow({
                       )}
                     </div>
                   )}
+                  {/* Check if message is an image */}
+                  {msg.content?.startsWith('[Image]') ? (
+                    <div className={`relative max-w-[75%] transition-all duration-300 group ${msg._optimistic ? 'opacity-70 scale-[0.98]' : 'hover:scale-[1.01]'}`}>
+                      <img 
+                        src={msg.content.replace('[Image] ', '')} 
+                        alt="Shared image"
+                        className={`rounded-2xl max-w-full max-h-[300px] object-cover shadow-lg cursor-pointer hover:shadow-xl transition-all ${
+                          isMe ? 'rounded-br-sm' : 'rounded-bl-sm'
+                        }`}
+                        onClick={() => window.open(msg.content.replace('[Image] ', ''), '_blank')}
+                      />
+                      {isMe && !msg._optimistic && (
+                        <div className="absolute bottom-2 right-2 bg-black/50 backdrop-blur-sm rounded-full px-2 py-0.5 flex items-center gap-1">
+                          <span className="text-[10px] text-white/90 font-medium">Sent</span>
+                          <svg className="w-3 h-3 text-white/90" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      )}
+                      {msg._optimistic && (
+                        <div className="absolute bottom-2 right-2 bg-black/50 backdrop-blur-sm rounded-full p-1.5">
+                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        </div>
+                      )}
+                    </div>
+                  ) : (
                   <div
                     className={`relative max-w-[75%] px-4 py-3 transition-all duration-300 group ${
                       isMe
@@ -465,6 +567,7 @@ export default function ChatWindow({
                       </div>
                     )}
                   </div>
+                  )}
                 </div>
               </div>
             );
@@ -508,9 +611,63 @@ export default function ChatWindow({
         </div>
       )}
 
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleImageUpload}
+        className="hidden"
+      />
+
       {/* Input */}
       <div className="flex-shrink-0 p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 safe-area-bottom shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-        <div className="flex items-end gap-3">
+        <div className="flex items-end gap-2">
+          {/* Attachment Button */}
+          <div className="relative">
+            <button
+              onClick={() => setShowAttachMenu(!showAttachMenu)}
+              disabled={uploadingImage}
+              className={`p-3.5 rounded-2xl transition-all duration-200 ${
+                showAttachMenu 
+                  ? 'bg-[#E63946] text-white shadow-lg' 
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+              aria-label="Add attachment"
+            >
+              {uploadingImage ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Paperclip className="w-5 h-5" />
+              )}
+            </button>
+
+            {/* Attachment Menu */}
+            {showAttachMenu && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowAttachMenu(false)} />
+                <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-20 min-w-[160px]">
+                  <button
+                    onClick={() => {
+                      fileInputRef.current?.click();
+                      setShowAttachMenu(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                      <Image className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">Photo</p>
+                      <p className="text-xs text-gray-500">Send an image</p>
+                    </div>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Message Input */}
           <div className="flex-1 relative group">
             <textarea
               ref={inputRef}
@@ -528,6 +685,8 @@ export default function ChatWindow({
               </span>
             )}
           </div>
+
+          {/* Send Button */}
           <button
             onClick={handleSend}
             disabled={!newMessage.trim() || sending}

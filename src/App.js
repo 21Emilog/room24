@@ -30,7 +30,8 @@ import {
   saveProfile,
   getUserType,
   isLandlordComplete,
-  syncProfileToSupabase
+  syncProfileToSupabase,
+  supabase
 } from './supabase';
 
 const ListingDetailModal = React.lazy(() => import('./components/ListingDetailModal'));
@@ -942,15 +943,32 @@ React.useEffect(() => {
 
         // Show push notification if app is in background
         if (document.visibilityState === 'hidden' || document.hidden) {
-          // Try to get sender name
+          // Try to get sender name from conversation data
           let senderName = 'Someone';
           const conversation = conversations.find(c => c.id === message.conversation_id);
+          
           if (conversation) {
-            // Find the other participant
+            // Find the sender in conversation participants
             if (conversation.renter?.id === message.sender_id) {
               senderName = conversation.renter?.display_name || 'Renter';
             } else if (conversation.landlord?.id === message.sender_id) {
               senderName = conversation.landlord?.display_name || 'Landlord';
+            }
+          }
+          
+          // If still no name, try to fetch profile directly
+          if (senderName === 'Someone' && message.sender_id) {
+            try {
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('display_name')
+                .eq('id', message.sender_id)
+                .maybeSingle();
+              if (profile?.display_name) {
+                senderName = profile.display_name;
+              }
+            } catch (e) {
+              console.log('Could not fetch sender profile:', e);
             }
           }
 
