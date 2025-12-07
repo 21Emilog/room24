@@ -298,6 +298,10 @@ export async function setAdminOnlyMessages(propertyId, adminOnly) {
 
   if (error) {
     console.error('Error updating admin-only messages setting:', error);
+    // Check if error is because column doesn't exist
+    if (error.message?.includes('admin_only_messages') || error.code === '42703') {
+      throw new Error('Please run the database migration to add admin_only_messages column');
+    }
     throw error;
   }
 
@@ -309,15 +313,25 @@ export async function setAdminOnlyMessages(propertyId, adminOnly) {
  */
 export async function canSendPropertyMessage(propertyId, userId) {
   // Get property settings
-  const { data: property } = await supabase
+  const { data: property, error } = await supabase
     .from('properties')
     .select('landlord_id, admin_only_messages')
     .eq('id', propertyId)
     .maybeSingle();
 
+  if (error) {
+    console.error('Error checking property:', error);
+    return true; // Default to allowing messages if there's an error
+  }
+
   if (!property) return false;
 
-  // If admin_only_messages is off, anyone can send
+  // Landlord can ALWAYS send messages
+  if (property.landlord_id === userId) {
+    return true;
+  }
+
+  // If admin_only_messages is off or doesn't exist, anyone can send
   if (!property.admin_only_messages) return true;
 
   // If admin_only_messages is on, check if user is admin

@@ -15,6 +15,14 @@ CREATE TABLE IF NOT EXISTS properties (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Add column if table already exists (for migrations)
+DO $$ 
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'properties' AND column_name = 'admin_only_messages') THEN
+    ALTER TABLE properties ADD COLUMN admin_only_messages BOOLEAN DEFAULT false;
+  END IF;
+END $$;
+
 -- Tenants table (links tenants to properties)
 CREATE TABLE IF NOT EXISTS tenants (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -36,6 +44,14 @@ CREATE TABLE IF NOT EXISTS tenants (
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(property_id, tenant_id) -- One tenant entry per property
 );
+
+-- Add is_admin column if table already exists (for migrations)
+DO $$ 
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'tenants' AND column_name = 'is_admin') THEN
+    ALTER TABLE tenants ADD COLUMN is_admin BOOLEAN DEFAULT false;
+  END IF;
+END $$;
 
 -- Tenant invitations (for inviting users who aren't on the platform yet)
 CREATE TABLE IF NOT EXISTS tenant_invitations (
