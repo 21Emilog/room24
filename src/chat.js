@@ -414,6 +414,7 @@ export { REACTION_EMOJIS };
 
 /**
  * Add a reaction to a message
+ * NOTE: Requires message_reactions table - fails silently if not available
  */
 export async function addReaction(messageId, userId, emoji) {
   try {
@@ -428,23 +429,19 @@ export async function addReaction(messageId, userId, emoji) {
       .single();
 
     if (error) {
-      // Gracefully handle missing table
-      if (error.code === '42P01' || error.message?.includes('does not exist')) {
-        console.warn('message_reactions table not found - feature disabled');
-        return null;
-      }
-      console.error('Error adding reaction:', error);
+      console.warn('Error adding reaction:', error.message);
       return null;
     }
     return data;
   } catch (err) {
-    console.warn('Reactions feature unavailable:', err.message);
+    console.warn('Reactions not available');
     return null;
   }
 }
 
 /**
  * Remove a reaction from a message
+ * NOTE: Requires message_reactions table - fails silently if not available
  */
 export async function removeReaction(messageId, userId, emoji) {
   try {
@@ -455,16 +452,17 @@ export async function removeReaction(messageId, userId, emoji) {
       .eq('user_id', userId)
       .eq('emoji', emoji);
 
-    if (error && error.code !== '42P01' && !error.message?.includes('does not exist')) {
-      console.error('Error removing reaction:', error);
+    if (error) {
+      console.warn('Error removing reaction:', error.message);
     }
   } catch (err) {
-    console.warn('Reactions feature unavailable:', err.message);
+    console.warn('Reactions not available');
   }
 }
 
 /**
  * Get reactions for a message
+ * NOTE: Requires message_reactions table - returns empty array if not available
  */
 export async function getMessageReactions(messageId) {
   try {
@@ -474,11 +472,6 @@ export async function getMessageReactions(messageId) {
       .eq('message_id', messageId);
 
     if (error) {
-      // Gracefully handle missing table
-      if (error.code === '42P01' || error.message?.includes('does not exist')) {
-        return [];
-      }
-      console.error('Error fetching reactions:', error);
       return [];
     }
     return data || [];
@@ -489,6 +482,7 @@ export async function getMessageReactions(messageId) {
 
 /**
  * Subscribe to reactions for messages in a conversation
+ * NOTE: Requires message_reactions table - returns no-op if not available
  */
 export function subscribeToReactions(conversationId, onReaction) {
   try {
@@ -505,15 +499,11 @@ export function subscribeToReactions(conversationId, onReaction) {
           onReaction(payload);
         }
       )
-      .subscribe((status, err) => {
-        if (err) console.warn('Reactions subscription unavailable');
-      });
+      .subscribe();
 
-    return () => {
-      try { supabase.removeChannel(channel); } catch (e) {}
-    };
+    return () => supabase.removeChannel(channel);
   } catch (err) {
-    console.warn('Reactions feature unavailable');
+    console.warn('Reactions subscription not available');
     return () => {};
   }
 }
@@ -524,6 +514,7 @@ export function subscribeToReactions(conversationId, onReaction) {
 
 /**
  * Set typing status for a user in a conversation
+ * NOTE: Requires typing_indicators table - fails silently if not available
  */
 export async function setTyping(conversationId, userId, isTyping) {
   try {
@@ -536,8 +527,8 @@ export async function setTyping(conversationId, userId, isTyping) {
           started_at: new Date().toISOString(),
         }, { onConflict: 'conversation_id,user_id' });
 
-      if (error && !error.message?.includes('duplicate') && error.code !== '42P01' && !error.message?.includes('does not exist')) {
-        console.error('Error setting typing:', error);
+      if (error && !error.message?.includes('duplicate') && !error.message?.includes('does not exist')) {
+        console.warn('Error setting typing:', error.message);
       }
     } else {
       await supabase
@@ -547,12 +538,14 @@ export async function setTyping(conversationId, userId, isTyping) {
         .eq('user_id', userId);
     }
   } catch (err) {
-    // Typing indicators table may not exist - gracefully ignore
+    // Table might not exist yet - fail silently
+    console.warn('Typing indicators not available:', err.message);
   }
 }
 
 /**
  * Subscribe to typing indicators in a conversation
+ * NOTE: Requires typing_indicators table - returns no-op if not available
  */
 export function subscribeToTyping(conversationId, currentUserId, onTypingChange) {
   try {
@@ -578,20 +571,16 @@ export function subscribeToTyping(conversationId, currentUserId, onTypingChange)
             
             onTypingChange(data?.map(t => t.user_id) || []);
           } catch (err) {
-            onTypingChange([]);
+            // Table might not exist
           }
         }
       )
-      .subscribe((status, err) => {
-        if (err) console.warn('Typing subscription unavailable');
-      });
+      .subscribe();
 
-    return () => {
-      try { supabase.removeChannel(channel); } catch (e) {}
-    };
+    return () => supabase.removeChannel(channel);
   } catch (err) {
-    console.warn('Typing indicators unavailable');
-    return () => {};
+    console.warn('Typing subscription not available');
+    return () => {}; // Return no-op cleanup function
   }
 }
 
@@ -601,6 +590,7 @@ export function subscribeToTyping(conversationId, currentUserId, onTypingChange)
 
 /**
  * Update user's online presence
+ * NOTE: Requires user_presence table - fails silently if not available
  */
 export async function updatePresence(userId, isOnline, conversationId = null) {
   try {
@@ -613,16 +603,18 @@ export async function updatePresence(userId, isOnline, conversationId = null) {
         current_conversation_id: conversationId,
       }, { onConflict: 'user_id' });
 
-    if (error && error.code !== '42P01' && !error.message?.includes('does not exist')) {
-      console.error('Error updating presence:', error);
+    if (error && !error.message?.includes('does not exist')) {
+      console.warn('Error updating presence:', error.message);
     }
   } catch (err) {
-    // Presence table may not exist - gracefully ignore
+    // Table might not exist yet - fail silently
+    console.warn('Presence not available');
   }
 }
 
 /**
  * Get user's presence/online status
+ * NOTE: Requires user_presence table - returns null if not available
  */
 export async function getUserPresence(userId) {
   try {
@@ -633,11 +625,7 @@ export async function getUserPresence(userId) {
       .maybeSingle();
 
     if (error) {
-      // Gracefully handle missing table
-      if (error.code === '42P01' || error.message?.includes('does not exist')) {
-        return null;
-      }
-      console.error('Error fetching presence:', error);
+      // Table might not exist
       return null;
     }
     return data;
@@ -648,6 +636,7 @@ export async function getUserPresence(userId) {
 
 /**
  * Subscribe to user presence changes
+ * NOTE: Requires user_presence table - returns no-op if not available
  */
 export function subscribeToPresence(userId, onPresenceChange) {
   try {
@@ -665,16 +654,12 @@ export function subscribeToPresence(userId, onPresenceChange) {
           onPresenceChange(payload.new);
         }
       )
-      .subscribe((status, err) => {
-        if (err) console.warn('Presence subscription unavailable');
-      });
+      .subscribe();
 
-    return () => {
-      try { supabase.removeChannel(channel); } catch (e) {}
-    };
+    return () => supabase.removeChannel(channel);
   } catch (err) {
-    console.warn('Presence feature unavailable');
-    return () => {};
+    console.warn('Presence subscription not available');
+    return () => {}; // Return no-op cleanup function
   }
 }
 
@@ -688,30 +673,15 @@ export function subscribeToPresence(userId, onPresenceChange) {
 export async function markMessagesAsReadWithTimestamp(conversationId, userId) {
   const now = new Date().toISOString();
   
-  try {
-    // Try with read_at column first
-    const { error } = await supabase
-      .from('messages')
-      .update({ read: true, read_at: now })
-      .eq('conversation_id', conversationId)
-      .neq('sender_id', userId)
-      .is('read_at', null);
+  const { error } = await supabase
+    .from('messages')
+    .update({ read: true, read_at: now })
+    .eq('conversation_id', conversationId)
+    .neq('sender_id', userId)
+    .is('read_at', null);
 
-    if (error) {
-      // If read_at column doesn't exist, fall back to regular mark as read
-      if (error.message?.includes('read_at') || error.code === '42703') {
-        await supabase
-          .from('messages')
-          .update({ read: true })
-          .eq('conversation_id', conversationId)
-          .neq('sender_id', userId)
-          .eq('read', false);
-      } else {
-        console.error('Error marking messages as read:', error);
-      }
-    }
-  } catch (err) {
-    console.warn('Read receipts feature unavailable');
+  if (error) {
+    console.error('Error marking messages as read:', error);
   }
   
   return now;
@@ -725,39 +695,29 @@ export async function markMessagesAsReadWithTimestamp(conversationId, userId) {
  * Send a reply to a specific message
  */
 export async function sendReply(conversationId, senderId, content, replyToId) {
-  try {
-    // Try with reply_to_id column first
-    const { data, error } = await supabase
-      .from('messages')
-      .insert({
-        conversation_id: conversationId,
-        sender_id: senderId,
-        content: content.trim(),
-        reply_to_id: replyToId,
-        read: false,
-      })
-      .select()
-      .single();
+  const { data, error } = await supabase
+    .from('messages')
+    .insert({
+      conversation_id: conversationId,
+      sender_id: senderId,
+      content: content.trim(),
+      reply_to_id: replyToId,
+      read: false,
+    })
+    .select()
+    .single();
 
-    if (error) {
-      // If reply_to_id column doesn't exist, send as regular message
-      if (error.message?.includes('reply_to_id') || error.code === '42703') {
-        return await sendMessage(conversationId, senderId, content);
-      }
-      console.error('Error sending reply:', error);
-      throw error;
-    }
-
-    // Update conversation's last_message_at
-    await supabase
-      .from('conversations')
-      .update({ last_message_at: new Date().toISOString() })
-      .eq('id', conversationId);
-
-    return data;
-  } catch (err) {
-    // Fall back to regular message
-    return await sendMessage(conversationId, senderId, content);
+  if (error) {
+    console.error('Error sending reply:', error);
+    throw error;
   }
+
+  // Update conversation's last_message_at
+  await supabase
+    .from('conversations')
+    .update({ last_message_at: new Date().toISOString() })
+    .eq('id', conversationId);
+
+  return data;
 }
 

@@ -12,6 +12,7 @@ import {
   addReaction,
   removeReaction,
   subscribeToReactions,
+  getMessageReactions,
   getUserPresence,
   subscribeToPresence,
   updatePresence,
@@ -378,15 +379,12 @@ export default function ChatWindow({
       messages.forEach(async (msg) => {
         if (msg._optimistic) return;
         try {
-          const { data, error } = await supabase
-            .from('message_reactions')
-            .select('*')
-            .eq('message_id', msg.id);
-          if (!error && data) {
-            setMessageReactions(prev => ({ ...prev, [msg.id]: data }));
+          const reactions = await getMessageReactions(msg.id);
+          if (reactions) {
+            setMessageReactions(prev => ({ ...prev, [msg.id]: reactions }));
           }
         } catch (err) {
-          // Reactions table may not exist - ignore
+          // Ignore errors - table may not exist
         }
       });
     });
@@ -416,8 +414,8 @@ export default function ChatWindow({
         }
       }
     } catch (err) {
-      // Reactions feature may not be available
-      console.warn('Reaction error:', err);
+      // Reactions may not be available - fail silently
+      console.warn('Reaction not available');
     }
     setShowReactionPicker(null);
   };
