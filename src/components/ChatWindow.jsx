@@ -377,12 +377,16 @@ export default function ChatWindow({
       // Refresh reactions for all messages
       messages.forEach(async (msg) => {
         if (msg._optimistic) return;
-        const { data } = await supabase
-          .from('message_reactions')
-          .select('*')
-          .eq('message_id', msg.id);
-        if (data) {
-          setMessageReactions(prev => ({ ...prev, [msg.id]: data }));
+        try {
+          const { data, error } = await supabase
+            .from('message_reactions')
+            .select('*')
+            .eq('message_id', msg.id);
+          if (!error && data) {
+            setMessageReactions(prev => ({ ...prev, [msg.id]: data }));
+          }
+        } catch (err) {
+          // Reactions table may not exist - ignore
         }
       });
     });
@@ -404,13 +408,16 @@ export default function ChatWindow({
         }));
       } else {
         const reaction = await addReaction(messageId, currentUserId, emoji);
-        setMessageReactions(prev => ({
-          ...prev,
-          [messageId]: [...(prev[messageId] || []), reaction]
-        }));
+        if (reaction) {
+          setMessageReactions(prev => ({
+            ...prev,
+            [messageId]: [...(prev[messageId] || []), reaction]
+          }));
+        }
       }
     } catch (err) {
-      console.error('Reaction error:', err);
+      // Reactions feature may not be available
+      console.warn('Reaction error:', err);
     }
     setShowReactionPicker(null);
   };
