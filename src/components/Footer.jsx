@@ -92,7 +92,7 @@ export default function Footer({ onOpenPrivacy, onOpenAbout, onInstallApp, onNav
       </div>
 
       {/* Safe area padding for bottom navigation bar */}
-      <div className="h-20 md:h-0 bg-gray-950" aria-hidden="true" />
+      <div className="h-16 md:h-0 bg-gray-950" aria-hidden="true" />
     </footer>
   );
 }

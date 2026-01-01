@@ -1286,7 +1286,7 @@ const filteredListings = listings
         </div>
       )}
 
-      <div id="main-content" className="max-w-7xl mx-auto pb-24 px-4 sm:px-6 lg:px-8" role="main">
+      <div id="main-content" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" role="main">
         {currentView === 'setup-profile' && (
           <ProfileSetupView onSubmit={handleProfileSetup} userType={userType} />
         )}
