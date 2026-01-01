@@ -128,9 +128,4 @@ export default function ConversationList({
       })}
     </div>
   );
-          </button>
-        );
-      })}
-    </div>
-  );
 }
