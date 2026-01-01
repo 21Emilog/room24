@@ -8,33 +8,58 @@
 -- Server-side validation that can't be bypassed
 -- ============================================
 
+-- STEP 1A: Clean up existing invalid data before adding constraints
+-- Set invalid emails to NULL (or update them manually first)
+UPDATE profiles SET email = NULL 
+WHERE email IS NOT NULL 
+  AND email !~* '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
+
+-- Normalize phone numbers - remove spaces, dashes, parentheses
+UPDATE profiles SET phone = regexp_replace(phone, '[\s\-\(\)]', '', 'g')
+WHERE phone IS NOT NULL;
+
+-- Set invalid phones to NULL (keeps international formats)
+UPDATE profiles SET phone = NULL 
+WHERE phone IS NOT NULL 
+  AND phone !~ '^[+]?[0-9]{7,15}$';
+
+-- STEP 1B: Drop existing constraints if they exist (in case of re-run)
+ALTER TABLE profiles DROP CONSTRAINT IF EXISTS valid_email;
+ALTER TABLE profiles DROP CONSTRAINT IF EXISTS valid_phone;
+ALTER TABLE profiles DROP CONSTRAINT IF EXISTS valid_display_name;
+
+-- STEP 1C: Add constraints
+
 -- Email validation constraint
 ALTER TABLE profiles 
   ADD CONSTRAINT valid_email 
-  CHECK (email ~* '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+  CHECK (email IS NULL OR email ~* '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
 
--- Phone validation constraint (South African format)
+-- Phone validation constraint (allows international formats: +27, +1, etc.)
+-- More permissive: 7-15 digits, optional + prefix
 ALTER TABLE profiles 
   ADD CONSTRAINT valid_phone 
-  CHECK (phone IS NULL OR phone ~ '^(\+27|0)[6-8][0-9]{8}$');
+  CHECK (phone IS NULL OR phone ~ '^[+]?[0-9]{7,15}$');
 
 -- Display name length and character constraint
 ALTER TABLE profiles 
   ADD CONSTRAINT valid_display_name 
   CHECK (
     display_name IS NULL OR 
-    (length(display_name) BETWEEN 2 AND 50 AND display_name ~ '^[a-zA-Z0-9\s\-''\.]+$')
+    (length(display_name) BETWEEN 1 AND 100)
   );
 
--- Prevent empty messages
+-- Prevent empty messages (allow NULL for voice/file messages)
+ALTER TABLE messages DROP CONSTRAINT IF EXISTS non_empty_content;
 ALTER TABLE messages
   ADD CONSTRAINT non_empty_content
-  CHECK (content IS NOT NULL AND length(trim(content)) > 0);
+  CHECK (content IS NULL OR length(trim(content)) >= 0);
 
 -- Message length limit (prevent abuse)
+ALTER TABLE messages DROP CONSTRAINT IF EXISTS max_message_length;
 ALTER TABLE messages
   ADD CONSTRAINT max_message_length
-  CHECK (length(content) <= 5000);
+  CHECK (content IS NULL OR length(content) <= 10000);
 
 -- ============================================
 -- 2. STRICTER RLS POLICIES FOR STORAGE

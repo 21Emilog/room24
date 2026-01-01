@@ -226,12 +226,11 @@ export function debounce(func, wait, options = {}) {
   let lastArgs;
   let lastThis;
   let result;
-  let lastCallTime;
   
   const leading = options.leading ?? false;
   const trailing = options.trailing ?? true;
   
-  function invokeFunc(time) {
+  function invokeFunc() {
     const args = lastArgs;
     const thisArg = lastThis;
     lastArgs = lastThis = undefined;
@@ -240,28 +239,27 @@ export function debounce(func, wait, options = {}) {
   }
   
   function debounced(...args) {
-    const time = Date.now();
     const isInvoking = leading && !timeout;
     
     lastArgs = args;
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     lastThis = this;
-    lastCallTime = time;
     
     if (isInvoking) {
       timeout = setTimeout(() => {
         timeout = undefined;
         if (trailing && lastArgs) {
-          invokeFunc(Date.now());
+          invokeFunc();
         }
       }, wait);
-      return invokeFunc(time);
+      return invokeFunc();
     }
     
     if (!timeout && trailing) {
       timeout = setTimeout(() => {
         timeout = undefined;
         if (trailing && lastArgs) {
-          invokeFunc(Date.now());
+          invokeFunc();
         }
       }, wait);
     }

@@ -23,6 +23,7 @@ import {
 import { supabase } from '../supabase';
 import { getLandlordProperties, addTenant } from '../tenantManagement';
 import { VoiceRecorder, formatDuration } from '../utils/voiceRecorder';
+import { sanitizeHTML, checkRateLimit } from '../utils/security';
 
 // Emoji picker data
 const QUICK_EMOJIS = ['😀', '😂', '❤️', '👍', '🔥', '😍', '🙏', '💯', '🎉', '😊', '🤔', '👀', '🥳', '😎', '🤩', '💪'];
@@ -622,7 +623,21 @@ export default function ChatWindow({
   const handleSend = async () => {
     if (!newMessage.trim() || sending) return;
 
+    // Rate limiting: max 30 messages per minute
+    const rateCheck = checkRateLimit('send_message', 30, 60000);
+    if (!rateCheck.allowed) {
+      alert(`Slow down! You can send more messages in ${rateCheck.retryAfter} seconds.`);
+      return;
+    }
+
     const content = newMessage.trim();
+    
+    // Basic content length check
+    if (content.length > 5000) {
+      alert('Message is too long (max 5000 characters)');
+      return;
+    }
+    
     setNewMessage('');
     setSending(true);
     
@@ -705,6 +720,14 @@ export default function ChatWindow({
       
       if (!result || result.duration < 1) {
         setRecordingError('Recording too short. Minimum 1 second required.');
+        setRecordingDuration(0);
+        return;
+      }
+
+      // Rate limiting: max 10 voice messages per minute
+      const rateCheck = checkRateLimit('voice_message', 10, 60000);
+      if (!rateCheck.allowed) {
+        setRecordingError(`Too many voice messages. Try again in ${rateCheck.retryAfter}s.`);
         setRecordingDuration(0);
         return;
       }
@@ -1401,7 +1424,8 @@ export default function ChatWindow({
                       style={{ wordBreak: 'break-word' }}
                       onDoubleClick={() => !msg._optimistic && handleReaction(msg.id, '❤️')}
                     >
-                      <p className="whitespace-pre-wrap break-words leading-relaxed text-[15px]">{msg.content}</p>
+                      {/* XSS-safe message content */}
+                      <p className="whitespace-pre-wrap break-words leading-relaxed text-[15px]">{sanitizeHTML(msg.content)}</p>
                       
                       {/* Message status for sent messages */}
                       {isMe && (
