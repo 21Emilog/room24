@@ -141,45 +141,55 @@ export async function addTenant({ propertyId, tenantId, landlordId, roomNumber, 
  * Accept a group invitation (tenant accepts to join property)
  */
 export async function acceptGroupInvitation(tenantRecordId) {
-  const { data, error } = await supabase
-    .from('tenants')
-    .update({
-      status: 'active',
-      accepted_at: new Date().toISOString(),
-    })
-    .eq('id', tenantRecordId)
-    .select()
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from('tenants')
+      .update({
+        status: 'active',
+        accepted_at: new Date().toISOString(),
+      })
+      .eq('id', tenantRecordId)
+      .select()
+      .single();
 
-  if (error) {
-    console.error('Error accepting invitation:', error);
-    throw error;
+    if (error) {
+      console.error('Error accepting invitation:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (err) {
+    console.error('Error accepting invitation:', err);
+    return { success: false, error: err.message };
   }
-
-  return data;
 }
 
 /**
  * Decline a group invitation (tenant declines to join property)
  */
 export async function declineGroupInvitation(tenantRecordId) {
-  const { data, error } = await supabase
-    .from('tenants')
-    .update({
-      status: 'declined',
-      left_at: new Date().toISOString(),
-      left_reason: 'Declined invitation',
-    })
-    .eq('id', tenantRecordId)
-    .select()
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from('tenants')
+      .update({
+        status: 'declined',
+        left_at: new Date().toISOString(),
+        left_reason: 'Declined invitation',
+      })
+      .eq('id', tenantRecordId)
+      .select()
+      .single();
 
-  if (error) {
-    console.error('Error declining invitation:', error);
-    throw error;
+    if (error) {
+      console.error('Error declining invitation:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (err) {
+    console.error('Error declining invitation:', err);
+    return { success: false, error: err.message };
   }
-
-  return data;
 }
 
 /**
