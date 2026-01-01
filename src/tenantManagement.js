@@ -557,17 +557,26 @@ export async function cancelInvitation(invitationId) {
  * Send a message in property chat
  */
 export async function sendPropertyMessage({ propertyId, senderId, content, messageType = 'text', voiceUrl = null, voiceDuration = null }) {
+  console.log('sendPropertyMessage called:', { propertyId, senderId, content, messageType, voiceUrl, voiceDuration });
+  
+  const insertData = {
+    property_id: propertyId,
+    sender_id: senderId,
+    content,
+    message_type: messageType,
+  };
+
+  // Only add voice fields if they have values
+  if (voiceUrl) {
+    insertData.voice_url = voiceUrl;
+  }
+  if (voiceDuration) {
+    insertData.voice_duration = voiceDuration;
+  }
+
   const { data, error } = await supabase
     .from('property_messages')
-    .insert({
-      property_id: propertyId,
-      sender_id: senderId,
-      content,
-      message_type: messageType,
-      voice_url: voiceUrl,
-      voice_duration: voiceDuration,
-      read_by: [senderId], // Sender has read it
-    })
+    .insert(insertData)
     .select()
     .single();
 
@@ -576,6 +585,7 @@ export async function sendPropertyMessage({ propertyId, senderId, content, messa
     throw error;
   }
 
+  console.log('Message sent successfully:', data);
   return data;
 }
 
