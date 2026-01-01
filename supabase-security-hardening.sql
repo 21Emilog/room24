@@ -131,17 +131,32 @@ USING (
 -- Prevent abuse at the database level
 -- ============================================
 
--- Create rate limits table if not exists
-CREATE TABLE IF NOT EXISTS rate_limits (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-  action text NOT NULL,
-  ip_address inet,
-  created_at timestamptz DEFAULT now(),
-  window_start timestamptz DEFAULT now()
-);
+-- Check if rate_limits table exists and has correct schema
+-- If it exists with different columns, we'll use it as-is
+DO $$
+BEGIN
+  -- Try to add the action column if it doesn't exist
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'rate_limits' AND column_name = 'action'
+  ) THEN
+    -- Table exists but missing action column - add it
+    ALTER TABLE rate_limits ADD COLUMN IF NOT EXISTS action text;
+  END IF;
+EXCEPTION
+  WHEN undefined_table THEN
+    -- Table doesn't exist, create it
+    CREATE TABLE rate_limits (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+      action text NOT NULL,
+      ip_address inet,
+      created_at timestamptz DEFAULT now(),
+      window_start timestamptz DEFAULT now()
+    );
+END $$;
 
--- Create index for fast lookups
+-- Create index for fast lookups (if not exists)
 CREATE INDEX IF NOT EXISTS idx_rate_limits_lookup 
 ON rate_limits (user_id, action, window_start);
 
@@ -152,10 +167,9 @@ ALTER TABLE rate_limits ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "rate_limits_deny_all" ON rate_limits;
 CREATE POLICY "rate_limits_deny_all" ON rate_limits FOR ALL USING (false);
 
--- Function to check rate limits
-CREATE OR REPLACE FUNCTION check_rate_limit(
+-- Function to check rate limits (simplified version that works with existing table)
+CREATE OR REPLACE FUNCTION check_rate_limit_v2(
   p_user_id uuid,
-  p_action text,
   p_max_attempts int DEFAULT 10,
   p_window_seconds int DEFAULT 60
 ) RETURNS boolean
@@ -173,7 +187,6 @@ BEGIN
   SELECT COUNT(*) INTO v_count
   FROM rate_limits
   WHERE user_id = p_user_id
-    AND action = p_action
     AND created_at > v_window_start;
   
   -- If over limit, deny
@@ -182,8 +195,7 @@ BEGIN
   END IF;
   
   -- Log this attempt
-  INSERT INTO rate_limits (user_id, action)
-  VALUES (p_user_id, p_action);
+  INSERT INTO rate_limits (user_id) VALUES (p_user_id);
   
   RETURN true;
 END;

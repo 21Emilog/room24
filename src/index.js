@@ -5,6 +5,10 @@ import App from './App';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ThemeProvider } from './contexts/ThemeContext';
 import reportWebVitals from './reportWebVitals';
+
+// Anti-tampering protection (console attacks, devtools detection)
+import './utils/antiTamper';
+
 // Register service worker for PWA install (only in production builds served over HTTPS)
 
 function registerServiceWorker() {
