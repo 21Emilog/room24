@@ -1226,7 +1226,7 @@ export default function BrowseView({
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12 justify-items-center stagger-animation">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-6 justify-items-center stagger-animation">
                 {(paymentFilter ? listings.filter(l => l.paymentMethod === paymentFilter) : listings).map((listing, idx) => (
                   <React.Fragment key={listing.id}>
                     <ListingCard
@@ -1247,12 +1247,12 @@ export default function BrowseView({
               
               {/* How It Works Section - show for non-logged in users */}
               {!currentUser && (
-                <div className="bg-gradient-to-br from-white via-slate-50 to-blue-50 dark:from-gray-800 dark:via-gray-800 dark:to-gray-800 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700 p-8 md:p-12 mb-8 relative overflow-hidden">
+                <div className="bg-gradient-to-br from-white via-slate-50 to-blue-50 dark:from-gray-800 dark:via-gray-800 dark:to-gray-800 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700 p-6 md:p-8 mb-4 relative overflow-hidden">
                   {/* Decorative elements */}
                   <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-red-100/50 to-transparent rounded-bl-full" />
                   <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-blue-100/50 to-transparent rounded-tr-full" />
                   
-                  <div className="relative text-center mb-10">
+                  <div className="relative text-center mb-6">
                     <span className="inline-flex items-center gap-2 bg-gradient-to-r from-[#E63946]/10 to-rose-500/10 text-[#E63946] px-4 py-2 rounded-full text-sm font-bold mb-4">
                       <Sparkles className="w-4 h-4" />
                       Simple Process
@@ -1293,7 +1293,7 @@ export default function BrowseView({
                     </div>
                   </div>
                   
-                  <div className="text-center mt-10 pt-8 border-t border-gray-200 dark:border-gray-700">
+                  <div className="text-center mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                     <button
                       onClick={() => onRequireAuth && onRequireAuth('renter')}
                       className="inline-flex items-center gap-3 bg-gradient-to-r from-[#E63946] to-rose-500 hover:from-[#c5303c] hover:to-rose-600 text-white font-bold px-8 py-4 rounded-2xl shadow-xl hover:shadow-2xl transition-all active:scale-95 text-lg"
