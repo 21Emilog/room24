@@ -7,16 +7,20 @@
 ALTER TABLE profiles 
 ADD COLUMN IF NOT EXISTS user_type text DEFAULT 'user';
 
--- 2. Create index for performance
+-- 2. Fix existing NULL or invalid values BEFORE adding constraint
+UPDATE profiles SET user_type = 'user' 
+WHERE user_type IS NULL OR user_type NOT IN ('user', 'admin', 'moderator');
+
+-- 3. Create index for performance
 CREATE INDEX IF NOT EXISTS idx_profiles_user_type ON profiles(user_type);
 
--- 3. Add constraint to limit valid values
+-- 4. Add constraint to limit valid values
 ALTER TABLE profiles DROP CONSTRAINT IF EXISTS valid_user_type;
 ALTER TABLE profiles 
 ADD CONSTRAINT valid_user_type 
 CHECK (user_type IN ('user', 'admin', 'moderator'));
 
--- 4. Set yourself as admin (replace with your user ID or email)
+-- 5. Set yourself as admin (replace with your user ID or email)
 -- Option A: By email (uncomment and modify)
 -- UPDATE profiles SET user_type = 'admin' WHERE email = 'your-email@example.com';
 
@@ -27,7 +31,7 @@ CHECK (user_type IN ('user', 'admin', 'moderator'));
 UPDATE profiles SET user_type = 'admin' 
 WHERE id = (SELECT id FROM profiles ORDER BY created_at ASC LIMIT 1);
 
--- 5. Update audit_log policy to allow admin access
+-- 6. Update audit_log policy to allow admin access
 DROP POLICY IF EXISTS "audit_log_owner_read" ON audit_log;
 DROP POLICY IF EXISTS "audit_log_admin_read" ON audit_log;
 
@@ -43,7 +47,7 @@ USING (
   )
 );
 
--- 6. Update content_flags policy to allow admin access
+-- 7. Update content_flags policy to allow admin access
 DROP POLICY IF EXISTS "content_flags_deny_public" ON content_flags;
 DROP POLICY IF EXISTS "content_flags_admin_access" ON content_flags;
 
@@ -58,7 +62,7 @@ USING (
   )
 );
 
--- 7. Update blocklist policy to allow admin access
+-- 8. Update blocklist policy to allow admin access
 DROP POLICY IF EXISTS "blocklist_deny_public" ON blocklist;
 DROP POLICY IF EXISTS "blocklist_admin_access" ON blocklist;
 
@@ -73,7 +77,7 @@ USING (
   )
 );
 
--- 8. Create helper function to check if user is admin
+-- 9. Create helper function to check if user is admin
 DROP FUNCTION IF EXISTS is_admin();
 CREATE FUNCTION is_admin()
 RETURNS boolean
@@ -90,7 +94,7 @@ BEGIN
 END;
 $$;
 
--- 9. Create helper function to check if user is moderator or admin
+-- 10. Create helper function to check if user is moderator or admin
 DROP FUNCTION IF EXISTS is_moderator();
 CREATE FUNCTION is_moderator()
 RETURNS boolean
@@ -107,7 +111,7 @@ BEGIN
 END;
 $$;
 
--- 10. Verify: Check who is admin
+-- 11. Verify: Check who is admin
 SELECT id, email, display_name, user_type, created_at 
 FROM profiles 
 WHERE user_type = 'admin';
