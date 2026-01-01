@@ -702,7 +702,7 @@ export default function BrowseView({
   }
   // Mobile / tablet layout
   return (
-    <div className="bg-gradient-to-b from-slate-50 via-white to-slate-100 dark:from-gray-900 dark:via-gray-850 dark:to-gray-900 min-h-screen pb-4" role="main" aria-labelledby="results-heading">
+    <div className="bg-gradient-to-b from-slate-50 via-white to-slate-100 dark:from-gray-900 dark:via-gray-850 dark:to-gray-900 min-h-screen" role="main" aria-labelledby="results-heading">
       {/* Custom animations */}
       <style>{`
         @keyframes float {
@@ -1226,7 +1226,7 @@ export default function BrowseView({
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-2 justify-items-center stagger-animation">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-items-center stagger-animation">
                 {(paymentFilter ? listings.filter(l => l.paymentMethod === paymentFilter) : listings).map((listing, idx) => (
                   <React.Fragment key={listing.id}>
                     <ListingCard
@@ -1247,7 +1247,7 @@ export default function BrowseView({
               
               {/* How It Works Section - show for non-logged in users */}
               {!currentUser && (
-                <div className="bg-gradient-to-br from-white via-slate-50 to-blue-50 dark:from-gray-800 dark:via-gray-800 dark:to-gray-800 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700 p-6 md:p-8 mb-2 relative overflow-hidden">
+                <div className="bg-gradient-to-br from-white via-slate-50 to-blue-50 dark:from-gray-800 dark:via-gray-800 dark:to-gray-800 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700 p-6 md:p-8 relative overflow-hidden">
                   {/* Decorative elements */}
                   <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-red-100/50 to-transparent rounded-bl-full" />
                   <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-blue-100/50 to-transparent rounded-tr-full" />
