@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Building2, Users, Plus, Search, X, ChevronRight, MessageCircle, 
   UserPlus, Copy, Check, Trash2, Home, Send, ArrowLeft, MoreVertical, 
   Crown, User, Clock, Link2, Share2, Loader2, Shield, ShieldOff, 
-  MessageSquareOff, Settings, ShieldCheck, Star, Phone, BookUser, UserCheck, Edit2,
-  Mic, Square, Play, Pause, Circle, UserMinus, Volume2, LogOut, Ban, Contact, AlertCircle,
+  MessageSquareOff, Settings, ShieldCheck, Star, Phone, BookUser, UserCheck,
+  Mic, Play, Pause, Circle, UserMinus, Volume2, LogOut, Ban, Contact, AlertCircle,
   Image, Paperclip
 } from 'lucide-react';
 
@@ -34,10 +34,7 @@ import {
   canSendPropertyMessage,
   leavePropertyGroup,
   blockUser,
-  unblockUser,
-  isUserBlocked,
   pickContactsAndCheckRegistration,
-  checkPhoneRegistered,
   deletePropertyMessageForMe,
   deletePropertyMessageForEveryone,
   acceptGroupInvitation,
@@ -1059,6 +1056,7 @@ function AddTenantModal({ property, currentUser, showToast, onClose, onAdded }) 
   const [savingContact, setSavingContact] = useState(false);
   
   // Phone contacts from device
+  // eslint-disable-next-line no-unused-vars
   const [phoneContacts, setPhoneContacts] = useState([]);
   const [registeredContacts, setRegisteredContacts] = useState({});
   const [notRegisteredContacts, setNotRegisteredContacts] = useState([]);
@@ -1844,7 +1842,7 @@ function PropertyChatView({ property, currentUser, showToast, onBack }) {
 
   const isOwner = property.landlord_id === currentUser.id;
   const currentTenant = property.tenants?.find(t => t.tenant_id === currentUser.id);
-  const isAdmin = isOwner || currentTenant?.is_admin;
+  // isOwner || currentTenant?.is_admin used for permission checks inline
 
   // Check if user can send messages (admin-only mode check)
   useEffect(() => {
@@ -1962,7 +1960,7 @@ function PropertyChatView({ property, currentUser, showToast, onBack }) {
 
       // Upload to Supabase storage
       const fileName = `property_${property.id}_${currentUser.id}_${Date.now()}.webm`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('voice-messages')
         .upload(fileName, audioBlob, { contentType: 'audio/webm' });
 
@@ -2352,7 +2350,7 @@ function PropertyChatView({ property, currentUser, showToast, onBack }) {
                     >
                       <img 
                         src={msg.content.replace('[Image] ', '')}
-                        alt="Shared image"
+                        alt="Shared content"
                         className="max-w-[240px] max-h-[300px] object-cover cursor-pointer hover:opacity-90 transition-opacity"
                         onClick={() => window.open(msg.content.replace('[Image] ', ''), '_blank')}
                       />

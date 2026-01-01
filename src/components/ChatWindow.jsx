@@ -1843,15 +1843,6 @@ function VoiceMessagePlayer({ message, isMe }) {
     }
   };
 
-  const handleStop = () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      setCurrentTime(0);
-    }
-    setIsPlaying(false);
-  };
-
   const handleProgress = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const percent = (e.clientX - rect.left) / rect.width;

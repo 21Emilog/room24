@@ -1,5 +1,5 @@
 import React from 'react';
-import { MessageSquare, Home, Clock, ChevronRight, MapPin, Star } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 
 function formatRelativeTime(dateString) {
   if (!dateString) return '';

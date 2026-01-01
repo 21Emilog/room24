@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, Suspense } from 'react';
-import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone, Sparkles, TrendingUp, ShieldCheck, ChevronDown, ArrowLeft, RefreshCw, AlertCircle, Trash2, GitCompare, MessageSquare, Copy, MessageCircle } from 'lucide-react';
+import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone, Sparkles, TrendingUp, ShieldCheck, ChevronDown, ArrowLeft, RefreshCw, AlertCircle, GitCompare, MessageSquare, Copy, MessageCircle } from 'lucide-react';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import BrowseView from './components/BrowseView';

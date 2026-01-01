@@ -501,7 +501,7 @@ export default function BrowseView({
               </div>
             </div>
 
-            {/* Two Column Layout: Listings + Sidebar */}}
+            {/* Two Column Layout: Listings + Sidebar */}
             <div className="flex gap-6 lg:gap-8">
               {/* Main Listings Area */}
               <div className="flex-1">
@@ -1106,7 +1106,7 @@ export default function BrowseView({
         </div>
       </div>
       
-      {/* Results Section */}}
+      {/* Results Section */}
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between items-center mt-6 mb-6 bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-md border border-gray-100 dark:border-gray-700">
           <h2 id="results-heading" className="text-2xl font-bold text-gray-800 dark:text-white">

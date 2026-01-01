@@ -873,7 +873,7 @@ export async function isUserBlocked(blockerId, blockedId) {
 function normalizePhone(phone) {
   if (!phone) return null;
   // Remove all spaces, dashes, parentheses
-  let normalized = phone.replace(/[\s\-\(\)]/g, '');
+  let normalized = phone.replace(/[\s\-()]/g, '');
   // Convert +27 to 0 for South African numbers
   if (normalized.startsWith('+27')) {
     normalized = '0' + normalized.slice(3);
