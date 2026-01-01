@@ -14,7 +14,8 @@ export default function MessagesView({
   currentUser, 
   userType,
   onBack,
-  initialConversation = null // Optional: open specific conversation
+  initialConversation = null, // Optional: open specific conversation
+  onViewListing = null // Callback to open listing detail modal
 }) {
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(initialConversation);
@@ -193,7 +194,8 @@ export default function MessagesView({
             conversation={selectedConversation}
             currentUserId={currentUser.id}
             onBack={handleBackToList}
-            isLandlord={isLandlord && selectedConversation.landlord_id === currentUser.id}
+            isLandlord={isLandlord}
+            onViewListing={onViewListing}
           />
         </div>
       );
@@ -379,7 +381,8 @@ export default function MessagesView({
             conversation={selectedConversation}
             currentUserId={currentUser.id}
             onBack={handleBackToList}
-            isLandlord={isLandlord && selectedConversation.landlord_id === currentUser.id}
+            isLandlord={isLandlord}
+            onViewListing={onViewListing}
           />
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-12">

@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bell, User, LogOut, Search, PlusCircle, Heart, Settings, ChevronDown, Eye, EyeOff, MapPin, Moon, Sun, MessageSquare } from 'lucide-react';
+import { Menu, X, Bell, User, LogOut, Search, PlusCircle, Heart, Settings, ChevronDown, Eye, EyeOff, MapPin, Moon, Sun, MessageSquare } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 
-// RentMzansi Logo Component with subtle animation
+// RentMzansi Logo Component
 const Logo = ({ className = "w-10 h-10" }) => (
-  <svg viewBox="0 0 100 120" className={`${className} transition-transform duration-300 group-hover:scale-110`}>
-    <path d="M50,5 Q70,5 80,20 Q90,35 80,50 L50,90 L20,50 Q10,35 20,20 Q30,5 50,5 Z" fill="#E63946" className="drop-shadow-lg"/>
+  <svg viewBox="0 0 100 120" className={className}>
+    <path d="M50,5 Q70,5 80,20 Q90,35 80,50 L50,90 L20,50 Q10,35 20,20 Q30,5 50,5 Z" fill="#E63946"/>
     <polygon points="50,30 40,40 40,55 60,55 60,40" fill="#F1FAEE"/>
     <rect x="45" y="45" width="10" height="10" fill="#F1FAEE"/>
     <circle cx="50" cy="50" r="3" fill="#1D3557"/>
@@ -59,25 +59,14 @@ export default function Header({
   openAuthModal,
   handleSignOut,
   setCurrentView,
-  currentView,
   unreadCount,
   onOpenNotifications,
   unreadMessageCount = 0
 }) {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
   const userMenuRef = useRef(null);
   const mobileMenuRef = useRef(null);
-
-  // Track scroll for header shadow effect
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -116,17 +105,13 @@ export default function Header({
   ].filter(link => link.show);
 
   return (
-    <header className={`sticky top-0 z-30 bg-gradient-to-r from-[#1D3557] via-[#1D3557] to-[#2d4a6f] text-white safe-area-top backdrop-blur-lg transition-all duration-300 ${
-      isScrolled 
-        ? 'shadow-2xl shadow-blue-900/40' 
-        : 'shadow-xl shadow-blue-900/20'
-    }`}>
+    <header className="sticky top-0 z-30 bg-gradient-to-r from-[#1D3557] via-[#1D3557] to-[#2d4a6f] text-white shadow-xl shadow-blue-900/20 safe-area-top backdrop-blur-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <button 
             onClick={() => setCurrentView('browse')}
-            className="group flex items-center gap-2 hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-[#1D3557] rounded-lg"
+            className="flex items-center gap-2 hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-[#1D3557] rounded-lg"
             aria-label="Go to home page"
           >
             <Logo className="w-10 h-10" />
@@ -140,23 +125,14 @@ export default function Header({
           <nav className="hidden md:flex items-center gap-1" role="navigation" aria-label="Main navigation">
             {navLinks.map(link => {
               const Icon = link.icon;
-              const isActive = currentView === link.id;
               return (
                 <button
                   key={link.id}
                   onClick={() => setCurrentView(link.id)}
-                  className={`relative flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 group ${
-                    isActive 
-                      ? 'text-white bg-white/20' 
-                      : 'text-white/80 hover:text-white hover:bg-white/10'
-                  }`}
+                  className="relative flex items-center gap-2 px-4 py-2.5 text-white/80 hover:text-white hover:bg-white/10 rounded-xl font-medium text-sm transition-all duration-300 group"
                 >
-                  <Icon className={`w-4 h-4 transition-transform ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
+                  <Icon className="w-4 h-4 group-hover:scale-110 transition-transform" />
                   {link.label}
-                  {/* Active indicator */}
-                  {isActive && (
-                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-white rounded-full" />
-                  )}
                   {link.badge > 0 && (
                     <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-red-500 to-rose-600 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg shadow-red-500/50 animate-pulse">
                       {link.badge > 9 ? '9+' : link.badge}
@@ -298,65 +274,48 @@ export default function Header({
               </div>
             )}
 
-            {/* Mobile Menu Button - Animated hamburger to X */}
+            {/* Mobile Menu Button */}
             <button
               onClick={() => setShowMobileMenu(!showMobileMenu)}
-              className="md:hidden p-2.5 text-white/80 hover:text-white hover:bg-white/10 rounded-xl transition-colors relative w-10 h-10 flex items-center justify-center"
+              className="md:hidden p-2.5 text-white/80 hover:text-white hover:bg-white/10 rounded-xl transition-colors"
               aria-label="Toggle menu"
               aria-expanded={showMobileMenu}
             >
-              <span className="sr-only">{showMobileMenu ? 'Close menu' : 'Open menu'}</span>
-              <span className="flex flex-col justify-center items-center w-5 h-5">
-                <span className={`w-5 h-0.5 bg-current rounded-full transition-all duration-300 ${showMobileMenu ? 'rotate-45 translate-y-0' : '-translate-y-1.5'}`} />
-                <span className={`w-5 h-0.5 bg-current rounded-full transition-all duration-300 ${showMobileMenu ? 'opacity-0 scale-0' : 'opacity-100'}`} />
-                <span className={`w-5 h-0.5 bg-current rounded-full transition-all duration-300 ${showMobileMenu ? '-rotate-45 translate-y-0' : 'translate-y-1.5'}`} />
-              </span>
+              {showMobileMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile Menu with Backdrop */}
+      {/* Mobile Menu */}
       {showMobileMenu && (
-        <>
-          {/* Backdrop blur overlay */}
-          <div 
-            className="md:hidden fixed inset-0 top-16 bg-black/40 backdrop-blur-sm z-40 animate-fadein"
-            onClick={() => setShowMobileMenu(false)}
-          />
-          <div 
-            ref={mobileMenuRef}
-            className="md:hidden absolute left-0 right-0 bg-gradient-to-b from-[#1D3557] to-[#162a45] border-t border-white/10 shadow-2xl animate-slideDown z-50"
-            role="menu"
-          >
-            <nav className="px-4 py-4 space-y-1">
-              {navLinks.map((link, index) => {
-                const Icon = link.icon;
-                const isActive = currentView === link.id;
-                return (
-                  <button
-                    key={link.id}
-                    onClick={() => { setCurrentView(link.id); setShowMobileMenu(false); }}
-                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
-                      isActive 
-                        ? 'bg-white/15 text-white' 
-                        : 'text-white/80 hover:bg-white/10 hover:text-white'
-                    }`}
-                    role="menuitem"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Icon className={`w-5 h-5 ${isActive ? 'text-[#E63946]' : ''}`} />
-                      {link.label}
-                    </div>
-                    {link.badge > 0 && (
-                      <span className="w-6 h-6 bg-gradient-to-br from-red-500 to-rose-600 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg">
-                        {link.badge > 9 ? '9+' : link.badge}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+        <div 
+          ref={mobileMenuRef}
+          className="md:hidden bg-[#1D3557] border-t border-white/10 shadow-lg animate-slideDown"
+          role="menu"
+        >
+          <nav className="px-4 py-4 space-y-1">
+            {navLinks.map(link => {
+              const Icon = link.icon;
+              return (
+                <button
+                  key={link.id}
+                  onClick={() => { setCurrentView(link.id); setShowMobileMenu(false); }}
+                  className="w-full flex items-center justify-between px-4 py-3 text-white/80 hover:bg-white/10 hover:text-white rounded-xl font-medium transition-colors"
+                  role="menuitem"
+                >
+                  <div className="flex items-center gap-3">
+                    <Icon className="w-5 h-5" />
+                    {link.label}
+                  </div>
+                  {link.badge > 0 && (
+                    <span className="w-6 h-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                      {link.badge > 9 ? '9+' : link.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
             
             {currentUser && isLandlord && (
               <button
@@ -416,7 +375,6 @@ export default function Header({
             )}
           </nav>
         </div>
-        </>
       )}
     </header>
   );

@@ -123,8 +123,8 @@ export async function addTenant({ propertyId, tenantId, landlordId, roomNumber, 
       lease_start: leaseStart,
       lease_end: leaseEnd,
       notes,
-      status: 'active',
-      accepted_at: new Date().toISOString(),
+      status: 'pending', // Start as pending, user must accept
+      // accepted_at will be set when user accepts
     })
     .select()
     .single();
@@ -135,6 +135,88 @@ export async function addTenant({ propertyId, tenantId, landlordId, roomNumber, 
   }
 
   return data;
+}
+
+/**
+ * Accept a group invitation (tenant accepts to join property)
+ */
+export async function acceptGroupInvitation(tenantRecordId) {
+  const { data, error } = await supabase
+    .from('tenants')
+    .update({
+      status: 'active',
+      accepted_at: new Date().toISOString(),
+    })
+    .eq('id', tenantRecordId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error accepting invitation:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+/**
+ * Decline a group invitation (tenant declines to join property)
+ */
+export async function declineGroupInvitation(tenantRecordId) {
+  const { data, error } = await supabase
+    .from('tenants')
+    .update({
+      status: 'declined',
+      left_at: new Date().toISOString(),
+      left_reason: 'Declined invitation',
+    })
+    .eq('id', tenantRecordId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error declining invitation:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+/**
+ * Get pending invitations for a user
+ */
+export async function getPendingInvitations(userId) {
+  const { data, error } = await supabase
+    .from('tenants')
+    .select(`
+      *,
+      property:properties(id, name, address, landlord_id)
+    `)
+    .eq('tenant_id', userId)
+    .eq('status', 'pending');
+
+  if (error) {
+    console.error('Error fetching pending invitations:', error);
+    return [];
+  }
+
+  // Fetch landlord info for each invitation
+  const enrichedInvitations = await Promise.all(
+    (data || []).map(async (inv) => {
+      const { data: landlord } = await supabase
+        .from('profiles')
+        .select('id, display_name, photo_url')
+        .eq('id', inv.landlord_id)
+        .maybeSingle();
+
+      return {
+        ...inv,
+        landlord: landlord || { display_name: 'Unknown' },
+      };
+    })
+  );
+
+  return enrichedInvitations;
 }
 
 /**
@@ -474,7 +556,7 @@ export async function cancelInvitation(invitationId) {
 /**
  * Send a message in property chat
  */
-export async function sendPropertyMessage({ propertyId, senderId, content, messageType = 'text' }) {
+export async function sendPropertyMessage({ propertyId, senderId, content, messageType = 'text', voiceUrl = null, voiceDuration = null }) {
   const { data, error } = await supabase
     .from('property_messages')
     .insert({
@@ -482,6 +564,8 @@ export async function sendPropertyMessage({ propertyId, senderId, content, messa
       sender_id: senderId,
       content,
       message_type: messageType,
+      voice_url: voiceUrl,
+      voice_duration: voiceDuration,
       read_by: [senderId], // Sender has read it
     })
     .select()
@@ -652,4 +736,380 @@ export async function getPropertyWithDetails(propertyId) {
     invitations,
     landlord: landlordProfile,
   };
+}
+
+// ===========================
+// LEAVE GROUP (for tenants)
+// ===========================
+
+/**
+ * Tenant leaves a property group voluntarily
+ */
+export async function leavePropertyGroup(tenantRecordId, reason = null) {
+  const { error } = await supabase
+    .from('tenants')
+    .update({
+      status: 'left',
+      left_at: new Date().toISOString(),
+      left_reason: reason,
+    })
+    .eq('id', tenantRecordId);
+
+  if (error) {
+    console.error('Error leaving property:', error);
+    throw error;
+  }
+}
+
+// ===========================
+// BLOCKING SYSTEM
+// ===========================
+
+/**
+ * Block a user
+ */
+export async function blockUser(blockerId, blockedId, reason = null) {
+  const { data, error } = await supabase
+    .from('blocked_users')
+    .insert({
+      blocker_id: blockerId,
+      blocked_id: blockedId,
+      reason,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    // Might already be blocked
+    if (error.code === '23505') {
+      return { alreadyBlocked: true };
+    }
+    console.error('Error blocking user:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+/**
+ * Unblock a user
+ */
+export async function unblockUser(blockerId, blockedId) {
+  const { error } = await supabase
+    .from('blocked_users')
+    .delete()
+    .eq('blocker_id', blockerId)
+    .eq('blocked_id', blockedId);
+
+  if (error) {
+    console.error('Error unblocking user:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get list of users blocked by current user
+ */
+export async function getBlockedUsers(userId) {
+  const { data, error } = await supabase
+    .from('blocked_users')
+    .select('*, blocked:profiles!blocked_id(id, display_name, photo_url)')
+    .eq('blocker_id', userId);
+
+  if (error) {
+    console.error('Error fetching blocked users:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+/**
+ * Check if a user is blocked
+ */
+export async function isUserBlocked(blockerId, blockedId) {
+  const { data, error } = await supabase
+    .from('blocked_users')
+    .select('id')
+    .eq('blocker_id', blockerId)
+    .eq('blocked_id', blockedId)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Error checking block status:', error);
+    return false;
+  }
+
+  return !!data;
+}
+
+// ===========================
+// CONTACT MATCHING
+// ===========================
+
+/**
+ * Normalize phone number for matching
+ */
+function normalizePhone(phone) {
+  if (!phone) return null;
+  // Remove all spaces, dashes, parentheses
+  let normalized = phone.replace(/[\s\-\(\)]/g, '');
+  // Convert +27 to 0 for South African numbers
+  if (normalized.startsWith('+27')) {
+    normalized = '0' + normalized.slice(3);
+  }
+  // Remove leading + if any other country
+  if (normalized.startsWith('+')) {
+    normalized = normalized.slice(1);
+  }
+  return normalized;
+}
+
+/**
+ * Check if a phone number is registered in the app
+ */
+export async function checkPhoneRegistered(phoneNumber) {
+  const normalized = normalizePhone(phoneNumber);
+  if (!normalized) return null;
+
+  // Search for matching phone in profiles
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, display_name, photo_url, phone')
+    .or(`phone.eq.${phoneNumber},phone.eq.${normalized}`)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Error checking phone registration:', error);
+    return null;
+  }
+
+  return data;
+}
+
+/**
+ * Check multiple phone numbers for registration
+ * Returns map of phone -> user data (or null if not registered)
+ */
+export async function checkPhonesRegistered(phoneNumbers) {
+  const results = {};
+  
+  // Normalize all phone numbers
+  const normalizedPhones = phoneNumbers.map(p => ({
+    original: p,
+    normalized: normalizePhone(p)
+  })).filter(p => p.normalized);
+
+  if (normalizedPhones.length === 0) return results;
+
+  // Build OR query for all phones
+  const phoneQueries = normalizedPhones.flatMap(p => [p.original, p.normalized]);
+  const uniquePhones = [...new Set(phoneQueries)];
+  
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, display_name, photo_url, phone')
+    .in('phone', uniquePhones);
+
+  if (error) {
+    console.error('Error checking phone registrations:', error);
+    return results;
+  }
+
+  // Map results back to original phone numbers
+  const phoneToUser = {};
+  (data || []).forEach(user => {
+    if (user.phone) {
+      phoneToUser[user.phone] = user;
+      phoneToUser[normalizePhone(user.phone)] = user;
+    }
+  });
+
+  normalizedPhones.forEach(({ original, normalized }) => {
+    results[original] = phoneToUser[original] || phoneToUser[normalized] || null;
+  });
+
+  return results;
+}
+
+/**
+ * Request access to device contacts
+ * Returns array of contacts with phone numbers
+ */
+export async function requestContactsAccess() {
+  // Check if Contact Picker API is supported
+  if (!('contacts' in navigator && 'ContactsManager' in window)) {
+    throw new Error('Contact Picker API is not supported on this device');
+  }
+
+  try {
+    const props = ['name', 'tel'];
+    const opts = { multiple: true };
+    
+    const contacts = await navigator.contacts.select(props, opts);
+    
+    // Flatten contacts with multiple phone numbers
+    const flatContacts = [];
+    contacts.forEach(contact => {
+      const name = contact.name?.[0] || 'Unknown';
+      (contact.tel || []).forEach(phone => {
+        if (phone) {
+          flatContacts.push({
+            name,
+            phone: phone.trim()
+          });
+        }
+      });
+    });
+
+    return flatContacts;
+  } catch (error) {
+    if (error.name === 'NotAllowedError') {
+      throw new Error('Permission to access contacts was denied');
+    }
+    throw error;
+  }
+}
+
+/**
+ * Pick contacts and check which ones are registered
+ */
+export async function pickContactsAndCheckRegistration() {
+  const contacts = await requestContactsAccess();
+  
+  if (contacts.length === 0) {
+    return { contacts: [], registered: {}, notRegistered: [] };
+  }
+
+  const phoneNumbers = contacts.map(c => c.phone);
+  const registrationMap = await checkPhonesRegistered(phoneNumbers);
+
+  const registered = {};
+  const notRegistered = [];
+
+  contacts.forEach(contact => {
+    const user = registrationMap[contact.phone];
+    if (user) {
+      registered[contact.phone] = {
+        ...contact,
+        user
+      };
+    } else {
+      notRegistered.push(contact);
+    }
+  });
+
+  return { contacts, registered, notRegistered };
+}
+
+/**
+ * Delete a property message for the current user only
+ */
+export async function deletePropertyMessageForMe(messageId, userId) {
+  try {
+    // Get current message to update deleted_for array
+    const { data: message, error: fetchError } = await supabase
+      .from('property_messages')
+      .select('deleted_for')
+      .eq('id', messageId)
+      .single();
+
+    if (fetchError) {
+      console.error('Error fetching property message:', fetchError);
+      throw fetchError;
+    }
+
+    // Add user to deleted_for array
+    const deletedFor = message?.deleted_for || [];
+    if (!deletedFor.includes(userId)) {
+      deletedFor.push(userId);
+    }
+
+    const { error } = await supabase
+      .from('property_messages')
+      .update({ deleted_for: deletedFor })
+      .eq('id', messageId);
+
+    if (error) {
+      console.error('Error deleting property message for me:', error);
+      throw error;
+    }
+
+    return true;
+  } catch (err) {
+    console.error('Error in deletePropertyMessageForMe:', err);
+    throw err;
+  }
+}
+
+/**
+ * Delete a property message for everyone (sender only)
+ */
+export async function deletePropertyMessageForEveryone(messageId, senderId) {
+  try {
+    // Verify the user is the sender
+    const { data: message, error: fetchError } = await supabase
+      .from('property_messages')
+      .select('sender_id, content, voice_url')
+      .eq('id', messageId)
+      .single();
+
+    if (fetchError) {
+      console.error('Error fetching property message:', fetchError);
+      throw fetchError;
+    }
+
+    if (message?.sender_id !== senderId) {
+      throw new Error('You can only delete your own messages for everyone');
+    }
+
+    // If it's a voice message, delete the audio file
+    if (message?.voice_url) {
+      try {
+        const urlParts = message.voice_url.split('/');
+        const fileName = urlParts.slice(-2).join('/');
+        await supabase.storage
+          .from('voice-messages')
+          .remove([fileName]);
+      } catch (e) {
+        console.warn('Failed to delete voice file:', e);
+      }
+    }
+
+    // If it's an image message, try to delete from storage
+    if (message?.content?.startsWith('[Image]')) {
+      try {
+        const imageUrl = message.content.replace('[Image] ', '');
+        const urlParts = imageUrl.split('/');
+        const fileName = urlParts.slice(-3).join('/');
+        await supabase.storage
+          .from('chat-images')
+          .remove([fileName]);
+      } catch (e) {
+        console.warn('Failed to delete image file:', e);
+      }
+    }
+
+    // Update message to show it was deleted
+    const { error } = await supabase
+      .from('property_messages')
+      .update({ 
+        content: '🚫 This message was deleted',
+        deleted_at: new Date().toISOString(),
+        voice_url: null,
+        voice_duration: null,
+        message_type: 'deleted'
+      })
+      .eq('id', messageId);
+
+    if (error) {
+      console.error('Error deleting property message for everyone:', error);
+      throw error;
+    }
+
+    return true;
+  } catch (err) {
+    console.error('Error in deletePropertyMessageForEveryone:', err);
+    throw err;
+  }
 }

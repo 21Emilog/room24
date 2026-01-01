@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { Home, MapPin, User, ShieldCheck, Star, Heart, Clock, ChevronLeft, ChevronRight, Share2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Home, MapPin, User, ShieldCheck, Star, Heart, Clock } from 'lucide-react';
 
 function formatRelativeTime(date) {
   const now = new Date();
@@ -16,57 +16,14 @@ function formatRelativeTime(date) {
   return date.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' });
 }
 
-export default function ListingCard({ listing, onClick, isFavorite, onToggleFavorite, index = 0 }) {
+export default function ListingCard({ listing, onClick, isFavorite, onToggleFavorite }) {
   const addressLine = [listing.streetAddress, listing.location].filter(Boolean).join(', ');
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
-  const [showHeartBurst, setShowHeartBurst] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
 
   const handleFavoriteClick = (e) => {
     e.stopPropagation();
-    if (onToggleFavorite) {
-      onToggleFavorite(listing.id);
-      if (!isFavorite) {
-        setShowHeartBurst(true);
-        setTimeout(() => setShowHeartBurst(false), 700);
-      }
-    }
-  };
-
-  const handlePrevPhoto = useCallback((e) => {
-    e.stopPropagation();
-    if (listing.photos && listing.photos.length > 1) {
-      setCurrentPhotoIndex((prev) => (prev - 1 + listing.photos.length) % listing.photos.length);
-      setImageLoaded(false);
-    }
-  }, [listing.photos]);
-
-  const handleNextPhoto = useCallback((e) => {
-    e.stopPropagation();
-    if (listing.photos && listing.photos.length > 1) {
-      setCurrentPhotoIndex((prev) => (prev + 1) % listing.photos.length);
-      setImageLoaded(false);
-    }
-  }, [listing.photos]);
-
-  const handleShare = async (e) => {
-    e.stopPropagation();
-    const shareData = {
-      title: listing.title,
-      text: `Check out this room: ${listing.title} - R${formattedPrice}/mo`,
-      url: window.location.href
-    };
-    try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-      } else {
-        await navigator.clipboard.writeText(window.location.href);
-      }
-    } catch (err) {
-      console.log('Share cancelled');
-    }
+    if (onToggleFavorite) onToggleFavorite(listing.id);
   };
 
   // Calculate average rating from reviews
@@ -91,31 +48,28 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
   return (
     <div
       onClick={onClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
       className={`bg-white dark:bg-gray-800 rounded-3xl shadow-md hover:shadow-2xl dark:shadow-gray-900/50 transition-all duration-500 ease-out cursor-pointer overflow-hidden border border-gray-100 dark:border-gray-700 hover:border-red-400 dark:hover:border-red-500/50 hover:-translate-y-2 hover:scale-[1.02] group w-full max-w-sm ${listing.premium ? 'ring-2 ring-amber-400 ring-offset-4 dark:ring-offset-gray-900 shadow-amber-500/20' : ''}`}
       role="article"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(); } }}
       aria-label={`${listing.title} - R${formattedPrice} per month in ${listing.location || 'unknown location'}`}
-      style={{ animationDelay: `${index * 80}ms` }}
     >
-      {/* Image Section with Carousel */}
+      {/* Image Section */}
       {listing.photos && listing.photos.length > 0 ? (
         <div className="relative bg-gray-200 dark:bg-gray-700 aspect-[4/3] overflow-hidden">
           {/* Skeleton placeholder while loading */}
           {!imageLoaded && !imageError && (
-            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700 skeleton" />
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-pulse" />
           )}
           {/* Error fallback */}
           {imageError && (
-            <div className="absolute inset-0 bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-              <Home className="w-12 h-12 text-gray-300 dark:text-gray-500" />
+            <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+              <Home className="w-12 h-12 text-gray-300" />
             </div>
           )}
           <img
-            src={listing.photos[currentPhotoIndex]}
-            alt={`Room: ${listing.title} (Photo ${currentPhotoIndex + 1})`}
+            src={listing.photos[0]}
+            alt={`Room: ${listing.title}`}
             className={`w-full h-full object-cover group-hover:scale-110 transition-all duration-500 ease-out ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
             loading="lazy"
             onLoad={() => setImageLoaded(true)}
@@ -124,98 +78,25 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
           {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500" />
           
-          {/* Carousel Navigation - Show on hover */}
-          {listing.photos.length > 1 && isHovered && (
-            <>
-              <button
-                onClick={handlePrevPhoto}
-                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110 z-10 animate-fadein"
-                aria-label="Previous photo"
-              >
-                <ChevronLeft className="w-5 h-5 text-gray-700" />
-              </button>
-              <button
-                onClick={handleNextPhoto}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110 z-10 animate-fadein"
-                aria-label="Next photo"
-              >
-                <ChevronRight className="w-5 h-5 text-gray-700" />
-              </button>
-            </>
-          )}
-
-          {/* Photo Dots Indicator */}
-          {listing.photos.length > 1 && (
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
-              {listing.photos.slice(0, 5).map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setCurrentPhotoIndex(idx);
-                    setImageLoaded(false);
-                  }}
-                  className={`w-2 h-2 rounded-full transition-all duration-200 ${
-                    idx === currentPhotoIndex 
-                      ? 'bg-white w-4' 
-                      : 'bg-white/50 hover:bg-white/80'
-                  }`}
-                  aria-label={`Go to photo ${idx + 1}`}
-                />
-              ))}
-              {listing.photos.length > 5 && (
-                <span className="text-white text-[10px] ml-1">+{listing.photos.length - 5}</span>
-              )}
-            </div>
-          )}
-          
-          {/* Favorite button with burst effect */}
+          {/* Favorite button */}
           {onToggleFavorite && (
-            <div className="absolute top-3 left-3 z-10">
-              <button
-                onClick={handleFavoriteClick}
-                className={`relative rounded-2xl p-3 shadow-xl transition-all duration-300 hover:scale-110 active:scale-90 ${
-                  isFavorite 
-                    ? 'bg-gradient-to-br from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 shadow-rose-500/40' 
-                    : 'bg-white/95 backdrop-blur-md hover:bg-white shadow-black/10'
-                }`}
-                aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                aria-pressed={isFavorite}
-              >
-                <Heart
-                  className={`w-5 h-5 transition-all duration-300 ${
-                    isFavorite 
-                      ? 'fill-white text-white' 
-                      : 'text-gray-600 group-hover:text-rose-500'
-                  } ${showHeartBurst ? 'animate-heartbeat' : ''}`}
-                />
-              </button>
-              {/* Heart burst particles */}
-              {showHeartBurst && (
-                <div className="absolute inset-0 pointer-events-none">
-                  {[...Array(6)].map((_, i) => (
-                    <span
-                      key={i}
-                      className="absolute top-1/2 left-1/2 w-2 h-2 bg-rose-500 rounded-full animate-confetti-burst"
-                      style={{
-                        '--angle': `${i * 60}deg`,
-                        animationDelay: `${i * 30}ms`
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Share button - show on hover */}
-          {isHovered && (
             <button
-              onClick={handleShare}
-              className="absolute top-3 left-16 rounded-2xl p-3 bg-white/95 backdrop-blur-md hover:bg-white shadow-xl transition-all duration-300 hover:scale-110 active:scale-90 z-10 animate-fadein"
-              aria-label="Share listing"
+              onClick={handleFavoriteClick}
+              className={`absolute top-3 left-3 rounded-2xl p-3 shadow-xl transition-all duration-300 hover:scale-110 active:scale-90 z-10 ${
+                isFavorite 
+                  ? 'bg-gradient-to-br from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 shadow-rose-500/40' 
+                  : 'bg-white/95 backdrop-blur-md hover:bg-white shadow-black/10'
+              }`}
+              aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+              aria-pressed={isFavorite}
             >
-              <Share2 className="w-5 h-5 text-gray-600" />
+              <Heart
+                className={`w-5 h-5 transition-all duration-300 ${
+                  isFavorite 
+                    ? 'fill-white text-white animate-pulse' 
+                    : 'text-gray-600 group-hover:text-rose-500'
+                }`}
+              />
             </button>
           )}
           

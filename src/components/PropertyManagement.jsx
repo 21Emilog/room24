@@ -1,10 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Building2, Users, Plus, Search, X, ChevronRight, MessageCircle, 
   UserPlus, Copy, Check, Trash2, Home, Send, ArrowLeft, MoreVertical, 
   Crown, User, Clock, Link2, Share2, Loader2, Shield, ShieldOff, 
-  MessageSquareOff, Settings, ShieldCheck
+  MessageSquareOff, Settings, ShieldCheck, Star, Phone, BookUser, UserCheck, Edit2,
+  Mic, Square, Play, Pause, Circle, UserMinus, Volume2, LogOut, Ban, Contact, AlertCircle,
+  Image, Paperclip
 } from 'lucide-react';
+
+import { getSavedContacts, saveContact, deleteContact, searchContacts } from '../utils/savedContacts';
+import { VoiceRecorder } from '../utils/voiceRecorder';
+import { supabase } from '../supabase';
 
 import {
   createProperty,
@@ -26,6 +32,17 @@ import {
   setTenantAdmin,
   setAdminOnlyMessages,
   canSendPropertyMessage,
+  leavePropertyGroup,
+  blockUser,
+  unblockUser,
+  isUserBlocked,
+  pickContactsAndCheckRegistration,
+  checkPhoneRegistered,
+  deletePropertyMessageForMe,
+  deletePropertyMessageForEveryone,
+  acceptGroupInvitation,
+  declineGroupInvitation,
+  getPendingInvitations,
 } from '../tenantManagement';
 
 // ===========================
@@ -36,10 +53,12 @@ export default function PropertyManagement({ currentUser, showToast, isLandlord,
   const [view, setView] = useState('list'); // list, property-detail, chat, add-property
   const [properties, setProperties] = useState([]);
   const [tenantProperties, setTenantProperties] = useState([]);
+  const [pendingInvitations, setPendingInvitations] = useState([]);
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showAddTenant, setShowAddTenant] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [processingInvitation, setProcessingInvitation] = useState(null);
 
   // Load properties
   useEffect(() => {
@@ -55,6 +74,10 @@ export default function PropertyManagement({ currentUser, showToast, isLandlord,
         // Load properties where user is tenant (for all users)
         const tenantProps = await getTenantProperties(currentUser.id);
         setTenantProperties(tenantProps);
+        
+        // Load pending invitations
+        const pending = await getPendingInvitations(currentUser.id);
+        setPendingInvitations(pending);
       } catch (err) {
         console.error('Failed to load properties:', err);
         showToast?.('Failed to load properties', 'error');
@@ -69,6 +92,45 @@ export default function PropertyManagement({ currentUser, showToast, isLandlord,
   const refreshProperty = async (propertyId) => {
     const details = await getPropertyWithDetails(propertyId);
     setSelectedProperty(details);
+  };
+
+  // Handle accepting group invitation
+  const handleAcceptInvitation = async (tenantRecordId) => {
+    setProcessingInvitation(tenantRecordId);
+    try {
+      const result = await acceptGroupInvitation(tenantRecordId);
+      if (result.success) {
+        showToast('Invitation accepted! You can now access the property group.', 'success');
+        // Refresh tenant properties and pending invitations
+        const tenantProps = await getTenantProperties(currentUser.id);
+        setTenantProperties(tenantProps);
+        setPendingInvitations(prev => prev.filter(inv => inv.id !== tenantRecordId));
+      } else {
+        showToast(result.error || 'Failed to accept invitation', 'error');
+      }
+    } catch (error) {
+      showToast('Error accepting invitation', 'error');
+    } finally {
+      setProcessingInvitation(null);
+    }
+  };
+
+  // Handle declining group invitation
+  const handleDeclineInvitation = async (tenantRecordId) => {
+    setProcessingInvitation(tenantRecordId);
+    try {
+      const result = await declineGroupInvitation(tenantRecordId);
+      if (result.success) {
+        showToast('Invitation declined', 'success');
+        setPendingInvitations(prev => prev.filter(inv => inv.id !== tenantRecordId));
+      } else {
+        showToast(result.error || 'Failed to decline invitation', 'error');
+      }
+    } catch (error) {
+      showToast('Error declining invitation', 'error');
+    } finally {
+      setProcessingInvitation(null);
+    }
   };
 
   if (loading) {
@@ -143,6 +205,70 @@ export default function PropertyManagement({ currentUser, showToast, isLandlord,
                 </>
               )}
             </>
+          )}
+
+          {/* Pending Group Invitations */}
+          {pendingInvitations.length > 0 && (
+            <div className="space-y-3">
+              <h2 className="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-amber-500" />
+                Pending Invitations
+              </h2>
+              {pendingInvitations.map((invitation) => (
+                <div
+                  key={invitation.id}
+                  className="bg-amber-50 dark:bg-amber-900/20 rounded-2xl p-4 border border-amber-200 dark:border-amber-800"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-12 h-12 bg-amber-100 dark:bg-amber-800 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <Building2 className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-800 dark:text-gray-200 truncate">
+                        {invitation.property?.name || 'Property'}
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {invitation.property?.address}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                        Invited by {invitation.property?.landlord?.name || 'Landlord'}
+                      </p>
+                      {invitation.unit_number && (
+                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                          Unit: {invitation.unit_number}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={() => handleDeclineInvitation(invitation.id)}
+                      disabled={processingInvitation === invitation.id}
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-semibold hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {processingInvitation === invitation.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <X className="w-4 h-4" />
+                      )}
+                      Decline
+                    </button>
+                    <button
+                      onClick={() => handleAcceptInvitation(invitation.id)}
+                      disabled={processingInvitation === invitation.id}
+                      className="flex-1 px-3 py-2 bg-green-500 text-white rounded-xl font-semibold hover:bg-green-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {processingInvitation === invitation.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Check className="w-4 h-4" />
+                      )}
+                      Accept
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
 
           {/* Tenant's Properties */}
@@ -929,15 +1055,48 @@ function InvitationCard({ invitation, showToast, onCancel }) {
 // ===========================
 
 function AddTenantModal({ property, currentUser, showToast, onClose, onAdded }) {
+  const [activeTab, setActiveTab] = useState('saved'); // saved, search, phone, new
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [adding, setAdding] = useState(null);
   const [roomNumber, setRoomNumber] = useState('');
+  const [savedContacts, setSavedContacts] = useState([]);
+  const [filteredContacts, setFilteredContacts] = useState([]);
+  
+  // New contact form
+  const [newContactName, setNewContactName] = useState('');
+  const [newContactPhone, setNewContactPhone] = useState('');
+  const [savingContact, setSavingContact] = useState(false);
+  
+  // Phone contacts from device
+  const [phoneContacts, setPhoneContacts] = useState([]);
+  const [registeredContacts, setRegisteredContacts] = useState({});
+  const [notRegisteredContacts, setNotRegisteredContacts] = useState([]);
+  const [loadingPhoneContacts, setLoadingPhoneContacts] = useState(false);
+  const [phoneContactsError, setPhoneContactsError] = useState(null);
+  const [contactsLoaded, setContactsLoaded] = useState(false);
 
-  // Search users
+  // Load saved contacts on mount
   useEffect(() => {
-    if (searchQuery.length < 2) {
+    const contacts = getSavedContacts();
+    setSavedContacts(contacts);
+    setFilteredContacts(contacts);
+  }, []);
+
+  // Filter saved contacts when searching
+  useEffect(() => {
+    if (!searchQuery || searchQuery.length < 2) {
+      setFilteredContacts(savedContacts);
+    } else {
+      const results = searchContacts(searchQuery);
+      setFilteredContacts(results);
+    }
+  }, [searchQuery, savedContacts]);
+
+  // Search users from database
+  useEffect(() => {
+    if (activeTab !== 'search' || searchQuery.length < 2) {
       setSearchResults([]);
       return;
     }
@@ -945,7 +1104,7 @@ function AddTenantModal({ property, currentUser, showToast, onClose, onAdded }) 
     const search = async () => {
       setSearching(true);
       const existingIds = property.tenants?.map(t => t.tenant_id) || [];
-      existingIds.push(currentUser.id); // Exclude self
+      existingIds.push(currentUser.id);
       const results = await searchUsers(searchQuery, existingIds);
       setSearchResults(results);
       setSearching(false);
@@ -953,10 +1112,109 @@ function AddTenantModal({ property, currentUser, showToast, onClose, onAdded }) 
 
     const debounce = setTimeout(search, 300);
     return () => clearTimeout(debounce);
-  }, [searchQuery, property.tenants, currentUser.id]);
+  }, [searchQuery, property.tenants, currentUser.id, activeTab]);
 
   const handleAdd = async (user) => {
     setAdding(user.id);
+    try {
+      await addTenant({
+        propertyId: property.id,
+        tenantId: user.id,
+        landlordId: currentUser.id,
+        roomNumber: roomNumber.trim() || null,
+      });
+      // Save to contacts if not already saved
+      if (user.phone) {
+        saveContact({ name: user.display_name, phone: user.phone, userId: user.id });
+        setSavedContacts(getSavedContacts());
+      }
+      showToast?.(`${user.display_name} added as tenant!`, 'success');
+      onAdded?.();
+    } catch (err) {
+      showToast?.(err.message || 'Failed to add tenant', 'error');
+    }
+    setAdding(null);
+  };
+
+  const handleAddFromContact = async (contact) => {
+    if (!contact.userId) {
+      showToast?.('This contact hasn\'t registered yet. Share an invite code with them!', 'info');
+      return;
+    }
+    setAdding(contact.id);
+    try {
+      await addTenant({
+        propertyId: property.id,
+        tenantId: contact.userId,
+        landlordId: currentUser.id,
+        roomNumber: roomNumber.trim() || null,
+      });
+      showToast?.(`${contact.name} added as tenant!`, 'success');
+      onAdded?.();
+    } catch (err) {
+      showToast?.(err.message || 'Failed to add tenant', 'error');
+    }
+    setAdding(null);
+  };
+
+  const handleSaveNewContact = () => {
+    if (!newContactName.trim() || !newContactPhone.trim()) {
+      showToast?.('Please enter name and phone number', 'error');
+      return;
+    }
+    setSavingContact(true);
+    saveContact({ name: newContactName.trim(), phone: newContactPhone.trim() });
+    setSavedContacts(getSavedContacts());
+    setNewContactName('');
+    setNewContactPhone('');
+    setSavingContact(false);
+    showToast?.('Contact saved!', 'success');
+    setActiveTab('saved');
+  };
+
+  const handleDeleteContact = (contactId, e) => {
+    e.stopPropagation();
+    deleteContact(contactId);
+    setSavedContacts(getSavedContacts());
+    showToast?.('Contact deleted', 'success');
+  };
+
+  // Load contacts from phone
+  const handleLoadPhoneContacts = async () => {
+    setLoadingPhoneContacts(true);
+    setPhoneContactsError(null);
+    
+    try {
+      const result = await pickContactsAndCheckRegistration();
+      setPhoneContacts(result.contacts);
+      setRegisteredContacts(result.registered);
+      setNotRegisteredContacts(result.notRegistered);
+      setContactsLoaded(true);
+      
+      // Auto-save registered contacts to saved contacts
+      Object.values(result.registered).forEach(({ name, phone, user }) => {
+        saveContact({ name, phone, userId: user.id });
+      });
+      setSavedContacts(getSavedContacts());
+      
+    } catch (error) {
+      console.error('Error loading phone contacts:', error);
+      setPhoneContactsError(error.message || 'Failed to load contacts');
+      
+      // Show helpful message based on error
+      if (error.message?.includes('not supported')) {
+        showToast?.('Contact picker is not supported on this device. Try adding manually.', 'info');
+      } else if (error.message?.includes('denied')) {
+        showToast?.('Please allow access to contacts to use this feature', 'error');
+      }
+    }
+    
+    setLoadingPhoneContacts(false);
+  };
+
+  // Add from phone contact
+  const handleAddFromPhoneContact = async (contact, user) => {
+    setAdding(contact.phone);
     try {
       await addTenant({
         propertyId: property.id,
@@ -974,7 +1232,7 @@ function AddTenantModal({ property, currentUser, showToast, onClose, onAdded }) 
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md max-h-[85vh] overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out]">
+      <div className="bg-white dark:bg-gray-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md max-h-[90vh] overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out]">
         {/* Header */}
         <div className="bg-gradient-to-r from-green-500 to-emerald-500 p-4 text-white">
           <div className="flex items-center justify-between">
@@ -984,7 +1242,7 @@ function AddTenantModal({ property, currentUser, showToast, onClose, onAdded }) 
               </div>
               <div>
                 <h2 className="text-lg font-bold">Add Tenant</h2>
-                <p className="text-sm text-white/70">Search and add users</p>
+                <p className="text-sm text-white/70">Quick add from contacts</p>
               </div>
             </div>
             <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-colors">
@@ -993,8 +1251,56 @@ function AddTenantModal({ property, currentUser, showToast, onClose, onAdded }) 
           </div>
         </div>
 
-        <div className="p-4 space-y-4">
-          {/* Room Number */}
+        {/* Tabs - Like WhatsApp */}
+        <div className="flex border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 overflow-x-auto">
+          <button
+            onClick={() => setActiveTab('saved')}
+            className={`flex-1 py-3 text-xs font-semibold flex items-center justify-center gap-1 transition-all whitespace-nowrap ${
+              activeTab === 'saved' 
+                ? 'text-green-600 border-b-2 border-green-500 bg-white dark:bg-gray-700' 
+                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+          >
+            <Star className="w-3.5 h-3.5" />
+            Saved
+          </button>
+          <button
+            onClick={() => setActiveTab('phone')}
+            className={`flex-1 py-3 text-xs font-semibold flex items-center justify-center gap-1 transition-all whitespace-nowrap ${
+              activeTab === 'phone' 
+                ? 'text-green-600 border-b-2 border-green-500 bg-white dark:bg-gray-700' 
+                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+          >
+            <Contact className="w-3.5 h-3.5" />
+            Phone
+          </button>
+          <button
+            onClick={() => setActiveTab('search')}
+            className={`flex-1 py-3 text-xs font-semibold flex items-center justify-center gap-1 transition-all whitespace-nowrap ${
+              activeTab === 'search' 
+                ? 'text-green-600 border-b-2 border-green-500 bg-white dark:bg-gray-700' 
+                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+          >
+            <Search className="w-3.5 h-3.5" />
+            Search
+          </button>
+          <button
+            onClick={() => setActiveTab('new')}
+            className={`flex-1 py-3 text-xs font-semibold flex items-center justify-center gap-1 transition-all whitespace-nowrap ${
+              activeTab === 'new' 
+                ? 'text-green-600 border-b-2 border-green-500 bg-white dark:bg-gray-700' 
+                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+          >
+            <Plus className="w-3.5 h-3.5" />
+            New
+          </button>
+        </div>
+
+        <div className="p-4 space-y-4 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 180px)' }}>
+          {/* Room Number - Always visible */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Room/Unit Number (optional)
@@ -1004,63 +1310,353 @@ function AddTenantModal({ property, currentUser, showToast, onClose, onAdded }) 
               value={roomNumber}
               onChange={(e) => setRoomNumber(e.target.value)}
               placeholder="e.g., 101, A, Ground Floor"
-              className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+              className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
           </div>
 
-          {/* Search */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Search Users
-            </label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by name or phone..."
-                className="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
-              />
-            </div>
-          </div>
-
-          {/* Results */}
-          <div className="max-h-60 overflow-y-auto space-y-2">
-            {searching ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+          {/* SAVED CONTACTS TAB */}
+          {activeTab === 'saved' && (
+            <>
+              {/* Quick Search for saved contacts */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search saved contacts..."
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
               </div>
-            ) : searchQuery.length >= 2 && searchResults.length === 0 ? (
-              <p className="text-center text-gray-500 py-8">No users found</p>
-            ) : (
-              searchResults.map((user) => (
-                <div
-                  key={user.id}
-                  className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl"
-                >
-                  {user.photo_url ? (
-                    <img src={user.photo_url} alt="" className="w-10 h-10 rounded-xl object-cover" />
-                  ) : (
-                    <div className="w-10 h-10 rounded-xl bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-                      <User className="w-5 h-5 text-gray-500" />
+
+              {/* Saved Contacts List */}
+              <div className="space-y-2">
+                {filteredContacts.length === 0 ? (
+                  <div className="text-center py-8">
+                    <BookUser className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                    <p className="text-gray-500 dark:text-gray-400 mb-2">No saved contacts yet</p>
+                    <button
+                      onClick={() => setActiveTab('new')}
+                      className="text-green-600 dark:text-green-400 text-sm font-medium hover:underline"
+                    >
+                      + Add your first contact
+                    </button>
+                  </div>
+                ) : (
+                  filteredContacts.map((contact) => (
+                    <div
+                      key={contact.id}
+                      className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group"
+                    >
+                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center shadow-sm ${
+                        contact.userId 
+                          ? 'bg-gradient-to-br from-green-400 to-emerald-500' 
+                          : 'bg-gradient-to-br from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-700'
+                      }`}>
+                        <span className="text-white font-bold text-lg">
+                          {contact.name?.[0]?.toUpperCase() || '?'}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-gray-800 dark:text-gray-200 truncate">{contact.name}</p>
+                          {contact.userId && (
+                            <span className="flex items-center gap-0.5 text-[10px] bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded-full">
+                              <UserCheck className="w-3 h-3" /> Registered
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                          <Phone className="w-3 h-3" /> {contact.phone}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={(e) => handleDeleteContact(contact.id, e)}
+                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => contact.userId ? handleAddFromContact(contact) : showToast?.('Contact not registered yet. Share an invite code!', 'info')}
+                          disabled={adding === contact.id}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+                            contact.userId
+                              ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:shadow-lg hover:shadow-green-500/30'
+                              : 'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400'
+                          }`}
+                        >
+                          {adding === contact.id ? <Loader2 className="w-4 h-4 animate-spin" /> : contact.userId ? 'Add' : 'Invite'}
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </>
+          )}
+
+          {/* PHONE CONTACTS TAB */}
+          {activeTab === 'phone' && (
+            <div className="space-y-4">
+              {!contactsLoaded ? (
+                <div className="text-center py-8">
+                  <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Contact className="w-10 h-10 text-blue-500" />
+                  </div>
+                  <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2">Import from Phone</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 max-w-xs mx-auto">
+                    Select contacts from your phone. We'll check which ones have the app installed.
+                  </p>
+                  
+                  {phoneContactsError && (
+                    <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-xl text-sm text-red-600 dark:text-red-400 flex items-center gap-2 justify-center">
+                      <AlertCircle className="w-4 h-4" />
+                      {phoneContactsError}
                     </div>
                   )}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-800 dark:text-gray-200 truncate">{user.display_name}</p>
-                    {user.phone && <p className="text-xs text-gray-500 truncate">{user.phone}</p>}
-                  </div>
+                  
                   <button
-                    onClick={() => handleAdd(user)}
-                    disabled={adding === user.id}
-                    className="px-3 py-1.5 bg-[#c5303c] text-white rounded-lg text-sm font-semibold hover:bg-[#a52833] disabled:opacity-50"
+                    onClick={handleLoadPhoneContacts}
+                    disabled={loadingPhoneContacts}
+                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-blue-500/30 transition-all disabled:opacity-50 flex items-center gap-2 mx-auto"
                   >
-                    {adding === user.id ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Add'}
+                    {loadingPhoneContacts ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        <Contact className="w-5 h-5" />
+                        Choose Contacts
+                      </>
+                    )}
                   </button>
+                  
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-4">
+                    📱 Works on mobile devices with Contact Picker API support
+                  </p>
                 </div>
-              ))
-            )}
-          </div>
+              ) : (
+                <>
+                  {/* Registered Contacts */}
+                  {Object.keys(registeredContacts).length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                        <UserCheck className="w-4 h-4 text-green-500" />
+                        Registered on RentMzansi ({Object.keys(registeredContacts).length})
+                      </h4>
+                      <div className="space-y-2">
+                        {Object.values(registeredContacts).map(({ name, phone, user }) => (
+                          <div
+                            key={phone}
+                            className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800"
+                          >
+                            {user.photo_url ? (
+                              <img src={user.photo_url} alt="" className="w-11 h-11 rounded-xl object-cover shadow-sm" />
+                            ) : (
+                              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-sm">
+                                <span className="text-white font-bold text-lg">{user.display_name?.[0]?.toUpperCase() || '?'}</span>
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-gray-800 dark:text-gray-200 truncate">{user.display_name}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">{name} • {phone}</p>
+                            </div>
+                            <button
+                              onClick={() => handleAddFromPhoneContact({ name, phone }, user)}
+                              disabled={adding === phone}
+                              className="px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg text-sm font-semibold hover:shadow-lg hover:shadow-green-500/30 transition-all disabled:opacity-50"
+                            >
+                              {adding === phone ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Add'}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Not Registered Contacts */}
+                  {notRegisteredContacts.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-amber-500" />
+                        Not on RentMzansi ({notRegisteredContacts.length})
+                      </h4>
+                      <div className="space-y-2">
+                        {notRegisteredContacts.slice(0, 5).map((contact) => (
+                          <div
+                            key={contact.phone}
+                            className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl"
+                          >
+                            <div className="w-11 h-11 rounded-xl bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                              <User className="w-5 h-5 text-gray-400" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-gray-800 dark:text-gray-200 truncate">{contact.name}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">{contact.phone}</p>
+                            </div>
+                            <span className="text-xs px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full font-medium">
+                              Not registered
+                            </span>
+                          </div>
+                        ))}
+                        {notRegisteredContacts.length > 5 && (
+                          <p className="text-xs text-gray-500 text-center py-2">
+                            + {notRegisteredContacts.length - 5} more contacts not registered
+                          </p>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-3 text-center">
+                        💡 Share an invite link with them to join the app!
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Pick more contacts */}
+                  <button
+                    onClick={handleLoadPhoneContacts}
+                    disabled={loadingPhoneContacts}
+                    className="w-full py-2.5 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-500 dark:text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Select More Contacts
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* SEARCH USERS TAB */}
+          {activeTab === 'search' && (
+            <>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by name or phone..."
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  autoFocus
+                />
+              </div>
+
+              <div className="space-y-2">
+                {searching ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-green-500" />
+                  </div>
+                ) : searchQuery.length < 2 ? (
+                  <div className="text-center py-8">
+                    <Search className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                    <p className="text-gray-500 dark:text-gray-400">Type at least 2 characters to search</p>
+                  </div>
+                ) : searchResults.length === 0 ? (
+                  <div className="text-center py-8">
+                    <User className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                    <p className="text-gray-500 dark:text-gray-400 mb-2">No users found</p>
+                    <button
+                      onClick={() => setActiveTab('new')}
+                      className="text-green-600 dark:text-green-400 text-sm font-medium hover:underline"
+                    >
+                      + Save as new contact instead
+                    </button>
+                  </div>
+                ) : (
+                  searchResults.map((user) => (
+                    <div
+                      key={user.id}
+                      className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      {user.photo_url ? (
+                        <img src={user.photo_url} alt="" className="w-11 h-11 rounded-xl object-cover shadow-sm" />
+                      ) : (
+                        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-sm">
+                          <span className="text-white font-bold text-lg">{user.display_name?.[0]?.toUpperCase() || '?'}</span>
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-800 dark:text-gray-200 truncate">{user.display_name}</p>
+                        {user.phone && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                            <Phone className="w-3 h-3" /> {user.phone}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleAdd(user)}
+                        disabled={adding === user.id}
+                        className="px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg text-sm font-semibold hover:shadow-lg hover:shadow-green-500/30 transition-all disabled:opacity-50"
+                      >
+                        {adding === user.id ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Add'}
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </>
+          )}
+
+          {/* NEW CONTACT TAB */}
+          {activeTab === 'new' && (
+            <div className="space-y-4">
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-4 border border-green-100 dark:border-green-800">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/30">
+                    <BookUser className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-800 dark:text-gray-200">Save New Contact</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Like WhatsApp - save for quick access</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+                    <input
+                      type="text"
+                      value={newContactName}
+                      onChange={(e) => setNewContactName(e.target.value)}
+                      placeholder="e.g., John Doe"
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number</label>
+                    <input
+                      type="tel"
+                      value={newContactPhone}
+                      onChange={(e) => setNewContactPhone(e.target.value)}
+                      placeholder="e.g., 0812345678"
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={handleSaveNewContact}
+                disabled={savingContact || !newContactName.trim() || !newContactPhone.trim()}
+                className="w-full py-3.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-green-500/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
+              >
+                {savingContact ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <>
+                    <Check className="w-5 h-5" />
+                    Save Contact
+                  </>
+                )}
+              </button>
+
+              <p className="text-xs text-center text-gray-500 dark:text-gray-400">
+                💡 Tip: When this person registers with the same phone number, you can add them instantly!
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -1204,7 +1800,7 @@ function InviteModal({ property, currentUser, showToast, onClose, onCreated }) {
 }
 
 // ===========================
-// PROPERTY CHAT VIEW
+// PROPERTY CHAT VIEW (Group Chat)
 // ===========================
 
 function PropertyChatView({ property, currentUser, showToast, onBack }) {
@@ -1213,7 +1809,53 @@ function PropertyChatView({ property, currentUser, showToast, onBack }) {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [canSend, setCanSend] = useState(true);
+  const [showMembersPanel, setShowMembersPanel] = useState(false);
+  const [onlineMembers, setOnlineMembers] = useState({});
   const messagesEndRef = useRef(null);
+  
+  // File upload state
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const fileInputRef = useRef(null);
+  
+  // Voice recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [sendingVoice, setSendingVoice] = useState(false);
+  const voiceRecorderRef = useRef(null);
+  const recordingTimerRef = useRef(null);
+  
+  // Voice playback state
+  const [playingVoiceId, setPlayingVoiceId] = useState(null);
+  const [voiceProgress, setVoiceProgress] = useState({});
+  const audioRef = useRef(null);
+  
+  // Message delete state
+  const [showDeleteModal, setShowDeleteModal] = useState(null);
+  const [deletingMessage, setDeletingMessage] = useState(false);
+
+  // Get all members (landlord + tenants)
+  const allMembers = [
+    { 
+      id: property.landlord_id, 
+      profile: property.landlord, 
+      isLandlord: true,
+      isAdmin: true
+    },
+    ...(property.tenants || []).map(t => ({
+      id: t.tenant_id,
+      profile: t.profile,
+      isLandlord: false,
+      isAdmin: t.is_admin,
+      tenantId: t.id,
+      status: t.status,
+      roomNumber: t.room_number
+    }))
+  ];
+
+  const isOwner = property.landlord_id === currentUser.id;
+  const currentTenant = property.tenants?.find(t => t.tenant_id === currentUser.id);
+  const isAdmin = isOwner || currentTenant?.is_admin;
 
   // Check if user can send messages (admin-only mode check)
   useEffect(() => {
@@ -1223,6 +1865,16 @@ function PropertyChatView({ property, currentUser, showToast, onBack }) {
     };
     checkSendPermission();
   }, [property.id, currentUser.id, property.admin_only_messages]);
+
+  // Initialize voice recorder
+  useEffect(() => {
+    voiceRecorderRef.current = new VoiceRecorder();
+    return () => {
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+      }
+    };
+  }, []);
 
   // Load messages
   useEffect(() => {
@@ -1241,7 +1893,6 @@ function PropertyChatView({ property, currentUser, showToast, onBack }) {
   useEffect(() => {
     const unsubscribe = subscribeToPropertyMessages(property.id, (newMsg) => {
       setMessages(prev => [...prev, newMsg]);
-      // Mark as read if it's not from current user
       if (newMsg.sender_id !== currentUser.id) {
         markPropertyMessagesAsRead(property.id, currentUser.id);
       }
@@ -1250,10 +1901,141 @@ function PropertyChatView({ property, currentUser, showToast, onBack }) {
     return unsubscribe;
   }, [property.id, currentUser.id]);
 
+  // Online presence for group chat
+  useEffect(() => {
+    const channelName = `property-presence:${property.id}`;
+    
+    const channel = supabase.channel(channelName, {
+      config: { presence: { key: currentUser.id } }
+    });
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        const online = {};
+        Object.keys(state).forEach(key => {
+          online[key] = true;
+        });
+        setOnlineMembers(online);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({
+            user_id: currentUser.id,
+            online_at: new Date().toISOString(),
+          });
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [property.id, currentUser.id]);
+
   // Scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Voice recording functions
+  const handleStartRecording = async () => {
+    try {
+      if (!navigator.mediaDevices) {
+        showToast?.('Your browser does not support voice recording', 'error');
+        return;
+      }
+      await voiceRecorderRef.current.startRecording();
+      setIsRecording(true);
+      setRecordingDuration(0);
+      
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingDuration(prev => prev + 0.1);
+      }, 100);
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      showToast?.(error.message || 'Failed to start recording', 'error');
+      setIsRecording(false);
+    }
+  };
+
+  const handleStopRecording = async () => {
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+    }
+    setIsRecording(false);
+    setSendingVoice(true);
+
+    try {
+      const audioBlob = await voiceRecorderRef.current.stopRecording();
+      if (!audioBlob) throw new Error('No audio recorded');
+
+      // Upload to Supabase storage
+      const fileName = `property_${property.id}_${currentUser.id}_${Date.now()}.webm`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('voice-messages')
+        .upload(fileName, audioBlob, { contentType: 'audio/webm' });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('voice-messages')
+        .getPublicUrl(fileName);
+
+      // Send voice message
+      await sendPropertyMessage({
+        propertyId: property.id,
+        senderId: currentUser.id,
+        content: '🎤 Voice message',
+        messageType: 'voice',
+        voiceUrl: urlData.publicUrl,
+        voiceDuration: Math.round(recordingDuration)
+      });
+
+      setRecordingDuration(0);
+    } catch (error) {
+      console.error('Error sending voice message:', error);
+      showToast?.('Failed to send voice message', 'error');
+    }
+    setSendingVoice(false);
+  };
+
+  const handleCancelRecording = () => {
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+    }
+    voiceRecorderRef.current?.stopRecording();
+    setIsRecording(false);
+    setRecordingDuration(0);
+  };
+
+  // Voice playback
+  const handlePlayVoice = (msg) => {
+    if (playingVoiceId === msg.id) {
+      audioRef.current?.pause();
+      setPlayingVoiceId(null);
+      return;
+    }
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+
+    const audio = new Audio(msg.voice_url);
+    audioRef.current = audio;
+    
+    audio.ontimeupdate = () => {
+      const progress = (audio.currentTime / audio.duration) * 100;
+      setVoiceProgress(prev => ({ ...prev, [msg.id]: progress }));
+    };
+    
+    audio.onended = () => {
+      setPlayingVoiceId(null);
+      setVoiceProgress(prev => ({ ...prev, [msg.id]: 0 }));
+    };
+
+    audio.play();
+    setPlayingVoiceId(msg.id);
+  };
 
   const handleSend = async () => {
     if (!newMessage.trim() || sending || !canSend) return;
@@ -1270,26 +2052,151 @@ function PropertyChatView({ property, currentUser, showToast, onBack }) {
       });
     } catch (err) {
       showToast?.('Failed to send message', 'error');
-      setNewMessage(content); // Restore message
+      setNewMessage(content);
     }
     setSending(false);
   };
 
-  // Check if a message sender is an admin
+  // Format duration
+  const formatDuration = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Handle image upload for group chat
+  const handleImageUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      showToast?.('Please select an image file', 'error');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      showToast?.('Image must be less than 5MB', 'error');
+      return;
+    }
+
+    setUploadingImage(true);
+    setShowAttachMenu(false);
+
+    try {
+      // Create unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `property-chat/${property.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+      // Upload to Supabase Storage
+      const { error } = await supabase.storage
+        .from('chat-images')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      let imageUrl;
+      
+      if (error) {
+        // Try alternative bucket name
+        const { error: error2 } = await supabase.storage
+          .from('listings')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+        
+        if (error2) throw error2;
+        
+        // Get public URL from listings bucket
+        const { data: urlData } = supabase.storage
+          .from('listings')
+          .getPublicUrl(fileName);
+        
+        imageUrl = urlData.publicUrl;
+      } else {
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('chat-images')
+          .getPublicUrl(fileName);
+
+        imageUrl = urlData.publicUrl;
+      }
+
+      // Send image as message
+      await sendPropertyMessage({
+        propertyId: property.id,
+        senderId: currentUser.id,
+        content: `[Image] ${imageUrl}`,
+      });
+
+      showToast?.('Image sent!', 'success');
+    } catch (error) {
+      console.error('Failed to upload image:', error);
+      showToast?.('Failed to upload image. Please try again.', 'error');
+    } finally {
+      setUploadingImage(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  // Delete message handlers
+  const handleDeleteForMe = async () => {
+    if (!showDeleteModal) return;
+    setDeletingMessage(true);
+    try {
+      await deletePropertyMessageForMe(showDeleteModal.id, currentUser.id);
+      setMessages(prev => prev.filter(m => m.id !== showDeleteModal.id));
+      setShowDeleteModal(null);
+      showToast?.('Message deleted', 'success');
+    } catch (err) {
+      console.error('Failed to delete message:', err);
+      showToast?.('Failed to delete message', 'error');
+    }
+    setDeletingMessage(false);
+  };
+
+  const handleDeleteForEveryone = async () => {
+    if (!showDeleteModal) return;
+    setDeletingMessage(true);
+    try {
+      await deletePropertyMessageForEveryone(showDeleteModal.id, currentUser.id);
+      setMessages(prev => prev.map(m => 
+        m.id === showDeleteModal.id 
+          ? { ...m, content: '🚫 This message was deleted', message_type: 'deleted', voice_url: null }
+          : m
+      ));
+      setShowDeleteModal(null);
+      showToast?.('Message deleted for everyone', 'success');
+    } catch (err) {
+      console.error('Failed to delete message:', err);
+      showToast?.('Failed to delete message', 'error');
+    }
+    setDeletingMessage(false);
+  };
+
+  // Check if sender is admin
   const isSenderAdmin = (msg) => {
-    // Landlord is always admin
     if (msg.sender_id === property.landlord_id) return true;
-    // Check if sender is in tenants list and is_admin
-    const tenant = property.tenants?.find(t => t.user_id === msg.sender_id);
+    const tenant = property.tenants?.find(t => t.tenant_id === msg.sender_id);
     return tenant?.is_admin || false;
   };
+
+  const isSenderLandlord = (senderId) => senderId === property.landlord_id;
+
+  // Count online members
+  const onlineCount = Object.keys(onlineMembers).length;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
       {/* Header */}
       <div className="flex-shrink-0 bg-gradient-to-r from-[#E63946] via-rose-500 to-[#E63946] p-4 text-white shadow-xl relative overflow-hidden">
-        {/* Animated shimmer */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_3s_infinite]" style={{ animationTimingFunction: 'ease-in-out' }} />
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_3s_infinite]" />
         
         <div className="relative flex items-center gap-3">
           <button 
@@ -1299,25 +2206,39 @@ function PropertyChatView({ property, currentUser, showToast, onBack }) {
             <ArrowLeft className="w-5 h-5" />
           </button>
           
-          <div className="flex items-center gap-3 flex-1 min-w-0">
+          <button 
+            onClick={() => setShowMembersPanel(true)}
+            className="flex items-center gap-3 flex-1 min-w-0 hover:bg-white/10 rounded-xl p-1 -m-1 transition-colors"
+          >
             <div className="w-11 h-11 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-inner ring-2 ring-white/10">
               <Users className="w-5 h-5" />
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 text-left">
               <h1 className="font-bold truncate">{property.name}</h1>
               <p className="text-sm text-white/80 flex items-center gap-2">
-                <span>{(property.tenants?.length || 0) + 1} members</span>
+                <span className="flex items-center gap-1">
+                  <Circle className="w-2 h-2 fill-green-400 text-green-400" />
+                  {onlineCount} online
+                </span>
+                <span>• {allMembers.length} members</span>
                 {property.admin_only_messages && (
                   <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs font-medium">Admin-only</span>
                 )}
               </p>
             </div>
-          </div>
+          </button>
+          
+          <button 
+            onClick={() => setShowMembersPanel(true)}
+            className="p-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl transition-all"
+          >
+            <MoreVertical className="w-5 h-5" />
+          </button>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {loading ? (
           <div className="flex flex-col items-center justify-center h-32 gap-3">
             <div className="w-10 h-10 border-3 border-red-500 border-t-transparent rounded-full animate-spin" />
@@ -1334,58 +2255,130 @@ function PropertyChatView({ property, currentUser, showToast, onBack }) {
         ) : (
           messages.map((msg, idx) => {
             const isMe = msg.sender_id === currentUser.id;
-            const isLandlord = msg.sender_id === property.landlord_id;
-            const isAdmin = isSenderAdmin(msg);
+            const isLandlord = isSenderLandlord(msg.sender_id);
+            const msgIsAdmin = isSenderAdmin(msg);
             const showAvatar = idx === 0 || messages[idx - 1]?.sender_id !== msg.sender_id;
             const showTime = idx === messages.length - 1 || messages[idx + 1]?.sender_id !== msg.sender_id;
+            const isVoice = msg.message_type === 'voice' && msg.voice_url;
+            const isOnline = onlineMembers[msg.sender_id];
 
             return (
               <div
                 key={msg.id}
-                className={`flex gap-2 ${isMe ? 'flex-row-reverse' : ''} ${!showAvatar ? 'mt-1' : ''}`}
+                className={`flex gap-2 ${isMe ? 'flex-row-reverse' : ''} ${!showAvatar ? 'mt-0.5' : 'mt-3'}`}
               >
                 {!isMe && (
                   <div className="flex-shrink-0 w-9">
                     {showAvatar && (
-                      msg.sender?.photo_url ? (
-                        <img src={msg.sender.photo_url} alt="" className="w-9 h-9 rounded-xl object-cover border-2 border-white dark:border-gray-800 shadow-md" />
-                      ) : (
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700 flex items-center justify-center shadow-md">
-                          <span className="text-sm font-bold text-gray-600 dark:text-gray-300">
-                            {msg.sender?.display_name?.[0]?.toUpperCase() || '?'}
-                          </span>
-                        </div>
-                      )
+                      <div className="relative">
+                        {msg.sender?.photo_url ? (
+                          <img src={msg.sender.photo_url} alt="" className="w-9 h-9 rounded-xl object-cover border-2 border-white dark:border-gray-800 shadow-md" />
+                        ) : (
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-md ${
+                            isLandlord 
+                              ? 'bg-gradient-to-br from-yellow-400 to-orange-500' 
+                              : 'bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700'
+                          }`}>
+                            <span className="text-sm font-bold text-white">
+                              {msg.sender?.display_name?.[0]?.toUpperCase() || '?'}
+                            </span>
+                          </div>
+                        )}
+                        {isOnline && (
+                          <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full" />
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
                 <div className={`max-w-[75%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                   {!isMe && showAvatar && (
-                    <p className="text-xs text-gray-500 mb-1 flex items-center gap-1.5 font-medium">
+                    <p className="text-xs text-gray-500 mb-1 flex items-center gap-1.5 font-medium ml-1">
                       {msg.sender?.display_name || 'Unknown'}
                       {isLandlord && (
-                        <span className="flex items-center gap-0.5 text-yellow-600 dark:text-yellow-400">
+                        <span className="flex items-center gap-0.5 text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30 px-1.5 py-0.5 rounded-full">
                           <Crown className="w-3 h-3" />
                           <span className="text-[10px]">Owner</span>
                         </span>
                       )}
-                      {isAdmin && !isLandlord && (
-                        <span className="flex items-center gap-0.5 text-blue-600 dark:text-blue-400">
+                      {msgIsAdmin && !isLandlord && (
+                        <span className="flex items-center gap-0.5 text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/30 px-1.5 py-0.5 rounded-full">
                           <ShieldCheck className="w-3 h-3" />
                           <span className="text-[10px]">Admin</span>
                         </span>
                       )}
                     </p>
                   )}
-                  <div
-                    className={`px-4 py-2.5 shadow-sm ${
-                      isMe
-                        ? 'bg-gradient-to-r from-[#c5303c] to-[#E63946] text-white rounded-2xl rounded-tr-md'
-                        : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-2xl rounded-tl-md border border-gray-100 dark:border-gray-700'
-                    }`}
-                  >
-                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-                  </div>
+                  
+                  {/* Voice Message */}
+                  {isVoice ? (
+                    <div
+                      onClick={(e) => {
+                        // Don't show delete if clicking play button
+                        if (e.target.closest('button')) return;
+                        if (msg.message_type !== 'deleted') setShowDeleteModal(msg);
+                      }}
+                      className={`px-3 py-2.5 shadow-sm flex items-center gap-3 min-w-[200px] cursor-pointer hover:opacity-90 ${
+                        isMe
+                          ? 'bg-gradient-to-r from-[#c5303c] to-[#E63946] text-white rounded-2xl rounded-tr-md'
+                          : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-2xl rounded-tl-md border border-gray-100 dark:border-gray-700'
+                      }`}
+                    >
+                      <button
+                        onClick={() => handlePlayVoice(msg)}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                          isMe 
+                            ? 'bg-white/20 hover:bg-white/30' 
+                            : 'bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50'
+                        }`}
+                      >
+                        {playingVoiceId === msg.id ? (
+                          <Pause className={`w-5 h-5 ${isMe ? 'text-white' : 'text-red-500'}`} />
+                        ) : (
+                          <Play className={`w-5 h-5 ${isMe ? 'text-white' : 'text-red-500'}`} />
+                        )}
+                      </button>
+                      <div className="flex-1">
+                        <div className={`h-1.5 rounded-full overflow-hidden ${isMe ? 'bg-white/30' : 'bg-gray-200 dark:bg-gray-700'}`}>
+                          <div 
+                            className={`h-full transition-all ${isMe ? 'bg-white' : 'bg-red-500'}`}
+                            style={{ width: `${voiceProgress[msg.id] || 0}%` }}
+                          />
+                        </div>
+                        <p className={`text-xs mt-1 ${isMe ? 'text-white/70' : 'text-gray-500'}`}>
+                          {formatDuration(msg.voice_duration || 0)}
+                        </p>
+                      </div>
+                      <Volume2 className={`w-4 h-4 ${isMe ? 'text-white/50' : 'text-gray-400'}`} />
+                    </div>
+                  ) : msg.content?.startsWith('[Image]') ? (
+                    // Image message
+                    <div 
+                      onClick={() => msg.message_type !== 'deleted' && setShowDeleteModal(msg)}
+                      className={`rounded-2xl overflow-hidden shadow-lg cursor-pointer hover:opacity-90 ${
+                        isMe ? 'rounded-tr-md' : 'rounded-tl-md'
+                      }`}
+                    >
+                      <img 
+                        src={msg.content.replace('[Image] ', '')}
+                        alt="Shared image"
+                        className="max-w-[240px] max-h-[300px] object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => window.open(msg.content.replace('[Image] ', ''), '_blank')}
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      onClick={() => msg.message_type !== 'deleted' && setShowDeleteModal(msg)}
+                      className={`px-4 py-2.5 shadow-sm cursor-pointer hover:opacity-90 active:scale-[0.98] transition-all ${
+                        isMe
+                          ? 'bg-gradient-to-r from-[#c5303c] to-[#E63946] text-white rounded-2xl rounded-tr-md'
+                          : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-2xl rounded-tl-md border border-gray-100 dark:border-gray-700'
+                      }`}
+                    >
+                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                    </div>
+                  )}
+                  
                   {showTime && (
                     <p className={`text-[10px] text-gray-400 mt-1 ${isMe ? 'mr-1' : 'ml-1'}`}>
                       {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -1402,25 +2395,122 @@ function PropertyChatView({ property, currentUser, showToast, onBack }) {
       {/* Input - or admin-only notice */}
       {canSend ? (
         <div className="flex-shrink-0 p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-          <div className="flex gap-3 items-end">
-            <div className="flex-1 relative">
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-                placeholder="Type a message..."
-                className="w-full px-4 py-3.5 rounded-2xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all"
-              />
+          {isRecording ? (
+            /* Recording UI */
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleCancelRecording}
+                className="p-3 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+              </button>
+              
+              <div className="flex-1 flex items-center justify-center gap-3 bg-red-50 dark:bg-red-900/20 rounded-2xl py-3 px-4">
+                <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                <span className="font-mono text-lg font-bold text-red-600 dark:text-red-400">
+                  {formatDuration(recordingDuration)}
+                </span>
+                <span className="text-sm text-red-500 dark:text-red-400">Recording...</span>
+              </div>
+              
+              <button
+                onClick={handleStopRecording}
+                disabled={sendingVoice}
+                className="p-3.5 bg-gradient-to-r from-[#c5303c] to-[#E63946] text-white rounded-full hover:shadow-lg hover:shadow-red-500/30 transition-all"
+              >
+                {sendingVoice ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Send className="w-5 h-5" />
+                )}
+              </button>
             </div>
-            <button
-              onClick={handleSend}
-              disabled={!newMessage.trim() || sending}
-              className="p-3.5 bg-gradient-to-r from-[#c5303c] to-[#E63946] text-white rounded-2xl hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none hover:scale-105 active:scale-95"
-            >
-              {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-            </button>
-          </div>
+          ) : (
+            /* Normal input UI */
+            <div className="flex gap-2 items-center">
+              {/* Hidden file input */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageUpload}
+                accept="image/*"
+                className="hidden"
+              />
+              
+              {/* Attachment Button */}
+              <div className="relative flex-shrink-0">
+                <button
+                  onClick={() => setShowAttachMenu(!showAttachMenu)}
+                  disabled={uploadingImage}
+                  className={`p-3 flex items-center justify-center rounded-full transition-all duration-300 ${
+                    showAttachMenu 
+                      ? 'bg-gradient-to-br from-[#E63946] to-rose-500 text-white shadow-lg shadow-red-500/30 rotate-45' 
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {uploadingImage ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Paperclip className="w-5 h-5" />
+                  )}
+                </button>
+
+                {/* Attachment Menu */}
+                {showAttachMenu && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setShowAttachMenu(false)} />
+                    <div 
+                      className="absolute bottom-full left-0 mb-3 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden z-20 min-w-[180px]"
+                      style={{ animation: 'message-in 0.2s ease-out' }}
+                    >
+                      <button
+                        onClick={() => {
+                          fileInputRef.current?.click();
+                          setShowAttachMenu(false);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-transparent dark:hover:from-blue-900/20 transition-all"
+                      >
+                        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                          <Image className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-sm">Photo</p>
+                          <p className="text-xs text-gray-500">Share an image</p>
+                        </div>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+              
+              {/* Voice Button */}
+              <button
+                onClick={handleStartRecording}
+                className="p-3 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-all hover:scale-105 active:scale-95"
+              >
+                <Mic className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+              </button>
+              
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+                  placeholder="Type a message..."
+                  className="w-full px-4 py-3 rounded-full border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all"
+                />
+              </div>
+              
+              <button
+                onClick={handleSend}
+                disabled={!newMessage.trim() || sending}
+                className="p-3 bg-gradient-to-r from-[#c5303c] to-[#E63946] text-white rounded-full hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none hover:scale-105 active:scale-95"
+              >
+                {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="flex-shrink-0 p-4 bg-amber-50 dark:bg-amber-900/20 border-t border-amber-200 dark:border-amber-700">
@@ -1428,6 +2518,311 @@ function PropertyChatView({ property, currentUser, showToast, onBack }) {
             <MessageSquareOff className="w-5 h-5" />
             <p className="text-sm font-medium">Only admins can send messages in this group</p>
           </div>
+        </div>
+      )}
+
+      {/* Delete Message Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 z-60 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-sm shadow-xl overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <Trash2 className="w-5 h-5 text-red-500" />
+                Delete Message
+              </h3>
+              <button
+                onClick={() => setShowDeleteModal(null)}
+                disabled={deletingMessage}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            
+            <div className="p-4">
+              {/* Message Preview */}
+              <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-xl">
+                <p className="text-sm text-gray-600 dark:text-gray-300 truncate">
+                  {showDeleteModal.content?.startsWith('[Image]') 
+                    ? '📷 Photo'
+                    : showDeleteModal.voice_url
+                    ? '🎤 Voice message'
+                    : showDeleteModal.content?.substring(0, 100)}
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                {/* Delete for Me */}
+                <button
+                  onClick={handleDeleteForMe}
+                  disabled={deletingMessage}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left"
+                >
+                  <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                    <Trash2 className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-800 dark:text-gray-200">Delete for me</p>
+                    <p className="text-xs text-gray-500">Only you won't see this message</p>
+                  </div>
+                  {deletingMessage && <Loader2 className="w-5 h-5 animate-spin text-gray-400" />}
+                </button>
+                
+                {/* Delete for Everyone - only if sender */}
+                {showDeleteModal.sender_id === currentUser.id && (
+                  <button
+                    onClick={handleDeleteForEveryone}
+                    disabled={deletingMessage}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border border-red-200 dark:border-red-800/50 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                      <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-red-600 dark:text-red-400">Delete for everyone</p>
+                      <p className="text-xs text-gray-500">Message will be deleted for all members</p>
+                    </div>
+                    {deletingMessage && <Loader2 className="w-5 h-5 animate-spin text-red-400" />}
+                  </button>
+                )}
+              </div>
+              
+              <button
+                onClick={() => setShowDeleteModal(null)}
+                disabled={deletingMessage}
+                className="w-full mt-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Members Panel (Slide-in) */}
+      {showMembersPanel && (
+        <div className="fixed inset-0 z-60 flex">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowMembersPanel(false)} />
+          <div className="relative ml-auto w-full max-w-sm bg-white dark:bg-gray-800 h-full shadow-2xl animate-[slideInRight_0.3s_ease-out] overflow-hidden flex flex-col">
+            {/* Panel Header */}
+            <div className="bg-gradient-to-r from-[#E63946] via-rose-500 to-[#E63946] p-4 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-bold">Group Members</h2>
+                  <p className="text-sm text-white/80">{allMembers.length} members • {onlineCount} online</p>
+                </div>
+                <button onClick={() => setShowMembersPanel(false)} className="p-2 hover:bg-white/20 rounded-xl transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Members List */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              {allMembers.map((member) => {
+                const memberIsOnline = onlineMembers[member.id];
+                const canManage = isOwner && !member.isLandlord && member.id !== currentUser.id;
+
+                return (
+                  <MemberCard
+                    key={member.id}
+                    member={member}
+                    isOnline={memberIsOnline}
+                    canManage={canManage}
+                    showToast={showToast}
+                    onRefresh={() => {
+                      // Refresh would need to be passed from parent
+                    }}
+                  />
+                );
+              })}
+            </div>
+
+            {/* Tenant Actions - Leave Group & Block */}
+            {!isOwner && currentTenant && (
+              <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
+                <button
+                  onClick={async () => {
+                    if (!window.confirm('Are you sure you want to leave this group? You will no longer receive messages.')) return;
+                    try {
+                      await leavePropertyGroup(currentTenant.id, 'User chose to leave');
+                      showToast?.('You have left the group', 'success');
+                      onBack();
+                    } catch (err) {
+                      showToast?.(err.message || 'Failed to leave group', 'error');
+                    }
+                  }}
+                  className="w-full py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-all flex items-center justify-center gap-2"
+                >
+                  <LogOut className="w-5 h-5" />
+                  Leave Group
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!window.confirm(`Block ${property.landlord?.display_name || 'the landlord'}? You won't receive messages from them.`)) return;
+                    try {
+                      await blockUser(currentUser.id, property.landlord_id, 'Blocked by tenant');
+                      showToast?.('Landlord blocked', 'success');
+                    } catch (err) {
+                      showToast?.(err.message || 'Failed to block', 'error');
+                    }
+                  }}
+                  className="w-full py-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl font-semibold hover:bg-red-100 dark:hover:bg-red-900/30 transition-all flex items-center justify-center gap-2"
+                >
+                  <Ban className="w-5 h-5" />
+                  Block Landlord
+                </button>
+              </div>
+            )}
+
+            {/* Group Info Footer */}
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+              <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                {property.admin_only_messages ? (
+                  <>
+                    <MessageSquareOff className="w-4 h-4 inline mr-1" />
+                    Admin-only messaging enabled
+                  </>
+                ) : (
+                  <>
+                    <MessageCircle className="w-4 h-4 inline mr-1" />
+                    All members can send messages
+                  </>
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Member Card for Group Panel
+function MemberCard({ member, isOnline, canManage, showToast, onRefresh }) {
+  const [showMenu, setShowMenu] = useState(false);
+  const [processing, setProcessing] = useState(false);
+
+  const handleToggleAdmin = async () => {
+    if (!member.tenantId) return;
+    setProcessing(true);
+    try {
+      await setTenantAdmin(member.tenantId, !member.isAdmin);
+      showToast?.(member.isAdmin ? 'Admin rights removed' : 'Promoted to admin', 'success');
+      onRefresh?.();
+    } catch (err) {
+      showToast?.(err.message || 'Failed to update', 'error');
+    }
+    setProcessing(false);
+    setShowMenu(false);
+  };
+
+  const handleRemove = async () => {
+    if (!member.tenantId) return;
+    if (!window.confirm(`Remove ${member.profile?.display_name || 'this member'}?`)) return;
+    
+    setProcessing(true);
+    try {
+      await removeTenant(member.tenantId);
+      showToast?.('Member removed', 'success');
+      onRefresh?.();
+    } catch (err) {
+      showToast?.(err.message || 'Failed to remove', 'error');
+    }
+    setProcessing(false);
+  };
+
+  return (
+    <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+      <div className="relative">
+        {member.profile?.photo_url ? (
+          <img src={member.profile.photo_url} alt="" className="w-11 h-11 rounded-xl object-cover shadow-md" />
+        ) : (
+          <div className={`w-11 h-11 rounded-xl flex items-center justify-center shadow-md ${
+            member.isLandlord 
+              ? 'bg-gradient-to-br from-yellow-400 to-orange-500' 
+              : 'bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700'
+          }`}>
+            <span className="text-white font-bold">{member.profile?.display_name?.[0]?.toUpperCase() || '?'}</span>
+          </div>
+        )}
+        {isOnline && (
+          <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-gray-700 rounded-full" />
+        )}
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-gray-800 dark:text-gray-200 truncate flex items-center gap-1.5">
+          {member.profile?.display_name || 'Unknown'}
+          {member.isLandlord && (
+            <Crown className="w-4 h-4 text-yellow-500" />
+          )}
+          {member.isAdmin && !member.isLandlord && (
+            <ShieldCheck className="w-4 h-4 text-purple-500" />
+          )}
+        </p>
+        <div className="flex items-center gap-2 text-xs">
+          <span className={`flex items-center gap-1 ${isOnline ? 'text-green-600 dark:text-green-400' : 'text-gray-400'}`}>
+            <Circle className={`w-2 h-2 ${isOnline ? 'fill-green-500 text-green-500' : 'fill-gray-400 text-gray-400'}`} />
+            {isOnline ? 'Online' : 'Offline'}
+          </span>
+          {member.roomNumber && (
+            <span className="text-gray-500">• Room {member.roomNumber}</span>
+          )}
+          {member.isLandlord && (
+            <span className="px-1.5 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full font-medium">
+              Owner
+            </span>
+          )}
+          {member.isAdmin && !member.isLandlord && (
+            <span className="px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-full font-medium">
+              Admin
+            </span>
+          )}
+        </div>
+      </div>
+
+      {canManage && (
+        <div className="relative">
+          <button
+            onClick={() => setShowMenu(!showMenu)}
+            className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+          >
+            <MoreVertical className="w-4 h-4 text-gray-500" />
+          </button>
+
+          {showMenu && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
+              <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-1 z-20 min-w-[160px]">
+                <button
+                  onClick={handleToggleAdmin}
+                  disabled={processing}
+                  className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                >
+                  {member.isAdmin ? (
+                    <>
+                      <ShieldOff className="w-4 h-4 text-gray-500" />
+                      Remove Admin
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="w-4 h-4 text-purple-500" />
+                      Make Admin
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={handleRemove}
+                  disabled={processing}
+                  className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                >
+                  <UserMinus className="w-4 h-4" />
+                  Remove from Group
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

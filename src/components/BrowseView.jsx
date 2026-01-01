@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Home, User, MapPin, Clock, Sparkles, ArrowRight, Building2, Shield, Zap, Bell } from 'lucide-react';
+import { Search, Home, MapPin, Clock, Sparkles, ArrowRight, Building2, Shield, Zap, Bell, TrendingUp, Eye, Filter, X, ChevronRight, MessageCircle } from 'lucide-react';
 import ListingCard from './ListingCard';
 import ListingSkeletonCard from './ListingSkeletonCard';
 import { InFeedAd } from './AdBanner';
 import { getSavedSearches, checkNewListings, checkPriceDrops, addNotification, saveSearch as saveSearchToEngine } from '../utils/notificationEngine';
+import { StatsSection, WhyChooseUs, Testimonials, CallToAction } from './MarketingSections';
 
 export default function BrowseView({
   listings,
@@ -612,9 +613,11 @@ export default function BrowseView({
               <div className="hidden lg:block w-72 xl:w-80 flex-shrink-0">
                 <div className="sticky top-24 space-y-5">
                   {/* Save Search Card */}
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-5">
-                    <h3 className="font-bold text-gray-800 dark:text-white mb-2 flex items-center gap-2">
-                      <Bell className="w-5 h-5 text-[#E63946]" />
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
+                    <h3 className="font-bold text-gray-800 dark:text-white mb-3 flex items-center gap-2 text-lg">
+                      <div className="w-10 h-10 bg-gradient-to-br from-[#E63946] to-rose-500 rounded-xl flex items-center justify-center shadow-lg">
+                        <Bell className="w-5 h-5 text-white" />
+                      </div>
                       Get Notified
                     </h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
@@ -622,22 +625,23 @@ export default function BrowseView({
                     </p>
                     <button
                       onClick={saveCurrentSearch}
-                      className="w-full bg-[#1D3557] hover:bg-[#152a45] text-white font-semibold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2"
+                      className="w-full bg-gradient-to-r from-[#1D3557] to-blue-600 hover:from-[#152a45] hover:to-blue-700 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl active:scale-95"
                     >
                       <Bell className="w-4 h-4" />
                       Save Search
                     </button>
                     {savedSearches.length > 0 && (
-                      <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Your saved searches:</p>
+                      <div className="mt-5 pt-5 border-t border-gray-100 dark:border-gray-700">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 font-semibold">Your saved searches:</p>
                         <div className="space-y-2">
                           {savedSearches.slice(0, 3).map(s => (
                             <button
                               key={s.id}
                               onClick={() => loadSearch(s)}
-                              className="w-full text-left text-sm px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 truncate"
+                              className="w-full text-left text-sm px-4 py-3 rounded-xl bg-gradient-to-r from-gray-50 to-slate-100 dark:from-gray-900 dark:to-gray-800 hover:from-red-50 hover:to-rose-50 dark:hover:from-red-900/20 dark:hover:to-rose-900/20 text-gray-700 dark:text-gray-300 truncate border border-gray-200 dark:border-gray-700 hover:border-[#E63946] transition-all flex items-center gap-2"
                             >
-                              {s.location || 'Any location'} • R{s.priceRange[0]}-R{s.priceRange[1]}
+                              <MapPin className="w-3.5 h-3.5 text-[#E63946] flex-shrink-0" />
+                              {s.location || 'Any location'} • R{s.priceRange[0].toLocaleString()}-R{s.priceRange[1].toLocaleString()}
                             </button>
                           ))}
                         </div>
@@ -646,26 +650,30 @@ export default function BrowseView({
                   </div>
 
                   {/* Quick Stats */}
-                  <div className="bg-gradient-to-br from-[#1D3557] to-[#2d4a6f] rounded-2xl shadow-lg p-6 text-white">
-                    <h3 className="font-bold mb-4">Why RentMzansi?</h3>
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-                          <Shield className="w-4 h-4" />
+                  <div className="bg-gradient-to-br from-[#1D3557] via-[#2d4a6f] to-blue-700 rounded-2xl shadow-xl p-6 text-white relative overflow-hidden">
+                    {/* Decorative shine */}
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-bl-full" />
+                    <div className="absolute bottom-0 left-0 w-16 h-16 bg-white/5 rounded-tr-full" />
+                    
+                    <h3 className="font-bold mb-5 text-lg relative">✨ Why RentMzansi?</h3>
+                    <div className="space-y-4 relative">
+                      <div className="flex items-center gap-4 p-3 bg-white/10 rounded-xl backdrop-blur-sm">
+                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                          <Shield className="w-5 h-5" />
                         </div>
-                        <span className="text-sm">Verified landlords only</span>
+                        <span className="text-sm font-medium">Verified landlords only</span>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-                          <Zap className="w-4 h-4" />
+                      <div className="flex items-center gap-4 p-3 bg-white/10 rounded-xl backdrop-blur-sm">
+                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                          <Zap className="w-5 h-5" />
                         </div>
-                        <span className="text-sm">Instant direct contact</span>
+                        <span className="text-sm font-medium">Instant direct contact</span>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-                          <Building2 className="w-4 h-4" />
+                      <div className="flex items-center gap-4 p-3 bg-white/10 rounded-xl backdrop-blur-sm">
+                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                          <Building2 className="w-5 h-5" />
                         </div>
-                        <span className="text-sm">No agent fees</span>
+                        <span className="text-sm font-medium">No agent fees</span>
                       </div>
                     </div>
                   </div>
@@ -678,59 +686,107 @@ export default function BrowseView({
               </div>
             </div>
           </div>
+
+          {/* Marketing Sections - Only show for non-logged-in users or if few listings */}
+          {!currentUser && (
+            <>
+              <StatsSection listingsCount={listings.length} />
+              <WhyChooseUs />
+              <Testimonials />
+              <CallToAction onSignUp={onRequireAuth} />
+            </>
+          )}
         </div>
       </div>
     );
   }
-
   // Mobile / tablet layout
   return (
-    <div className="bg-gradient-to-b from-slate-50 to-gray-100 dark:from-gray-900 dark:to-gray-900 min-h-screen pb-24" role="main" aria-labelledby="results-heading">
-      {/* Welcome Hero Section */}
+    <div className="bg-gradient-to-b from-slate-50 via-white to-slate-100 dark:from-gray-900 dark:via-gray-850 dark:to-gray-900 min-h-screen pb-24" role="main" aria-labelledby="results-heading">
+      {/* Custom animations */}
+      <style>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-6px); }
+        }
+        @keyframes pulse-soft {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
+        }
+        @keyframes slide-up {
+          0% { opacity: 0; transform: translateY(20px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        .card-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-hover:hover { transform: translateY(-4px); }
+      `}</style>
+      
+      {/* Welcome Hero Section - Premium */}
       {showWelcomeHero && !currentUser && listings.length > 0 && (
-        <div className="bg-gradient-to-br from-[#1D3557] via-[#1D3557] to-[#2d4a6f] text-white relative overflow-hidden">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRoLTJ2LTRoMnYtMmgtMnYtMmgydi0ySDI0djJoMnYyaC0ydjJoMnY0aC0ydjJoMTJ2LTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
-          {/* Decorative circles */}
-          <div className="absolute -top-20 -right-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
-          <div className="absolute -bottom-20 -left-20 w-48 h-48 bg-[#E63946]/20 rounded-full blur-3xl" />
+        <div className="bg-gradient-to-br from-[#1D3557] via-[#243b5a] to-[#2d4a6f] text-white relative overflow-hidden">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0aC0ydi00aDJ2LTJoLTJ2LTJoMnYtMkgyNHYyaDJ2MmgtMnYyaDJ2NGgtMnYyaDEydi0yeiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
+          {/* Decorative floating circles */}
+          <div className="absolute -top-24 -right-24 w-64 h-64 bg-[#E63946]/30 rounded-full blur-3xl" style={{ animation: 'pulse-soft 4s ease-in-out infinite' }} />
+          <div className="absolute -bottom-24 -left-24 w-56 h-56 bg-blue-500/20 rounded-full blur-3xl" style={{ animation: 'pulse-soft 4s ease-in-out infinite', animationDelay: '2s' }} />
+          <div className="absolute top-1/2 right-10 w-32 h-32 bg-amber-400/20 rounded-full blur-2xl" />
           
-          <div className="max-w-7xl mx-auto px-4 py-10 relative">
+          <div className="max-w-7xl mx-auto px-5 py-10 relative">
             <button 
               onClick={dismissHero}
-              className="absolute top-3 right-3 p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+              className="absolute top-4 right-4 p-2.5 text-white/60 hover:text-white bg-white/10 hover:bg-white/20 rounded-xl backdrop-blur-sm transition-all duration-200"
               aria-label="Dismiss welcome message"
             >
-              <span className="text-xl">×</span>
+              <span className="text-xl font-light">×</span>
             </button>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="flex items-center gap-1 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
-                <Sparkles className="w-4 h-4 text-amber-300" />
-                <span className="text-sm font-medium">South Africa's Room Finder</span>
+            
+            {/* Badge */}
+            <div className="flex items-center gap-2 mb-5" style={{ animation: 'slide-up 0.5s ease-out' }}>
+              <div className="flex items-center gap-2 bg-white/15 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 shadow-lg">
+                <span className="text-lg">🇿🇦</span>
+                <span className="text-sm font-semibold">South Africa's #1 Room Finder</span>
               </div>
             </div>
-            <h1 className="text-3xl md:text-4xl font-extrabold mb-4">
-              Find Your Perfect <span className="text-[#E63946]">Room</span>
+            
+            <h1 className="text-4xl md:text-5xl font-extrabold mb-4 leading-tight" style={{ animation: 'slide-up 0.6s ease-out' }}>
+              Find Your Perfect<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-[#E63946] to-rose-400">Room Today</span>
             </h1>
-            <p className="text-[#F1FAEE]/80 text-lg mb-8 max-w-lg">
+            <p className="text-white/80 text-lg mb-8 max-w-lg leading-relaxed" style={{ animation: 'slide-up 0.7s ease-out' }}>
               Discover affordable rooms across South Africa. Connect directly with verified landlords — no middleman fees.
             </p>
-            <div className="flex flex-wrap gap-4 mb-6">
-              <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm px-4 py-2.5 rounded-xl border border-white/20">
-                <Building2 className="w-5 h-5 text-amber-300" />
-                <span className="font-semibold">{listings.length}+ Rooms</span>
+            
+            {/* Stats cards with glass effect */}
+            <div className="flex flex-wrap gap-3 mb-8" style={{ animation: 'slide-up 0.8s ease-out' }}>
+              <div className="flex items-center gap-2.5 bg-white/10 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/20 shadow-lg" style={{ animation: 'float 3s ease-in-out infinite' }}>
+                <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
+                  <Building2 className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <span className="font-bold text-lg">{listings.length}+</span>
+                  <span className="text-sm text-white/70 ml-1">Rooms</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm px-4 py-2.5 rounded-xl border border-white/20">
-                <Shield className="w-5 h-5 text-amber-300" />
-                <span className="font-semibold">Verified Listings</span>
+              <div className="flex items-center gap-2.5 bg-white/10 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/20 shadow-lg" style={{ animation: 'float 3s ease-in-out infinite', animationDelay: '0.5s' }}>
+                <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-green-500 rounded-xl flex items-center justify-center shadow-lg">
+                  <Shield className="w-5 h-5 text-white" />
+                </div>
+                <span className="font-semibold">Verified</span>
               </div>
-              <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm px-4 py-2.5 rounded-xl border border-white/20">
-                <Zap className="w-5 h-5 text-amber-300" />
-                <span className="font-semibold">Instant Contact</span>
+              <div className="flex items-center gap-2.5 bg-white/10 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/20 shadow-lg" style={{ animation: 'float 3s ease-in-out infinite', animationDelay: '1s' }}>
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg">
+                  <Zap className="w-5 h-5 text-white" />
+                </div>
+                <span className="font-semibold">Instant</span>
               </div>
             </div>
+            
             <button
               onClick={() => onRequireAuth && onRequireAuth('renter')}
-              className="inline-flex items-center gap-2 bg-[#E63946] text-white font-bold px-6 py-3 rounded-xl hover:bg-[#c5303c] transition-all shadow-lg hover:shadow-xl active:scale-95"
+              className="inline-flex items-center gap-3 bg-gradient-to-r from-[#E63946] to-rose-500 text-white font-bold px-8 py-4 rounded-2xl hover:from-[#c5303c] hover:to-rose-600 transition-all shadow-xl hover:shadow-2xl active:scale-95 text-lg"
+              style={{ animation: 'slide-up 0.9s ease-out' }}
             >
               Get Started Free
               <ArrowRight className="w-5 h-5" />
@@ -924,13 +980,14 @@ export default function BrowseView({
               </div>
             )}
           </div>
-          <div className="flex gap-2 mb-3 flex-wrap items-center">
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">R{priceRange[0].toLocaleString()} - R{priceRange[1].toLocaleString()}</span>
+          {/* Filter Controls - Premium Card */}
+          <div className="flex gap-3 mb-4 flex-wrap items-center bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-md border border-gray-100 dark:border-gray-700">
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-gray-50 to-slate-100 dark:from-gray-700 dark:to-gray-800 border border-gray-200 dark:border-gray-600">
+              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">R{priceRange[0].toLocaleString()} - R{priceRange[1].toLocaleString()}</span>
               <select
                 value={priceRange[0]}
                 onChange={(e) => setPriceRange([parseInt(e.target.value), priceRange[1]])}
-                className="text-xs bg-transparent border-l border-gray-400 dark:border-gray-600 pl-2 focus:outline-none text-gray-700 dark:text-gray-300"
+                className="text-xs bg-transparent border-l border-gray-300 dark:border-gray-500 pl-2 focus:outline-none text-gray-700 dark:text-gray-300 cursor-pointer"
                 aria-label="Minimum price"
               >
                 <option value="0">Min</option>
@@ -941,7 +998,7 @@ export default function BrowseView({
               <select
                 value={priceRange[1]}
                 onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
-                className="text-xs bg-transparent border-l border-gray-400 dark:border-gray-600 pl-2 focus:outline-none text-gray-700 dark:text-gray-300"
+                className="text-xs bg-transparent border-l border-gray-300 dark:border-gray-500 pl-2 focus:outline-none text-gray-700 dark:text-gray-300 cursor-pointer"
                 aria-label="Maximum price"
               >
                 <option value="10000">R10k</option>
@@ -950,12 +1007,13 @@ export default function BrowseView({
                 <option value="2000">R2k</option>
               </select>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Sort:</span>
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-gray-50 to-slate-100 dark:from-gray-700 dark:to-gray-800 border border-gray-200 dark:border-gray-600">
+              <TrendingUp className="w-4 h-4 text-[#E63946]" />
+              <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">Sort:</span>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="text-sm px-3 py-2 rounded-lg bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-[#E63946]"
+                className="text-sm bg-transparent focus:outline-none text-gray-700 dark:text-gray-300 font-semibold cursor-pointer"
                 aria-label="Sort order"
               >
                 <option value="newest">Newest</option>
@@ -963,12 +1021,12 @@ export default function BrowseView({
                 <option value="expensive">Most Expensive</option>
               </select>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Payment:</span>
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-gray-50 to-slate-100 dark:from-gray-700 dark:to-gray-800 border border-gray-200 dark:border-gray-600">
+              <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">💳 Payment:</span>
               <select
                 value={paymentFilter}
                 onChange={(e) => setPaymentFilter(e.target.value)}
-                className="text-sm px-3 py-2 rounded-lg bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-[#E63946]"
+                className="text-sm bg-transparent focus:outline-none text-gray-700 dark:text-gray-300 font-semibold cursor-pointer"
                 aria-label="Payment method filter"
               >
                 <option value="">Any</option>
@@ -979,16 +1037,23 @@ export default function BrowseView({
             </div>
             <button
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-              className="text-sm text-[#E63946] hover:text-[#c5303c] font-medium px-3 py-2 rounded-lg hover:bg-red-50 transition"
+              className={`text-sm font-semibold px-4 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2 ${
+                showAdvancedFilters
+                  ? 'bg-gradient-to-r from-[#E63946] to-[#c5303c] text-white shadow-md'
+                  : 'bg-gradient-to-r from-gray-50 to-slate-100 dark:from-gray-700 dark:to-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:border-[#E63946]'
+              }`}
               aria-expanded={showAdvancedFilters}
-            >{showAdvancedFilters ? '✕ Filters' : '⚙️ Filters'}</button>
+            >
+              <Filter className="w-4 h-4" />
+              {showAdvancedFilters ? 'Hide Filters' : 'More Filters'}
+            </button>
           </div>
           {showAdvancedFilters && (
-            <div className="mt-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 space-y-4">
+            <div className="mt-4 p-5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg space-y-5">
               {/* Room Type */}
               <div>
-                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Room Type</label>
-                <div className="flex gap-2">
+                <label className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 block flex items-center gap-2">🏠 Room Type</label>
+                <div className="flex gap-3">
                   {['Private', 'Shared'].map(type => (
                     <button
                       key={type}
@@ -1085,15 +1150,21 @@ export default function BrowseView({
       <div className="max-w-7xl mx-auto px-4 pt-3">
         <InFeedAd />
       </div>
+      
+      {/* Results Section */}
       <div className="max-w-7xl mx-auto px-4">
-        <div className="flex justify-between items-center mt-4 mb-4">
+        <div className="flex justify-between items-center mt-6 mb-6 bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-md border border-gray-100 dark:border-gray-700">
           <h2 id="results-heading" className="text-2xl font-bold text-gray-800 dark:text-white">
             {listings.length === 0 ? (
-              'No rooms available'
-            ) : (
               <span className="flex items-center gap-2">
-                <span className="bg-gradient-to-r from-[#E63946] to-[#c5303c] text-white text-lg font-bold px-3 py-1 rounded-lg shadow-sm">{listings.length}</span>
+                <Search className="w-6 h-6 text-gray-400" />
+                No rooms available
+              </span>
+            ) : (
+              <span className="flex items-center gap-3">
+                <span className="bg-gradient-to-r from-[#E63946] to-rose-500 text-white text-lg font-bold px-4 py-1.5 rounded-xl shadow-lg">{listings.length}</span>
                 <span>Rooms Available</span>
+                <Eye className="w-5 h-5 text-gray-400 ml-2" />
               </span>
             )}
           </h2>
@@ -1104,32 +1175,53 @@ export default function BrowseView({
           </div>
         ) : (
           (paymentFilter ? listings.filter(l => l.paymentMethod === paymentFilter) : listings).length === 0 ? (
-            <div className="bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-800 dark:to-gray-800 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 p-16 text-center">
-              <div className="bg-white dark:bg-gray-900 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-                <Search className="w-12 h-12 text-gray-400" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-3">No rooms found</h3>
-              <p className="text-gray-600 dark:text-gray-300 mb-2">Try adjusting your filters or search in a different area</p>
-              <p className="text-gray-500 dark:text-gray-400 text-sm mb-8 max-w-md mx-auto">
-                Try different search terms or browse popular areas
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
-                <button
-                  onClick={() => {
-                    setSearchLocation('');
-                    setPriceRange([0, 10000]);
-                    setSelectedAmenities([]);
-                    setSortBy('newest');
-                    setRoomType('');
-                    setLeaseDuration('');
-                    setPetFriendly(false);
-                    setGenderPreference('');
-                    setPaymentFilter('');
-                  }}
-                  className="inline-flex items-center gap-2 bg-[#E63946] hover:bg-[#c5303c] text-white font-medium px-6 py-2.5 rounded-lg transition shadow-sm"
-                >
-                  Clear All
-                </button>
+            <div className="bg-gradient-to-br from-white via-slate-50 to-blue-50 dark:from-gray-800 dark:via-gray-800 dark:to-gray-800 rounded-3xl border-2 border-dashed border-gray-200 dark:border-gray-600 p-12 md:p-16 text-center shadow-lg relative overflow-hidden">
+              {/* Decorative elements */}
+              <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-br from-red-50 to-transparent rounded-br-full opacity-50" />
+              <div className="absolute bottom-0 right-0 w-40 h-40 bg-gradient-to-tl from-blue-50 to-transparent rounded-tl-full opacity-50" />
+              
+              <div className="relative">
+                <div className="bg-gradient-to-br from-gray-100 to-white dark:from-gray-700 dark:to-gray-900 w-28 h-28 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl border border-gray-200 dark:border-gray-600" style={{ animation: 'float 3s ease-in-out infinite' }}>
+                  <Search className="w-14 h-14 text-gray-300 dark:text-gray-500" />
+                </div>
+                <h3 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white mb-3">No rooms found</h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-2 text-lg">Try adjusting your filters or search in a different area</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-8 max-w-md mx-auto">
+                  We'll help you find the perfect room. Try these popular areas below!
+                </p>
+                
+                {/* Popular areas */}
+                <div className="flex flex-wrap justify-center gap-2 mb-8">
+                  {['Sandton', 'Soweto', 'Pretoria', 'Cape Town', 'Durban'].map(area => (
+                    <button
+                      key={area}
+                      onClick={() => setSearchLocation(area)}
+                      className="px-4 py-2 rounded-xl bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-2 border-gray-200 dark:border-gray-600 hover:border-[#E63946] hover:text-[#E63946] transition-all duration-200 font-medium text-sm shadow-sm"
+                    >
+                      {area}
+                    </button>
+                  ))}
+                </div>
+                
+                <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+                  <button
+                    onClick={() => {
+                      setSearchLocation('');
+                      setPriceRange([0, 10000]);
+                      setSelectedAmenities([]);
+                      setSortBy('newest');
+                      setRoomType('');
+                      setLeaseDuration('');
+                      setPetFriendly(false);
+                      setGenderPreference('');
+                      setPaymentFilter('');
+                    }}
+                    className="inline-flex items-center gap-2 bg-gradient-to-r from-[#E63946] to-rose-500 hover:from-[#c5303c] hover:to-rose-600 text-white font-bold px-8 py-3 rounded-xl transition-all shadow-lg hover:shadow-xl active:scale-95"
+                  >
+                    <X className="w-5 h-5" />
+                    Clear All Filters
+                  </button>
+                </div>
               </div>
             </div>
           ) : (
@@ -1155,45 +1247,61 @@ export default function BrowseView({
               
               {/* How It Works Section - show for non-logged in users */}
               {!currentUser && (
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 mb-8">
-                  <div className="text-center mb-8">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">How RentMzansi Works</h3>
-                    <p className="text-gray-600">Find your perfect room in 3 simple steps</p>
+                <div className="bg-gradient-to-br from-white via-slate-50 to-blue-50 dark:from-gray-800 dark:via-gray-800 dark:to-gray-800 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700 p-8 md:p-12 mb-8 relative overflow-hidden">
+                  {/* Decorative elements */}
+                  <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-red-100/50 to-transparent rounded-bl-full" />
+                  <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-blue-100/50 to-transparent rounded-tr-full" />
+                  
+                  <div className="relative text-center mb-10">
+                    <span className="inline-flex items-center gap-2 bg-gradient-to-r from-[#E63946]/10 to-rose-500/10 text-[#E63946] px-4 py-2 rounded-full text-sm font-bold mb-4">
+                      <Sparkles className="w-4 h-4" />
+                      Simple Process
+                    </span>
+                    <h3 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3">How RentMzansi Works</h3>
+                    <p className="text-gray-600 dark:text-gray-300 text-lg">Find your perfect room in 3 simple steps</p>
                   </div>
-                  <div className="grid md:grid-cols-3 gap-6">
-                    <div className="text-center p-4">
-                      <div className="w-16 h-16 bg-gradient-to-br from-red-100 to-rose-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <Search className="w-8 h-8 text-[#E63946]" />
+                  
+                  <div className="relative grid md:grid-cols-3 gap-8">
+                    {/* Connecting line */}
+                    <div className="hidden md:block absolute top-16 left-1/4 right-1/4 h-0.5 bg-gradient-to-r from-[#E63946] via-[#1D3557] to-emerald-500" />
+                    
+                    <div className="text-center p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                      <div className="w-20 h-20 bg-gradient-to-br from-red-100 to-rose-200 dark:from-red-900/30 dark:to-rose-800/30 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-md">
+                        <Search className="w-10 h-10 text-[#E63946]" />
                       </div>
-                      <div className="bg-[#E63946] text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center mx-auto -mt-8 mb-2 relative z-10 shadow-md">1</div>
-                      <h4 className="font-semibold text-gray-900 mb-2">Search & Filter</h4>
-                      <p className="text-sm text-gray-600">Browse rooms by location, price, and amenities. Use filters to find exactly what you need.</p>
+                      <div className="bg-gradient-to-r from-[#E63946] to-rose-500 text-white text-sm font-bold w-8 h-8 rounded-full flex items-center justify-center mx-auto -mt-10 mb-4 relative z-10 shadow-lg border-2 border-white">1</div>
+                      <h4 className="font-bold text-gray-900 dark:text-white mb-3 text-lg">Search & Filter</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">Browse rooms by location, price, and amenities. Use filters to find exactly what you need.</p>
                     </div>
-                    <div className="text-center p-4">
-                      <div className="w-16 h-16 bg-gradient-to-br from-[#1D3557]/10 to-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <Home className="w-8 h-8 text-[#1D3557]" />
+                    
+                    <div className="text-center p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                      <div className="w-20 h-20 bg-gradient-to-br from-[#1D3557]/20 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-md">
+                        <Home className="w-10 h-10 text-[#1D3557]" />
                       </div>
-                      <div className="bg-[#1D3557] text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center mx-auto -mt-8 mb-2 relative z-10 shadow-md">2</div>
-                      <h4 className="font-semibold text-gray-900 mb-2">View Details</h4>
-                      <p className="text-sm text-gray-600">Check photos, virtual tours, reviews, and landlord verification status.</p>
+                      <div className="bg-gradient-to-r from-[#1D3557] to-blue-600 text-white text-sm font-bold w-8 h-8 rounded-full flex items-center justify-center mx-auto -mt-10 mb-4 relative z-10 shadow-lg border-2 border-white">2</div>
+                      <h4 className="font-bold text-gray-900 dark:text-white mb-3 text-lg">View Details</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">Check photos, virtual tours, reviews, and landlord verification status.</p>
                     </div>
-                    <div className="text-center p-4">
-                      <div className="w-16 h-16 bg-gradient-to-br from-emerald-100 to-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <User className="w-8 h-8 text-blue-600" />
+                    
+                    <div className="text-center p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                      <div className="w-20 h-20 bg-gradient-to-br from-emerald-100 to-green-200 dark:from-emerald-900/30 dark:to-green-800/30 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-md">
+                        <MessageCircle className="w-10 h-10 text-emerald-600" />
                       </div>
-                      <div className="bg-blue-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center mx-auto -mt-8 mb-2 relative z-10 shadow-md">3</div>
-                      <h4 className="font-semibold text-gray-900 mb-2">Contact Landlord</h4>
-                      <p className="text-sm text-gray-600">Connect directly via phone, email, or WhatsApp. No middleman fees.</p>
+                      <div className="bg-gradient-to-r from-emerald-500 to-green-500 text-white text-sm font-bold w-8 h-8 rounded-full flex items-center justify-center mx-auto -mt-10 mb-4 relative z-10 shadow-lg border-2 border-white">3</div>
+                      <h4 className="font-bold text-gray-900 dark:text-white mb-3 text-lg">Contact Landlord</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">Connect directly via phone, email, or WhatsApp. No middleman fees.</p>
                     </div>
                   </div>
-                  <div className="text-center mt-6 pt-6 border-t border-gray-100">
+                  
+                  <div className="text-center mt-10 pt-8 border-t border-gray-200 dark:border-gray-700">
                     <button
                       onClick={() => onRequireAuth && onRequireAuth('renter')}
-                      className="inline-flex items-center gap-2 bg-gradient-to-r from-[#E63946] to-[#c5303c] hover:from-[#c5303c] hover:to-[#a52833] text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all"
+                      className="inline-flex items-center gap-3 bg-gradient-to-r from-[#E63946] to-rose-500 hover:from-[#c5303c] hover:to-rose-600 text-white font-bold px-8 py-4 rounded-2xl shadow-xl hover:shadow-2xl transition-all active:scale-95 text-lg"
                     >
                       Create Free Account
-                      <ArrowRight className="w-4 h-4" />
+                      <ChevronRight className="w-5 h-5" />
                     </button>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm mt-4">Join thousands of happy renters</p>
                   </div>
                 </div>
               )}

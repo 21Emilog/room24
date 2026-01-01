@@ -165,7 +165,7 @@ export async function getConversation(conversationId) {
 export async function getMessages(conversationId) {
   const { data, error } = await supabase
     .from('messages')
-    .select('*')
+    .select('*, voice_messages(*)')
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: true });
 
@@ -174,7 +174,12 @@ export async function getMessages(conversationId) {
     return [];
   }
 
-  return data || [];
+  // Flatten voice_messages array to single object
+  return (data || []).map(msg => ({
+    ...msg,
+    voice: msg.voice_messages && msg.voice_messages[0] ? msg.voice_messages[0] : null,
+    voice_messages: undefined, // Remove the array
+  }));
 }
 
 /**
@@ -265,7 +270,7 @@ export async function getUnreadCount(userId) {
 /**
  * Subscribe to new messages in a conversation
  */
-export function subscribeToMessages(conversationId, onNewMessage) {
+export function subscribeToMessages(conversationId, onNewMessage, onMessageUpdate = null) {
   const channel = supabase
     .channel(`messages:${conversationId}`)
     .on(
@@ -276,8 +281,37 @@ export function subscribeToMessages(conversationId, onNewMessage) {
         table: 'messages',
         filter: `conversation_id=eq.${conversationId}`,
       },
+      async (payload) => {
+        // For voice messages, fetch the voice data
+        if (payload.new.message_type === 'voice') {
+          try {
+            const voiceData = await getVoiceMessage(payload.new.id);
+            onNewMessage({
+              ...payload.new,
+              voice: voiceData,
+            });
+          } catch (err) {
+            console.error('Error fetching voice message:', err);
+            onNewMessage(payload.new);
+          }
+        } else {
+          onNewMessage(payload.new);
+        }
+      }
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'messages',
+        filter: `conversation_id=eq.${conversationId}`,
+      },
       (payload) => {
-        onNewMessage(payload.new);
+        // Call update handler for read status changes
+        if (onMessageUpdate) {
+          onMessageUpdate(payload.new);
+        }
       }
     )
     .subscribe();
@@ -414,98 +448,78 @@ export { REACTION_EMOJIS };
 
 /**
  * Add a reaction to a message
- * NOTE: Requires message_reactions table - fails silently if not available
  */
 export async function addReaction(messageId, userId, emoji) {
-  try {
-    const { data, error } = await supabase
-      .from('message_reactions')
-      .upsert({
-        message_id: messageId,
-        user_id: userId,
-        emoji,
-      }, { onConflict: 'message_id,user_id,emoji' })
-      .select()
-      .single();
+  const { data, error } = await supabase
+    .from('message_reactions')
+    .upsert({
+      message_id: messageId,
+      user_id: userId,
+      emoji,
+    }, { onConflict: 'message_id,user_id,emoji' })
+    .select()
+    .single();
 
-    if (error) {
-      console.warn('Error adding reaction:', error.message);
-      return null;
-    }
-    return data;
-  } catch (err) {
-    console.warn('Reactions not available');
-    return null;
+  if (error) {
+    console.error('Error adding reaction:', error);
+    throw error;
   }
+  return data;
 }
 
 /**
  * Remove a reaction from a message
- * NOTE: Requires message_reactions table - fails silently if not available
  */
 export async function removeReaction(messageId, userId, emoji) {
-  try {
-    const { error } = await supabase
-      .from('message_reactions')
-      .delete()
-      .eq('message_id', messageId)
-      .eq('user_id', userId)
-      .eq('emoji', emoji);
+  const { error } = await supabase
+    .from('message_reactions')
+    .delete()
+    .eq('message_id', messageId)
+    .eq('user_id', userId)
+    .eq('emoji', emoji);
 
-    if (error) {
-      console.warn('Error removing reaction:', error.message);
-    }
-  } catch (err) {
-    console.warn('Reactions not available');
+  if (error) {
+    console.error('Error removing reaction:', error);
+    throw error;
   }
 }
 
 /**
  * Get reactions for a message
- * NOTE: Requires message_reactions table - returns empty array if not available
  */
 export async function getMessageReactions(messageId) {
-  try {
-    const { data, error } = await supabase
-      .from('message_reactions')
-      .select('*')
-      .eq('message_id', messageId);
+  const { data, error } = await supabase
+    .from('message_reactions')
+    .select('*')
+    .eq('message_id', messageId);
 
-    if (error) {
-      return [];
-    }
-    return data || [];
-  } catch (err) {
+  if (error) {
+    console.error('Error fetching reactions:', error);
     return [];
   }
+  return data || [];
 }
 
 /**
  * Subscribe to reactions for messages in a conversation
- * NOTE: Requires message_reactions table - returns no-op if not available
  */
 export function subscribeToReactions(conversationId, onReaction) {
-  try {
-    const channel = supabase
-      .channel(`reactions-${conversationId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'message_reactions',
-        },
-        (payload) => {
-          onReaction(payload);
-        }
-      )
-      .subscribe();
+  const channel = supabase
+    .channel(`reactions-${conversationId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'message_reactions',
+      },
+      (payload) => {
+        onReaction(payload);
+      }
+    )
+    .subscribe();
 
-    return () => supabase.removeChannel(channel);
-  } catch (err) {
-    console.warn('Reactions subscription not available');
-    return () => {};
-  }
+  return () => supabase.removeChannel(channel);
 }
 
 // ===========================
@@ -514,74 +528,58 @@ export function subscribeToReactions(conversationId, onReaction) {
 
 /**
  * Set typing status for a user in a conversation
- * NOTE: Requires typing_indicators table - fails silently if not available
  */
 export async function setTyping(conversationId, userId, isTyping) {
-  try {
-    if (isTyping) {
-      const { error } = await supabase
-        .from('typing_indicators')
-        .upsert({
-          conversation_id: conversationId,
-          user_id: userId,
-          started_at: new Date().toISOString(),
-        }, { onConflict: 'conversation_id,user_id' });
+  if (isTyping) {
+    const { error } = await supabase
+      .from('typing_indicators')
+      .upsert({
+        conversation_id: conversationId,
+        user_id: userId,
+        started_at: new Date().toISOString(),
+      }, { onConflict: 'conversation_id,user_id' });
 
-      if (error && !error.message?.includes('duplicate') && !error.message?.includes('does not exist')) {
-        console.warn('Error setting typing:', error.message);
-      }
-    } else {
-      await supabase
-        .from('typing_indicators')
-        .delete()
-        .eq('conversation_id', conversationId)
-        .eq('user_id', userId);
+    if (error && !error.message?.includes('duplicate')) {
+      console.error('Error setting typing:', error);
     }
-  } catch (err) {
-    // Table might not exist yet - fail silently
-    console.warn('Typing indicators not available:', err.message);
+  } else {
+    await supabase
+      .from('typing_indicators')
+      .delete()
+      .eq('conversation_id', conversationId)
+      .eq('user_id', userId);
   }
 }
 
 /**
  * Subscribe to typing indicators in a conversation
- * NOTE: Requires typing_indicators table - returns no-op if not available
  */
 export function subscribeToTyping(conversationId, currentUserId, onTypingChange) {
-  try {
-    const channel = supabase
-      .channel(`typing-${conversationId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'typing_indicators',
-          filter: `conversation_id=eq.${conversationId}`,
-        },
-        async () => {
-          try {
-            // Fetch current typing users (excluding self)
-            const { data } = await supabase
-              .from('typing_indicators')
-              .select('user_id')
-              .eq('conversation_id', conversationId)
-              .neq('user_id', currentUserId)
-              .gt('started_at', new Date(Date.now() - 10000).toISOString());
-            
-            onTypingChange(data?.map(t => t.user_id) || []);
-          } catch (err) {
-            // Table might not exist
-          }
-        }
-      )
-      .subscribe();
+  const channel = supabase
+    .channel(`typing-${conversationId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'typing_indicators',
+        filter: `conversation_id=eq.${conversationId}`,
+      },
+      async () => {
+        // Fetch current typing users (excluding self)
+        const { data } = await supabase
+          .from('typing_indicators')
+          .select('user_id')
+          .eq('conversation_id', conversationId)
+          .neq('user_id', currentUserId)
+          .gt('started_at', new Date(Date.now() - 10000).toISOString());
+        
+        onTypingChange(data?.map(t => t.user_id) || []);
+      }
+    )
+    .subscribe();
 
-    return () => supabase.removeChannel(channel);
-  } catch (err) {
-    console.warn('Typing subscription not available');
-    return () => {}; // Return no-op cleanup function
-  }
+  return () => supabase.removeChannel(channel);
 }
 
 // ===========================
@@ -590,77 +588,60 @@ export function subscribeToTyping(conversationId, currentUserId, onTypingChange)
 
 /**
  * Update user's online presence
- * NOTE: Requires user_presence table - fails silently if not available
  */
 export async function updatePresence(userId, isOnline, conversationId = null) {
-  try {
-    const { error } = await supabase
-      .from('user_presence')
-      .upsert({
-        user_id: userId,
-        is_online: isOnline,
-        last_seen: new Date().toISOString(),
-        current_conversation_id: conversationId,
-      }, { onConflict: 'user_id' });
+  const { error } = await supabase
+    .from('user_presence')
+    .upsert({
+      user_id: userId,
+      is_online: isOnline,
+      last_seen: new Date().toISOString(),
+      current_conversation_id: conversationId,
+    }, { onConflict: 'user_id' });
 
-    if (error && !error.message?.includes('does not exist')) {
-      console.warn('Error updating presence:', error.message);
-    }
-  } catch (err) {
-    // Table might not exist yet - fail silently
-    console.warn('Presence not available');
+  if (error) {
+    console.error('Error updating presence:', error);
   }
 }
 
 /**
  * Get user's presence/online status
- * NOTE: Requires user_presence table - returns null if not available
  */
 export async function getUserPresence(userId) {
-  try {
-    const { data, error } = await supabase
-      .from('user_presence')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle();
+  const { data, error } = await supabase
+    .from('user_presence')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
 
-    if (error) {
-      // Table might not exist
-      return null;
-    }
-    return data;
-  } catch (err) {
+  if (error) {
+    console.error('Error fetching presence:', error);
     return null;
   }
+  return data;
 }
 
 /**
  * Subscribe to user presence changes
- * NOTE: Requires user_presence table - returns no-op if not available
  */
 export function subscribeToPresence(userId, onPresenceChange) {
-  try {
-    const channel = supabase
-      .channel(`presence-${userId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_presence',
-          filter: `user_id=eq.${userId}`,
-        },
-        (payload) => {
-          onPresenceChange(payload.new);
-        }
-      )
-      .subscribe();
+  const channel = supabase
+    .channel(`presence-${userId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'user_presence',
+        filter: `user_id=eq.${userId}`,
+      },
+      (payload) => {
+        onPresenceChange(payload.new);
+      }
+    )
+    .subscribe();
 
-    return () => supabase.removeChannel(channel);
-  } catch (err) {
-    console.warn('Presence subscription not available');
-    return () => {}; // Return no-op cleanup function
-  }
+  return () => supabase.removeChannel(channel);
 }
 
 // ===========================
@@ -720,4 +701,292 @@ export async function sendReply(conversationId, senderId, content, replyToId) {
 
   return data;
 }
+
+// ===========================
+// VOICE MESSAGES
+// ===========================
+
+/**
+ * Send a voice message
+ * @param {string} conversationId - Conversation ID
+ * @param {string} senderId - Sender user ID
+ * @param {Blob} audioBlob - Audio blob from recorder
+ * @param {number} duration - Duration in seconds
+ * @returns {Promise<Object>} - The created message
+ */
+export async function sendVoiceMessage(conversationId, senderId, audioBlob, duration) {
+  if (!audioBlob) {
+    throw new Error('Audio blob is required');
+  }
+
+  if (!duration || duration <= 0) {
+    throw new Error('Duration must be greater than 0');
+  }
+
+  try {
+    console.log('Starting voice message upload...', { conversationId, duration, blobSize: audioBlob.size });
+
+    // 1. Create the message record FIRST
+    const { data: message, error: msgError } = await supabase
+      .from('messages')
+      .insert({
+        conversation_id: conversationId,
+        sender_id: senderId,
+        content: `[Voice message - ${Math.round(duration)}s]`,
+        message_type: 'voice',
+        voice_duration: Math.round(duration),
+        read: false,
+      })
+      .select()
+      .single();
+
+    if (msgError) {
+      console.error('Error creating voice message:', msgError);
+      throw msgError;
+    }
+
+    console.log('Message created:', message.id);
+
+    // 2. Upload audio to Supabase Storage
+    const fileName = `${conversationId}/${message.id}-${Date.now()}.webm`;
+    console.log('Uploading to:', fileName);
+
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('voice-messages')
+      .upload(fileName, audioBlob, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: 'audio/webm',
+      });
+
+    if (uploadError) {
+      console.error('Storage upload error:', uploadError);
+      // Delete message if upload fails
+      await supabase.from('messages').delete().eq('id', message.id);
+      throw new Error(`Upload failed: ${uploadError.message}`);
+    }
+
+    console.log('File uploaded successfully:', uploadData);
+
+    // 3. Get public URL
+    const { data: urlData } = supabase.storage
+      .from('voice-messages')
+      .getPublicUrl(fileName);
+
+    console.log('Public URL:', urlData.publicUrl);
+
+    // 4. Create voice_messages record with metadata
+    const { data: voiceRecord, error: voiceError } = await supabase
+      .from('voice_messages')
+      .insert({
+        message_id: message.id,
+        audio_url: urlData.publicUrl,
+        duration: Math.round(duration),
+        file_size: audioBlob.size,
+        mime_type: audioBlob.type || 'audio/webm',
+      })
+      .select()
+      .single();
+
+    if (voiceError) {
+      console.error('Error creating voice record:', voiceError);
+      // Still return the message with URL even if voice record fails
+      return {
+        ...message,
+        voice: {
+          audio_url: urlData.publicUrl,
+          duration: Math.round(duration),
+        },
+      };
+    }
+
+    console.log('Voice record created:', voiceRecord);
+
+    // Update conversation's last_message_at
+    await supabase
+      .from('conversations')
+      .update({ last_message_at: new Date().toISOString() })
+      .eq('id', conversationId);
+
+    return {
+      ...message,
+      voice: voiceRecord,
+    };
+  } catch (err) {
+    console.error('Error sending voice message:', err);
+    throw err;
+  }
+}
+
+/**
+ * Get voice message details
+ */
+export async function getVoiceMessage(messageId) {
+  const { data, error } = await supabase
+    .from('voice_messages')
+    .select('*')
+    .eq('message_id', messageId)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Error fetching voice message:', error);
+    return null;
+  }
+
+  return data;
+}
+
+/**
+ * Delete a voice message (remove both message and audio file)
+ */
+export async function deleteVoiceMessage(messageId) {
+  try {
+    // Get voice message details first
+    const voiceMsg = await getVoiceMessage(messageId);
+    
+    if (voiceMsg) {
+      // Extract file path from URL
+      const urlParts = voiceMsg.audio_url.split('/');
+      const fileName = urlParts.slice(-3).join('/'); // Get: voice/conversationId/filename
+      
+      // Delete from storage
+      await supabase.storage
+        .from('voice-messages')
+        .remove([fileName]);
+    }
+
+    // Delete message record (cascade will delete voice_messages record)
+    const { error } = await supabase
+      .from('messages')
+      .delete()
+      .eq('id', messageId);
+
+    if (error) {
+      console.error('Error deleting voice message:', error);
+      throw error;
+    }
+
+    return true;
+  } catch (err) {
+    console.error('Error in deleteVoiceMessage:', err);
+    throw err;
+  }
+}
+
+/**
+ * Delete a message for the current user only (hide it from their view)
+ * @param {string} messageId - The message ID to delete
+ * @param {string} userId - The user hiding the message
+ */
+export async function deleteMessageForMe(messageId, userId) {
+  try {
+    // Get current message to update deleted_for array
+    const { data: message, error: fetchError } = await supabase
+      .from('messages')
+      .select('deleted_for')
+      .eq('id', messageId)
+      .single();
+
+    if (fetchError) {
+      console.error('Error fetching message:', fetchError);
+      throw fetchError;
+    }
+
+    // Add user to deleted_for array
+    const deletedFor = message?.deleted_for || [];
+    if (!deletedFor.includes(userId)) {
+      deletedFor.push(userId);
+    }
+
+    const { error } = await supabase
+      .from('messages')
+      .update({ deleted_for: deletedFor })
+      .eq('id', messageId);
+
+    if (error) {
+      console.error('Error deleting message for me:', error);
+      throw error;
+    }
+
+    return true;
+  } catch (err) {
+    console.error('Error in deleteMessageForMe:', err);
+    throw err;
+  }
+}
+
+/**
+ * Delete a message for everyone (sender only)
+ * @param {string} messageId - The message ID to delete
+ * @param {string} senderId - The sender's user ID (must match message sender)
+ */
+export async function deleteMessageForEveryone(messageId, senderId) {
+  try {
+    // Verify the user is the sender
+    const { data: message, error: fetchError } = await supabase
+      .from('messages')
+      .select('sender_id, content, voice_url')
+      .eq('id', messageId)
+      .single();
+
+    if (fetchError) {
+      console.error('Error fetching message:', fetchError);
+      throw fetchError;
+    }
+
+    if (message?.sender_id !== senderId) {
+      throw new Error('You can only delete your own messages for everyone');
+    }
+
+    // If it's a voice message, delete the audio file
+    if (message?.voice_url) {
+      try {
+        const urlParts = message.voice_url.split('/');
+        const fileName = urlParts.slice(-3).join('/');
+        await supabase.storage
+          .from('voice-messages')
+          .remove([fileName]);
+      } catch (e) {
+        console.warn('Failed to delete voice file:', e);
+      }
+    }
+
+    // If it's an image message, try to delete from storage
+    if (message?.content?.startsWith('[Image]')) {
+      try {
+        const imageUrl = message.content.replace('[Image] ', '');
+        const urlParts = imageUrl.split('/');
+        const fileName = urlParts.slice(-3).join('/');
+        await supabase.storage
+          .from('chat-images')
+          .remove([fileName]);
+      } catch (e) {
+        console.warn('Failed to delete image file:', e);
+      }
+    }
+
+    // Update message to show it was deleted
+    const { error } = await supabase
+      .from('messages')
+      .update({ 
+        content: '🚫 This message was deleted',
+        deleted_at: new Date().toISOString(),
+        voice_url: null,
+        voice_duration: null,
+        message_type: 'deleted'
+      })
+      .eq('id', messageId);
+
+    if (error) {
+      console.error('Error deleting message for everyone:', error);
+      throw error;
+    }
+
+    return true;
+  } catch (err) {
+    console.error('Error in deleteMessageForEveryone:', err);
+    throw err;
+  }
+}
+
 

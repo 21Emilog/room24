@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useRef, Suspense } from 'react';
 import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone, Sparkles, TrendingUp, ShieldCheck, ChevronDown, ArrowLeft, RefreshCw, AlertCircle, Trash2, GitCompare, MessageSquare, Copy, MessageCircle } from 'lucide-react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -63,29 +63,6 @@ const LazyModalBoundary = ({ children, label }) => (
   </Suspense>
 );
 
-// Page transition wrapper for smooth view changes
-const PageTransition = ({ children, viewKey }) => {
-  const [isVisible, setIsVisible] = useState(false);
-  
-  useEffect(() => {
-    setIsVisible(false);
-    const timer = setTimeout(() => setIsVisible(true), 50);
-    return () => clearTimeout(timer);
-  }, [viewKey]);
-
-  return (
-    <div 
-      className={`transition-all duration-300 ease-out ${
-        isVisible 
-          ? 'opacity-100 translate-y-0' 
-          : 'opacity-0 translate-y-2'
-      }`}
-    >
-      {children}
-    </div>
-  );
-};
-
 export default function RentalPlatform() {
   const [currentView, setCurrentView] = useState('browse');
   const [userType, setUserType] = useState(null);
@@ -118,7 +95,7 @@ export default function RentalPlatform() {
   const [editingListing, setEditingListing] = useState(null); // Listing being edited
   const [compareList, setCompareList] = useState(() => getCompareList()); // Room comparison list
   const [showCompareView, setShowCompareView] = useState(false);
-  const [pendingChatListing, setPendingChatListing] = useState(null); // For opening chat from listing detail
+  // pendingChatListing removed - handled via direct navigation
   const [unreadMessageCount, setUnreadMessageCount] = useState(0); // Chat unread count
 
 
@@ -449,6 +426,7 @@ export default function RentalPlatform() {
       if (authSubscription) authSubscription.unsubscribe();
       if (unsubscribeListings) unsubscribeListings();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Guard: require authentication before entering the Add Listing view
@@ -907,8 +885,8 @@ const handleMessageLandlord = async (listing, landlord) => {
     // Create or get existing conversation
     await getOrCreateConversation(listing.id, currentUser.id, landlord.id);
     
-    // Store the listing info for the messages view
-    setPendingChatListing({ listing, landlord });
+    // Store the listing info for the messages view (state removed - handled via direct navigation)
+    // setPendingChatListing({ listing, landlord });
     
     // Navigate to messages
     setSelectedListing(null); // Close listing modal
@@ -1166,7 +1144,6 @@ const filteredListings = listings
           openAuthModal={openAuthModal}
           handleSignOut={handleSignOut}
           setCurrentView={setCurrentView}
-          currentView={currentView}
           unreadCount={unreadCount}
           onOpenNotifications={() => setShowNotificationsPanel(true)}
           unreadMessageCount={unreadMessageCount}
@@ -1310,7 +1287,6 @@ const filteredListings = listings
       )}
 
       <div id="main-content" className="max-w-7xl mx-auto pb-24 px-4 sm:px-6 lg:px-8" role="main">
-        <PageTransition viewKey={currentView}>
         {currentView === 'setup-profile' && (
           <ProfileSetupView onSubmit={handleProfileSetup} userType={userType} />
         )}
@@ -1390,6 +1366,7 @@ const filteredListings = listings
               userType={userType}
               onBack={() => setCurrentView('browse')}
               initialConversation={null}
+              onViewListing={setSelectedListing}
             />
           </LazyModalBoundary>
         )}
@@ -1477,7 +1454,7 @@ const filteredListings = listings
           />
         )}
 
-        </PageTransition>
+
       </div>
 
       {selectedListing && (
@@ -1583,11 +1560,15 @@ const filteredListings = listings
         </LazyModalBoundary>
       )}
 
-      <Footer 
-        onOpenPrivacy={() => setShowPrivacyPolicy(true)} 
-        onOpenAbout={() => setShowAbout(true)}
-        onInstallApp={handleInstallClick}
-      />
+      {/* Footer - Only show on Browse/Explore page */}
+      {currentView === 'browse' && (
+        <Footer 
+          onOpenPrivacy={() => setShowPrivacyPolicy(true)} 
+          onOpenAbout={() => setShowAbout(true)}
+          onInstallApp={handleInstallClick}
+          onNavigate={setCurrentView}
+        />
+      )}
     </div>
     </div>
   );
@@ -2733,8 +2714,9 @@ const createDefaultListingForm = () => ({
 });
 
 function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
-  const GEOCODER_KEY = process.env.REACT_APP_GEOCODER_API_KEY;
-  const GEOCODER_PROVIDER = (process.env.REACT_APP_GEOCODER_PROVIDER || '').toLowerCase();
+  // Geocoding config - currently unused (geocodeAddress removed)
+  // const GEOCODER_KEY = process.env.REACT_APP_GEOCODER_API_KEY;
+  // const GEOCODER_PROVIDER = (process.env.REACT_APP_GEOCODER_PROVIDER || '').toLowerCase();
 
   const landlordId = currentUser?.id;
   const [formData, setFormData] = useState(() => {
@@ -2754,11 +2736,11 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
     }
     return base;
   });
-  const [geocodingStatus, setGecodingStatus] = useState('');
+  // geocodingStatus removed - using inline validation
   const [errors, setErrors] = useState({});
   const [showPhotoEditor, setShowPhotoEditor] = useState(false);
   const reverseGeocodeCacheRef = React.useRef({});
-  const [lastGeocodeSource, setLastGeocodeSource] = useState(null); // 'cached' | 'mapbox' | 'proxy' | 'direct' | 'coords-only' | 'manual-geocode'
+  // lastGeocodeSource removed - geocode lookup feature removed
   const [fullAddressInput, setFullAddressInput] = useState('');
   const [isFullAddressEditing, setIsFullAddressEditing] = useState(false);
 
@@ -2806,7 +2788,8 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
   }, [formData.title, formData.description, formData.photos]);
 
   // Helper: fetch with graceful fallbacks when third-party APIs lack CORS headers
-  const corsFallbackTransforms = useMemo(() => [
+  // (Currently unused - geocoding functions commented out)
+  /* const corsFallbackTransforms = useMemo(() => [
     (url) => url.startsWith('https://cors.isomorphic-git.org/') ? url : `https://cors.isomorphic-git.org/${url}`,
     (url) => url.startsWith('https://corsproxy.io/?') ? url : `https://corsproxy.io/?${encodeURIComponent(url)}`
   ], []);
@@ -2841,9 +2824,10 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
       throw lastError;
     }
   }, [corsFallbackTransforms]);
+  */
 
-  // Forward geocode helper for manual address lookups
-  const forwardGeocodeAddress = async (query) => {
+  // Forward geocode helper for manual address lookups (currently unused)
+  /* const forwardGeocodeAddress = async (query) => {
     if (!query || query.trim().length < 3) return [];
 
     // 1. Mapbox (if configured)
@@ -2928,6 +2912,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
 
     return [];
   };
+  */
 
   const availableAmenities = [
     'WiFi', 'Parking', 'Kitchen', 'Laundry', 'Air Conditioning', 
@@ -2997,14 +2982,12 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
     } catch (e) { /* ignore */ }
   }, []);
 
-  // Geocode address using Nominatim (OpenStreetMap)
-  const geocodeAddress = async () => {
-    if (!formData.streetAddress) {
-      setGecodingStatus('Please enter a street address');
-      return;
-    }
-    
-    setGecodingStatus('Finding coordinates...');
+  // Geocode address function - removed as geocode lookup feature was removed
+  // const geocodeAddress = async () => {
+  //   if (!formData.streetAddress) {
+  //     return;
+  //   }
+  /*
     try {
       const fullAddress = `${formData.streetAddress}, ${formData.location}, South Africa`;
       const results = await forwardGeocodeAddress(fullAddress);
@@ -3039,10 +3022,11 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
       }
     } catch (error) {
       console.error('Geocoding error:', error);
-      setGecodingStatus('Error finding address. Check your connection.');
-      setLastGeocodeSource(null);
+      // setGecodingStatus('Error finding address. Check your connection.');
+      // setLastGeocodeSource(null);
     }
   };
+  */
 
   const toggleAmenity = (amenity) => {
     if (formData.amenities.includes(amenity)) {
@@ -3093,12 +3077,13 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
     }
   };
 
-  const googleMapsQuery = [formData.streetAddress, formData.location, 'South Africa']
-    .filter(Boolean)
-    .join(', ');
-  const googleMapsUrl = googleMapsQuery
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(googleMapsQuery)}`
-    : '';
+  // googleMapsQuery and googleMapsUrl removed - not currently used in UI
+  // const googleMapsQuery = [formData.streetAddress, formData.location, 'South Africa']
+  //   .filter(Boolean)
+  //   .join(', ');
+  // const googleMapsUrl = googleMapsQuery
+  //   ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(googleMapsQuery)}`
+  //   : '';
   const combinedFormAddress = [formData.streetAddress, formData.location]
     .map(part => (part || '').trim())
     .filter(Boolean)
@@ -3358,81 +3343,16 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
               )}
             </div>
 
-            {/* Geocode Section - Manual confirmation only */}
-            <div className="bg-gradient-to-br from-red-50 to-red-50 border-2 border-red-200 rounded-xl p-6">
-              <div className="flex items-start gap-3 mb-4">
-                <MapPin className="w-6 h-6 text-[#E63946] flex-shrink-0 mt-1" />
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-1">Confirm Your Address</h3>
-                  <p className="text-sm text-gray-600">
-                    Type the exact street + suburb above, then tap <strong>Look Up Address</strong> if you0d like us to fetch coordinates for your Google Maps preview.
-                  </p>
+            {/* Address Confirmation Section */}
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
                 </div>
-              </div>
-
-              <div className="flex flex-wrap gap-3 items-start">
-                <button
-                  type="button"
-                  onClick={geocodeAddress}
-                  className="w-full md:w-auto bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-300 px-6 py-3 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2"
-                >
-                  <MapPin className="w-4 h-4" />
-                  Look Up Address
-                </button>
-
-                <div className="text-sm flex-1 min-w-[220px]">
-                  {geocodingStatus && (
-                    <span className={`${geocodingStatus.startsWith('✓') ? 'text-green-600 font-semibold' : geocodingStatus.startsWith('⚠️') ? 'text-amber-600' : 'text-gray-700'} flex items-center gap-1`}>
-                      {geocodingStatus.startsWith('✓') && <CheckCircle className="w-4 h-4" />}
-                      {geocodingStatus}
-                      {lastGeocodeSource === 'cached' && (
-                        <span className="ml-2 inline-block px-2 py-1 text-[10px] rounded bg-red-100 text-[#E63946] font-semibold">CACHED</span>
-                      )}
-                      {lastGeocodeSource === 'mapbox' && (
-                        <span className="ml-2 inline-block px-2 py-1 text-[10px] rounded bg-blue-100 text-blue-600 font-semibold">MAPBOX</span>
-                      )}
-                      {lastGeocodeSource === 'maps.co' && (
-                        <span className="ml-2 inline-block px-2 py-1 text-[10px] rounded bg-indigo-100 text-indigo-600 font-semibold">MAPS.CO</span>
-                      )}
-                      {lastGeocodeSource === 'proxy' && (
-                        <span className="ml-2 inline-block px-2 py-1 text-[10px] rounded bg-green-100 text-green-600 font-semibold">PROXY</span>
-                      )}
-                      {lastGeocodeSource === 'direct' && (
-                        <span className="ml-2 inline-block px-2 py-1 text-[10px] rounded bg-yellow-100 text-yellow-700 font-semibold">FALLBACK</span>
-                      )}
-                    </span>
-                  )}
-                  {formData.latitude && formData.longitude && !geocodingStatus && (
-                    <span className="text-green-600 font-semibold flex items-center gap-1">
-                      <CheckCircle className="w-4 h-4" />
-                      Coordinates saved: {formData.latitude.toFixed(4)}, {formData.longitude.toFixed(4)}
-                      {lastGeocodeSource === 'cached' && (
-                        <span className="ml-2 inline-block px-2 py-1 text-[10px] rounded bg-red-100 text-[#E63946] font-semibold">CACHED</span>
-                      )}
-                      {lastGeocodeSource === 'maps.co' && (
-                        <span className="ml-2 inline-block px-2 py-1 text-[10px] rounded bg-indigo-100 text-indigo-600 font-semibold">MAPS.CO</span>
-                      )}
-                    </span>
-                  )}
-                  {googleMapsUrl && (
-                    <div className="mt-3 bg-white border border-gray-200 rounded-lg p-3 text-xs text-gray-600">
-                      <span className="block text-gray-800 font-semibold mb-1">Preview this address</span>
-                      <a
-                        href={googleMapsUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-[#c5303c] font-semibold hover:text-[#8a1f28] underline"
-                      >
-                        <MapPin className="w-3 h-3" /> Open in Google Maps
-                      </a>
-                      <span className="block mt-2 text-[11px] text-gray-500">Renters will see the same button under your listing.</span>
-                    </div>
-                  )}
+                <div>
+                  <p className="font-semibold text-green-800">Address saved</p>
+                  <p className="text-sm text-green-700">Your address will be shown to potential renters.</p>
                 </div>
-              </div>
-              <div className="mt-4 text-sm text-gray-600 bg-white border border-dashed border-gray-300 rounded-lg p-4">
-                <p className="font-semibold text-gray-800 mb-1">Manual address confirmed</p>
-                <p>We now rely on the address you type here. Use Google Maps above if you want to double-check directions.</p>
               </div>
             </div>
 
@@ -4903,7 +4823,8 @@ function CompareView({ listings, compareList, onRemove, onClear, onSelectListing
   );
 }
 
-// Landlord Quick Replies Component
+// Landlord Quick Replies Component (prepared for future use)
+// eslint-disable-next-line no-unused-vars
 function QuickRepliesSection({ landlordId, showToast }) {
   const [replies, setReplies] = useState([]);
   const [editingId, setEditingId] = useState(null);
@@ -5072,6 +4993,12 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
       if (!form.name || form.name.trim().length < 2) {
         newErrors.name = 'Name must be at least 2 characters';
       }
+      // Phone is required for signup
+      if (!form.phone || form.phone.trim().length < 10) {
+        newErrors.phone = 'Please enter a valid phone number (at least 10 digits)';
+      } else if (!/^[+]?[0-9\s\-()]{10,}$/.test(form.phone.trim())) {
+        newErrors.phone = 'Please enter a valid phone number';
+      }
     }
     
     if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
@@ -5108,7 +5035,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
     try {
       if (mode === 'signup') {
         // Everyone signs up as renter by default, they can change to landlord in profile settings
-        await authFunctions.signUp(form.email, form.password, form.name, 'renter', '', captchaToken);
+        await authFunctions.signUp(form.email, form.password, form.name, 'renter', form.phone.trim(), captchaToken);
         onSuccess?.();
         onClose();
       } else if (mode === 'signin') {
@@ -5281,7 +5208,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
               {/* Name (signup only) */}
               {mode === 'signup' && (
                 <div className="group">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2.5">Full name *</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2.5">Full name <span className="text-red-500">*</span></label>
                   <input 
                     type="text" 
                     value={form.name} 
@@ -5292,6 +5219,29 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
                     placeholder="John Doe"
                   />
                   {errors.name && <p className="text-rose-500 text-xs mt-2 flex items-center gap-1.5 font-medium"><span>⚠</span>{errors.name}</p>}
+                </div>
+              )}
+
+              {/* Phone Number (signup only - REQUIRED) */}
+              {mode === 'signup' && (
+                <div className="group">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2.5">
+                    Phone Number <span className="text-red-500">*</span>
+                    <span className="text-xs text-gray-400 font-normal ml-2">(Required for contact matching)</span>
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">📱</span>
+                    <input 
+                      type="tel" 
+                      value={form.phone} 
+                      onChange={(e) => { setForm({ ...form, phone: e.target.value }); setErrors({ ...errors, phone: '' }); }}
+                      className={`w-full pl-12 pr-4 py-3.5 border-2 rounded-2xl transition-all duration-200 focus:ring-4 focus:ring-red-100 focus:border-[#E63946] bg-gray-50/50 focus:bg-white ${
+                        errors.phone ? 'border-rose-400 bg-rose-50 ring-4 ring-rose-100' : 'border-gray-200 hover:border-gray-300 group-hover:border-gray-300'
+                      }`}
+                      placeholder="081 234 5678"
+                    />
+                  </div>
+                  {errors.phone && <p className="text-rose-500 text-xs mt-2 flex items-center gap-1.5 font-medium"><span>⚠</span>{errors.phone}</p>}
                 </div>
               )}
 
