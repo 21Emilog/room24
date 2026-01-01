@@ -293,7 +293,7 @@ export default function MessagesView({
             </div>
           </div>
         ) : (
-          <div className="bg-white dark:bg-gray-800 mt-2 mx-2 rounded-2xl shadow-sm overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 overflow-hidden">
             <ConversationList
               conversations={filteredConversations}
               currentUserId={currentUser.id}

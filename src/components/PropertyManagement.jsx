@@ -719,36 +719,24 @@ function PropertyDetailView({
         </div>
       )}
 
-      <div className="p-4 space-y-4">
+      <div className="p-3 space-y-3">
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex gap-2">
           <button
             onClick={onOpenChat}
-            className="group relative bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-200 dark:border-gray-700 hover:border-blue-400 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 flex items-center gap-3 overflow-hidden"
+            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white rounded-xl py-3 px-4 font-semibold text-sm flex items-center justify-center gap-2 transition-colors"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="relative w-11 h-11 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform">
-              <MessageCircle className="w-5 h-5 text-white" />
-            </div>
-            <div className="relative text-left">
-              <p className="font-semibold text-gray-800 dark:text-gray-200 text-sm">Group Chat</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Message everyone</p>
-            </div>
+            <MessageCircle className="w-4 h-4" />
+            Group Chat
           </button>
 
           {isOwner && (
             <button
               onClick={() => setShowAddTenant(true)}
-              className="group relative bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-200 dark:border-gray-700 hover:border-green-400 hover:shadow-lg hover:shadow-green-500/10 transition-all duration-300 flex items-center gap-3 overflow-hidden"
+              className="flex-1 bg-green-500 hover:bg-green-600 text-white rounded-xl py-3 px-4 font-semibold text-sm flex items-center justify-center gap-2 transition-colors"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="relative w-11 h-11 rounded-xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg shadow-green-500/30 group-hover:scale-110 transition-transform">
-                <UserPlus className="w-5 h-5 text-white" />
-              </div>
-              <div className="relative text-left">
-                <p className="font-semibold text-gray-800 dark:text-gray-200 text-sm">Add Tenant</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Search users</p>
-              </div>
+              <UserPlus className="w-4 h-4" />
+              Add Tenant
             </button>
           )}
         </div>
@@ -778,30 +766,30 @@ function PropertyDetailView({
           </div>
         )}
 
-        {/* Tenants List */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+        {/* Tenants List - Collapsible */}
+        <details className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <summary className="flex items-center justify-between p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50">
+            <span className="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 text-sm">
               <Users className="w-4 h-4" />
               Tenants ({property.tenants?.length || 0})
-            </h3>
+            </span>
             {isOwner && (
               <button
-                onClick={() => setShowInviteModal(true)}
-                className="text-sm text-[#c5303c] font-semibold flex items-center gap-1"
+                onClick={(e) => { e.preventDefault(); setShowInviteModal(true); }}
+                className="text-xs text-[#c5303c] font-semibold flex items-center gap-1"
               >
-                <Share2 className="w-4 h-4" />
+                <Share2 className="w-3 h-3" />
                 Invite
               </button>
             )}
-          </div>
-
+          </summary>
+          <div className="border-t border-gray-100 dark:border-gray-700">
           {property.tenants?.length === 0 ? (
-            <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-              No tenants yet. Add tenants or share an invite code.
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-3">
+              No tenants yet.
             </p>
           ) : (
-            <div className="space-y-3">
+            <div className="divide-y divide-gray-100 dark:divide-gray-700">
               {property.tenants?.map((tenant) => (
                 <TenantCard
                   key={tenant.id}
@@ -813,7 +801,8 @@ function PropertyDetailView({
               ))}
             </div>
           )}
-        </div>
+          </div>
+        </details>
 
         {/* Pending Invitations */}
         {isOwner && property.invitations?.length > 0 && (
