@@ -1828,191 +1828,148 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-gray-100 pb-24">
-      {/* Profile Header with Wave */}
-      <div className="relative bg-gradient-to-br from-[#1D3557] via-[#1D3557] to-[#2d4a6f] pt-8 pb-24 px-4 overflow-hidden">
-        {/* Decorative elements */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+      {/* Compact Profile Header */}
+      <div className="relative bg-gradient-to-br from-[#1D3557] via-[#1D3557] to-[#2d4a6f] pt-6 pb-16 px-4 overflow-hidden">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
         
-        <div className="max-w-xl mx-auto flex justify-between items-start relative z-10">
-          <div>
-            <p className="text-[#F1FAEE]/80 text-sm font-medium mb-1">Welcome back</p>
-            <h2 className="text-2xl font-bold text-white">My Profile</h2>
+        <div className="max-w-xl mx-auto flex items-center gap-4 relative z-10">
+          {/* Avatar */}
+          <div className="relative flex-shrink-0">
+            {user.photo ? (
+              <img 
+                src={user.photo} 
+                alt="Profile" 
+                className="w-20 h-20 rounded-2xl object-cover border-3 border-white/30 shadow-lg" 
+              />
+            ) : (
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#E63946] to-[#c5303c] flex items-center justify-center border-3 border-white/30 shadow-lg">
+                <span className="text-3xl font-bold text-white">
+                  {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                </span>
+              </div>
+            )}
+            {user.type === 'landlord' && (
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-br from-emerald-400 to-green-500 rounded-full flex items-center justify-center border-2 border-white shadow-md">
+                <CheckCircle className="w-3 h-3 text-white" />
+              </div>
+            )}
           </div>
-          <button
-            onClick={onEdit}
-            className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2 border border-white/30 hover:scale-105 active:scale-95 shadow-lg"
-          >
-            <Edit className="w-4 h-4" />
-            Edit
-          </button>
-        </div>
-        
-        {/* Wave SVG */}
-        <svg className="absolute bottom-0 left-0 right-0 text-slate-50" viewBox="0 0 1440 120" preserveAspectRatio="none">
-          <path fill="currentColor" d="M0,64L60,69.3C120,75,240,85,360,80C480,75,600,53,720,48C840,43,960,53,1080,58.7C1200,64,1320,64,1380,64L1440,64L1440,120L1380,120C1320,120,1200,120,1080,120C960,120,840,120,720,120C600,120,480,120,360,120C240,120,120,120,60,120L0,120Z"></path>
-        </svg>
-      </div>
-
-      {/* Profile Card - Overlapping Header */}
-      <div className="px-4 -mt-20">
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 max-w-xl mx-auto">
-          {/* Avatar & Name */}
-          <div className="flex flex-col items-center -mt-16 mb-6">
-            <div className="relative group">
-              {user.photo ? (
-                <img 
-                  src={user.photo} 
-                  alt="Profile" 
-                  className="w-28 h-28 rounded-2xl object-cover border-4 border-white shadow-lg mb-4 group-hover:scale-105 transition-transform duration-300" 
-                />
-              ) : (
-                <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-[#E63946] to-[#c5303c] flex items-center justify-center border-4 border-white shadow-lg mb-4 group-hover:scale-105 transition-transform duration-300">
-                  <span className="text-4xl font-bold text-white">
-                    {user.name?.charAt(0)?.toUpperCase() || 'U'}
-                  </span>
-                </div>
-              )}
-              {/* Verified badge for landlords */}
-              {user.type === 'landlord' && (
-                <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-gradient-to-br from-emerald-400 to-green-500 rounded-full flex items-center justify-center border-2 border-white shadow-md">
-                  <CheckCircle className="w-4 h-4 text-white" />
-                </div>
-              )}
-            </div>
-            <h3 className="text-2xl font-bold text-gray-900">{user.name}</h3>
-            <span className={`inline-flex items-center mt-2 px-4 py-1.5 rounded-full text-sm font-semibold border transition-all hover:scale-105 ${
+          
+          {/* Name & Badge */}
+          <div className="flex-1 min-w-0">
+            <h2 className="text-xl font-bold text-white truncate">{user.name}</h2>
+            <span className={`inline-flex items-center mt-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
               user.type === 'landlord' 
-                ? 'bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 border-amber-200'
-                : 'bg-gradient-to-r from-red-50 to-red-50 text-[#c5303c] border-red-100'
+                ? 'bg-amber-500/20 text-amber-200'
+                : 'bg-white/20 text-white/90'
             }`}>
               {user.type === 'landlord' ? (
-                <>
-                  <Home className="w-4 h-4 mr-1.5" />
-                  Landlord
-                </>
+                <><Home className="w-3 h-3 mr-1" />Landlord</>
               ) : (
-                <>
-                  <User className="w-4 h-4 mr-1.5" />
-                  Renter
-                </>
+                <><User className="w-3 h-3 mr-1" />Renter</>
               )}
             </span>
           </div>
+          
+          {/* Edit Button */}
+          <button
+            onClick={onEdit}
+            className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white p-2.5 rounded-xl transition-all border border-white/30"
+          >
+            <Edit className="w-5 h-5" />
+          </button>
+        </div>
+        
+        {/* Wave */}
+        <svg className="absolute bottom-0 left-0 right-0 text-slate-50" viewBox="0 0 1440 80" preserveAspectRatio="none">
+          <path fill="currentColor" d="M0,40L80,44C160,48,320,56,480,52C640,48,800,32,960,28C1120,24,1280,32,1360,36L1440,40L1440,80L0,80Z"></path>
+        </svg>
+      </div>
 
-          {/* Profile Completion Bar */}
+      {/* Main Content */}
+      <div className="px-4 -mt-8">
+        <div className="max-w-xl mx-auto space-y-3">
+          
+          {/* Profile Completion - Only if incomplete */}
           {completionPercent < 100 && (
-            <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-gray-700">Profile Completion</span>
-                <span className="text-sm font-bold text-blue-600">{completionPercent}%</span>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-semibold text-gray-600">Profile Completion</span>
+                <span className="text-xs font-bold text-blue-600">{completionPercent}%</span>
               </div>
-              <div className="w-full h-2 bg-blue-100 rounded-full overflow-hidden">
+              <div className="w-full h-1.5 bg-blue-100 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500"
                   style={{ width: `${completionPercent}%` }}
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-2">Complete your profile to build trust with {user.type === 'landlord' ? 'renters' : 'landlords'}</p>
             </div>
           )}
 
+          {/* Become Landlord - Compact */}
           {user.type !== 'landlord' && onBecomeLandlord && (
-            <div className="mb-6 w-full">
-              <div className="bg-gradient-to-r from-amber-100 via-orange-50 to-rose-50 border border-amber-200 rounded-2xl p-4 flex flex-col md:flex-row md:items-center gap-4">
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-amber-800">List your first room</p>
-                  <p className="text-xs text-amber-700">Switch to a landlord profile to unlock My Rooms, premium sorting, and priority support.</p>
-                </div>
-                <button
-                  onClick={onBecomeLandlord}
-                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold shadow-lg transition"
-                >
-                  Become a Landlord
-                </button>
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-200 p-3 flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Home className="w-5 h-5 text-amber-600" />
               </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-amber-800">List your first room</p>
+                <p className="text-xs text-amber-600 truncate">Switch to landlord profile</p>
+              </div>
+              <button
+                onClick={onBecomeLandlord}
+                className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold shadow-sm transition flex-shrink-0"
+              >
+                Switch
+              </button>
             </div>
           )}
 
-          {/* Contact Info Cards */}
-          <div className="space-y-3 mb-6">
-            <div className="bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-800 dark:to-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 hover:border-red-200 dark:hover:border-red-800 hover:shadow-md transition-all duration-300 group cursor-default">
-              <div className="flex items-center">
-                <div className="w-11 h-11 bg-gradient-to-br from-red-100 to-red-100 dark:from-red-900/40 dark:to-red-900/40 rounded-xl flex items-center justify-center mr-4 shadow-sm group-hover:scale-110 transition-transform duration-300">
-                  <Phone className="w-5 h-5 text-[#E63946]" />
+          {/* Contact Info - Compact Grid */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <h4 className="text-sm font-bold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
+              <User className="w-4 h-4 text-gray-400" />
+              Contact Info
+            </h4>
+            <div className="grid grid-cols-2 gap-2">
+              {/* Phone */}
+              <div className="bg-gray-50 rounded-lg p-2.5 flex items-center gap-2">
+                <Phone className="w-4 h-4 text-[#E63946]" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] text-gray-500">Phone</p>
+                  <p className="text-xs font-semibold text-gray-800 truncate">{user.phone || 'Not set'}</p>
                 </div>
-                <div className="flex-1">
-                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Phone Number</p>
-                  <p className="font-semibold text-gray-800 dark:text-white">{user.phone || 'Not set'}</p>
-                </div>
-                {user.phone && (
-                  <a 
-                    href={`tel:${user.phone}`}
-                    className="p-2 text-[#E63946] hover:bg-red-50 rounded-lg transition-colors"
-                    aria-label="Call this number"
-                  >
-                    <Phone className="w-4 h-4" />
-                  </a>
-                )}
               </div>
-            </div>
-
-            <div className="bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-800 dark:to-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 hover:border-red-200 dark:hover:border-red-800 hover:shadow-md transition-all duration-300 group cursor-default">
-              <div className="flex items-center">
-                <div className="w-11 h-11 bg-gradient-to-br from-red-100 to-blue-100 dark:from-red-900/40 dark:to-blue-900/40 rounded-xl flex items-center justify-center mr-4 shadow-sm group-hover:scale-110 transition-transform duration-300">
-                  <Mail className="w-5 h-5 text-[#c5303c]" />
+              
+              {/* Email */}
+              <div className="bg-gray-50 rounded-lg p-2.5 flex items-center gap-2">
+                <Mail className="w-4 h-4 text-[#c5303c]" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] text-gray-500">Email</p>
+                  <p className="text-xs font-semibold text-gray-800 truncate">{user.email}</p>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Email Address</p>
-                  <p className="font-semibold text-gray-800 dark:text-white truncate">{user.email}</p>
-                </div>
-                <a 
-                  href={`mailto:${user.email}`}
-                  className="p-2 text-[#c5303c] hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
-                  aria-label="Send email"
-                >
-                  <Mail className="w-4 h-4" />
-                </a>
               </div>
-            </div>
-
-            {user.whatsapp && (
-              <div className="bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-800 dark:to-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 hover:border-green-200 dark:hover:border-green-800 hover:shadow-md transition-all duration-300 group cursor-default">
-                <div className="flex items-center">
-                  <div className="w-11 h-11 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/40 dark:to-emerald-900/40 rounded-xl flex items-center justify-center mr-4 shadow-sm group-hover:scale-110 transition-transform duration-300">
-                    <span className="text-lg">💬</span>
+              
+              {/* WhatsApp - only if set */}
+              {user.whatsapp && (
+                <div className="bg-gray-50 rounded-lg p-2.5 flex items-center gap-2">
+                  <span className="text-sm">💬</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] text-gray-500">WhatsApp</p>
+                    <p className="text-xs font-semibold text-gray-800 truncate">{user.whatsapp}</p>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">WhatsApp</p>
-                    <p className="font-semibold text-gray-800 dark:text-white">{user.whatsapp}</p>
-                  </div>
-                  <a 
-                    href={`https://wa.me/${user.whatsapp.replace(/[^0-9]/g, '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1"
-                  >
-                    Chat
-                  </a>
                 </div>
-              </div>
-            )}
-
-            <div className="bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-800 dark:to-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 hover:border-violet-200 dark:hover:border-violet-800 hover:shadow-md transition-all duration-300 group cursor-default">
-              <div className="flex items-center">
-                <div className="w-11 h-11 bg-gradient-to-br from-violet-100 to-purple-100 dark:from-violet-900/40 dark:to-purple-900/40 rounded-xl flex items-center justify-center mr-4 shadow-sm group-hover:scale-110 transition-transform duration-300">
-                  <Calendar className="w-5 h-5 text-violet-600 dark:text-violet-400" />
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Member Since</p>
-                  <p className="font-semibold text-gray-800 dark:text-white">
+              )}
+              
+              {/* Member Since */}
+              <div className="bg-gray-50 rounded-lg p-2.5 flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-violet-500" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] text-gray-500">Member Since</p>
+                  <p className="text-xs font-semibold text-gray-800 truncate">
                     {user.createdAt && !isNaN(new Date(user.createdAt).getTime())
-                      ? new Date(user.createdAt).toLocaleDateString('en-ZA', { 
-                          year: 'numeric', 
-                          month: 'long', 
-                          day: 'numeric' 
-                        })
-                      : 'Just joined!'
+                      ? new Date(user.createdAt).toLocaleDateString('en-ZA', { month: 'short', year: 'numeric' })
+                      : 'New!'
                     }
                   </p>
                 </div>
@@ -2020,188 +1977,151 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
             </div>
           </div>
 
-          {/* Notification Preferences */}
-          <div className="bg-gradient-to-br from-red-50 via-red-50 to-sky-50 dark:from-gray-800 dark:via-gray-800 dark:to-gray-800 rounded-xl p-5 border border-red-100 dark:border-gray-700">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-500 rounded-xl flex items-center justify-center shadow-sm">
-                <Bell className="w-5 h-5 text-white" />
+          {/* Notifications & Location Alerts - Side by Side */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Notifications */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Bell className="w-4 h-4 text-red-500" />
+                <h4 className="text-xs font-bold text-gray-800">Notifications</h4>
               </div>
-              <h4 className="font-bold text-gray-800 dark:text-white">Notification Preferences</h4>
+              <div className="space-y-1.5">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={localPrefs.updates}
+                    onChange={() => togglePref('updates')}
+                    className="w-4 h-4 rounded border-gray-300 text-[#E63946] focus:ring-red-500"
+                  />
+                  <span className="text-xs text-gray-700">Room Alerts</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={localPrefs.marketing}
+                    onChange={() => togglePref('marketing')}
+                    className="w-4 h-4 rounded border-gray-300 text-[#E63946] focus:ring-red-500"
+                  />
+                  <span className="text-xs text-gray-700">Tips & Updates</span>
+                </label>
+              </div>
             </div>
-            <div className="space-y-3">
-              <label className="flex items-center gap-3 p-3 bg-white dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-700 cursor-pointer hover:border-red-200 dark:hover:border-red-800 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={localPrefs.updates}
-                  onChange={() => togglePref('updates')}
-                  className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-[#E63946] focus:ring-red-500"
-                />
-                <div>
-                  <p className="text-sm font-medium text-gray-800 dark:text-white">Room Alerts</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Get notified about new rooms in your saved areas</p>
-                </div>
-              </label>
-              <label className="flex items-center gap-3 p-3 bg-white dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-700 cursor-pointer hover:border-red-200 dark:hover:border-red-800 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={localPrefs.marketing}
-                  onChange={() => togglePref('marketing')}
-                  className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-[#E63946] focus:ring-red-500"
-                />
-                <div>
-                  <p className="text-sm font-medium text-gray-800 dark:text-white">Tips & Updates</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Occasional features and helpful content</p>
-                </div>
-              </label>
-            </div>
-            <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-3 text-center">Changes save automatically • You can opt out anytime</p>
-          </div>
 
-          {/* Location Alerts Section */}
-          <div className="bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-gray-800 dark:via-gray-800 dark:to-gray-800 rounded-xl p-5 border border-emerald-100 dark:border-gray-700 mt-4">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center shadow-sm">
-                <MapPin className="w-5 h-5 text-white" />
+            {/* Location Alerts - Compact */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <MapPin className="w-4 h-4 text-emerald-500" />
+                <h4 className="text-xs font-bold text-gray-800">Locations</h4>
               </div>
-              <div>
-                <h4 className="font-bold text-gray-800 dark:text-white">Location Alerts</h4>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Get notified when rooms are listed in these areas</p>
-              </div>
-            </div>
-            
-            {areaSubscriptions.length > 0 ? (
-              <div className="space-y-2">
-                {areaSubscriptions.map((area, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 bg-white dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-700 hover:border-emerald-200 dark:hover:border-emerald-800 transition-colors group">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-emerald-500" />
-                      <span className="text-sm font-medium text-gray-800 dark:text-white">{area}</span>
+              {areaSubscriptions.length > 0 ? (
+                <div className="space-y-1">
+                  {areaSubscriptions.slice(0, 2).map((area, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-xs bg-emerald-50 rounded-md px-2 py-1">
+                      <span className="truncate text-gray-700">{area}</span>
+                      <button
+                        onClick={() => onUnsubscribeArea && onUnsubscribeArea(area)}
+                        className="text-gray-400 hover:text-red-500 ml-1"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
                     </div>
-                    <button
-                      onClick={() => onUnsubscribeArea && onUnsubscribeArea(area)}
-                      className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-all"
-                      aria-label={`Unsubscribe from ${area}`}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-6 bg-white/50 dark:bg-gray-900/50 rounded-lg border border-dashed border-emerald-200 dark:border-gray-600">
-                <MapPin className="w-8 h-8 text-emerald-300 dark:text-emerald-600 mx-auto mb-2" />
-                <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">No location alerts yet</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Search for an area and tap "Get Alerts" to subscribe</p>
-              </div>
-            )}
-            
-            <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-3 text-center">
-              💡 Tip: Search for a location on the Browse page and tap the bell icon
-            </p>
+                  ))}
+                  {areaSubscriptions.length > 2 && (
+                    <p className="text-[10px] text-gray-500">+{areaSubscriptions.length - 2} more</p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400">No alerts set</p>
+              )}
+            </div>
           </div>
 
-          {/* Account Linking Section */}
-          <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-violet-50 dark:from-gray-800 dark:via-gray-800 dark:to-gray-800 rounded-xl p-5 border border-blue-100 dark:border-gray-700 mt-4">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-sm">
-                <Link2 className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h4 className="font-bold text-gray-800 dark:text-white">Linked Accounts</h4>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Connect multiple sign-in methods</p>
-              </div>
+          {/* Linked Accounts - Horizontal */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Link2 className="w-4 h-4 text-blue-500" />
+              <h4 className="text-sm font-bold text-gray-800">Linked Accounts</h4>
             </div>
 
-            {/* Success/Error Messages */}
             {linkSuccess && (
-              <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
-                <CheckCircle className="w-4 h-4" />
+              <div className="mb-2 p-2 bg-green-50 border border-green-200 rounded-lg text-green-700 text-xs flex items-center gap-1">
+                <CheckCircle className="w-3 h-3" />
                 {linkSuccess}
               </div>
             )}
             {linkError && (
-              <div className="mb-3 p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-sm flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4" />
+              <div className="mb-2 p-2 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3" />
                 {linkError}
               </div>
             )}
 
-            <div className="space-y-2">
+            <div className="flex gap-2">
               {/* Google */}
-              <div className={`flex items-center justify-between p-3 bg-white rounded-lg border ${hasGoogle ? 'border-green-200' : 'border-gray-100'}`}>
-                <div className="flex items-center gap-3">
-                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <div className={`flex-1 flex items-center justify-between p-2 rounded-lg border ${hasGoogle ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                   </svg>
-                  <span className="font-medium text-gray-700">Google</span>
+                  <span className="text-xs font-medium text-gray-700">Google</span>
                 </div>
                 {hasGoogle ? (
-                  <span className="text-xs font-medium text-green-600 flex items-center gap-1">
-                    <CheckCircle className="w-4 h-4" /> Linked
-                  </span>
+                  <CheckCircle className="w-4 h-4 text-green-500" />
                 ) : (
                   <button
                     onClick={handleLinkGoogle}
                     disabled={linkingInProgress === 'google'}
-                    className="text-xs font-medium text-blue-600 hover:text-blue-700 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors disabled:opacity-50"
+                    className="text-[10px] font-medium text-blue-600 hover:underline disabled:opacity-50"
                   >
-                    {linkingInProgress === 'google' ? 'Linking...' : 'Link'}
+                    {linkingInProgress === 'google' ? '...' : 'Link'}
                   </button>
                 )}
               </div>
 
               {/* Phone */}
-              <div className={`flex items-center justify-between p-3 bg-white rounded-lg border ${hasPhone ? 'border-green-200' : 'border-gray-100'}`}>
-                <div className="flex items-center gap-3">
-                  <Phone className="w-5 h-5 text-green-600" />
-                  <span className="font-medium text-gray-700">Phone</span>
+              <div className={`flex-1 flex items-center justify-between p-2 rounded-lg border ${hasPhone ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+                <div className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-green-600" />
+                  <span className="text-xs font-medium text-gray-700">Phone</span>
                 </div>
                 {hasPhone ? (
-                  <span className="text-xs font-medium text-green-600 flex items-center gap-1">
-                    <CheckCircle className="w-4 h-4" /> Linked
-                  </span>
+                  <CheckCircle className="w-4 h-4 text-green-500" />
                 ) : (
                   <button
                     onClick={handleLinkPhone}
-                    className="text-xs font-medium text-blue-600 hover:text-blue-700 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                    className="text-[10px] font-medium text-blue-600 hover:underline"
                   >
                     Link
                   </button>
                 )}
               </div>
 
-              {/* Email/Password */}
-              <div className={`flex items-center justify-between p-3 bg-white rounded-lg border ${hasPassword ? 'border-green-200' : 'border-gray-100'}`}>
-                <div className="flex items-center gap-3">
-                  <Mail className="w-5 h-5 text-blue-600" />
-                  <span className="font-medium text-gray-700">Email & Password</span>
+              {/* Email */}
+              <div className={`flex-1 flex items-center justify-between p-2 rounded-lg border ${hasPassword ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+                <div className="flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-blue-600" />
+                  <span className="text-xs font-medium text-gray-700">Email</span>
                 </div>
                 {hasPassword ? (
-                  <span className="text-xs font-medium text-green-600 flex items-center gap-1">
-                    <CheckCircle className="w-4 h-4" /> Linked
-                  </span>
+                  <CheckCircle className="w-4 h-4 text-green-500" />
                 ) : (
-                  <span className="text-xs text-gray-400">Coming soon</span>
+                  <span className="text-[10px] text-gray-400">Soon</span>
                 )}
               </div>
             </div>
-
-            <p className="text-[11px] text-gray-500 mt-3 text-center">Link accounts to sign in with any method</p>
           </div>
-
-          {/* Quick Replies Section removed: now handled in-app via messaging */}
 
           {/* Sign Out Button */}
           {onSignOut && (
             <>
               <button
                 onClick={() => setShowSignOutConfirm(true)}
-                className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3.5 bg-gray-100 hover:bg-red-50 text-gray-700 hover:text-red-600 font-semibold rounded-xl transition-all duration-200 group"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 hover:bg-red-50 text-gray-600 hover:text-red-600 font-semibold rounded-xl transition-all"
               >
-                <LogOut className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
+                <LogOut className="w-4 h-4" />
                 Sign Out
               </button>
               
@@ -2209,21 +2129,21 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
               {showSignOutConfirm && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
                   <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl">
-                    <div className="w-16 h-16 bg-gradient-to-br from-red-100 to-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <LogOut className="w-8 h-8 text-red-500" />
+                    <div className="w-14 h-14 bg-gradient-to-br from-red-100 to-orange-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <LogOut className="w-7 h-7 text-red-500" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 text-center mb-2">Sign Out?</h3>
-                    <p className="text-gray-500 text-center text-sm mb-6">Are you sure you want to sign out of your RentMzansi account?</p>
+                    <h3 className="text-lg font-bold text-gray-900 text-center mb-2">Sign Out?</h3>
+                    <p className="text-gray-500 text-center text-sm mb-5">Are you sure you want to sign out?</p>
                     <div className="flex gap-3">
                       <button
                         onClick={() => setShowSignOutConfirm(false)}
-                        className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
+                        className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={handleSignOut}
-                        className="flex-1 px-4 py-3 bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white font-semibold rounded-xl transition-all shadow-md"
+                        className="flex-1 px-4 py-2.5 bg-gradient-to-r from-red-500 to-rose-500 text-white font-semibold rounded-xl transition-all shadow-md"
                       >
                         Sign Out
                       </button>
