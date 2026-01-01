@@ -1966,8 +1966,10 @@ function PropertyChatView({ property, currentUser, showToast, onBack }) {
     setSendingVoice(true);
 
     try {
-      const audioBlob = await voiceRecorderRef.current.stopRecording();
-      if (!audioBlob) throw new Error('No audio recorded');
+      const result = await voiceRecorderRef.current.stopRecording();
+      if (!result || !result.blob) throw new Error('No audio recorded');
+
+      const audioBlob = result.blob;
 
       // Upload to Supabase storage
       const fileName = `property_${property.id}_${currentUser.id}_${Date.now()}.webm`;
