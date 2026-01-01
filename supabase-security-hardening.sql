@@ -168,6 +168,7 @@ DROP POLICY IF EXISTS "rate_limits_deny_all" ON rate_limits;
 CREATE POLICY "rate_limits_deny_all" ON rate_limits FOR ALL USING (false);
 
 -- Function to check rate limits (simplified version that works with existing table)
+DROP FUNCTION IF EXISTS check_rate_limit_v2(uuid, int, int);
 CREATE OR REPLACE FUNCTION check_rate_limit_v2(
   p_user_id uuid,
   p_max_attempts int DEFAULT 10,
@@ -202,7 +203,9 @@ END;
 $$;
 
 -- Cleanup old rate limit entries (run as scheduled job)
-CREATE OR REPLACE FUNCTION cleanup_old_rate_limits()
+-- Drop first to handle return type change
+DROP FUNCTION IF EXISTS cleanup_old_rate_limits();
+CREATE FUNCTION cleanup_old_rate_limits()
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -249,7 +252,8 @@ USING (
 );
 
 -- Function to log actions
-CREATE OR REPLACE FUNCTION log_audit(
+DROP FUNCTION IF EXISTS log_audit(text, text, text, jsonb, jsonb);
+CREATE FUNCTION log_audit(
   p_action text,
   p_resource_type text DEFAULT NULL,
   p_resource_id text DEFAULT NULL,
@@ -300,7 +304,8 @@ USING (
 );
 
 -- Function to check for suspicious content
-CREATE OR REPLACE FUNCTION check_suspicious_content()
+DROP FUNCTION IF EXISTS check_suspicious_content() CASCADE;
+CREATE FUNCTION check_suspicious_content()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -401,7 +406,8 @@ USING (
 );
 
 -- Function to check blocklist
-CREATE OR REPLACE FUNCTION is_blocked(
+DROP FUNCTION IF EXISTS is_blocked(text, text);
+CREATE FUNCTION is_blocked(
   p_type text,
   p_value text
 ) RETURNS boolean
