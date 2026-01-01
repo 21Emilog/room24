@@ -1,9 +1,11 @@
 // Supabase client for RentMzansi
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://xohczphzosfgdlgwrlrw.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhvaGN6cGh6b3NmZ2RsZ3dybHJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2MTE1NDQsImV4cCI6MjA4MDE4NzU0NH0.AlW0ul9nwusOjEM36ERhN5XYsj0FzDHBBjufwd0rRYM';
+// Use environment variables for security (with fallback for development)
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://xohczphzosfgdlgwrlrw.supabase.co';
+const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhvaGN6cGh6b3NmZ2RsZ3dybHJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2MTE1NDQsImV4cCI6MjA4MDE4NzU0NH0.AlW0ul9nwusOjEM36ERhN5XYsj0FzDHBBjufwd0rRYM';
 
+// Create Supabase client
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // ===========================
