@@ -1827,9 +1827,9 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
   const completionPercent = Math.round((completionItems.filter(Boolean).length / completionItems.length) * 100);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-gray-100 pb-20">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-gray-100 pb-16">
       {/* Compact Profile Header */}
-      <div className="relative bg-gradient-to-br from-[#1D3557] via-[#1D3557] to-[#2d4a6f] pt-6 pb-14 px-4 overflow-hidden">
+      <div className="relative bg-gradient-to-br from-[#1D3557] via-[#1D3557] to-[#2d4a6f] pt-6 pb-12 px-4 overflow-hidden">
         <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
         
         <div className="max-w-xl mx-auto flex items-center gap-4 relative z-10">

@@ -91,8 +91,8 @@ export default function Footer({ onOpenPrivacy, onOpenAbout, onInstallApp, onNav
         </div>
       </div>
 
-      {/* Safe area padding for mobile - reduced to match nav bar */}
-      <div className="h-16 md:h-0 bg-gray-950" aria-hidden="true" />
+      {/* Safe area padding for mobile - minimal */}
+      <div className="h-14 md:h-0 bg-gray-950" aria-hidden="true" />
     </footer>
   );
 }

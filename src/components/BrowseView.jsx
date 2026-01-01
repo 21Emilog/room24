@@ -702,7 +702,7 @@ export default function BrowseView({
   }
   // Mobile / tablet layout
   return (
-    <div className="bg-gradient-to-b from-slate-50 via-white to-slate-100 dark:from-gray-900 dark:via-gray-850 dark:to-gray-900 min-h-screen pb-24" role="main" aria-labelledby="results-heading">
+    <div className="bg-gradient-to-b from-slate-50 via-white to-slate-100 dark:from-gray-900 dark:via-gray-850 dark:to-gray-900 min-h-screen pb-16" role="main" aria-labelledby="results-heading">
       {/* Custom animations */}
       <style>{`
         @keyframes float {
