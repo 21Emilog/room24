@@ -238,18 +238,17 @@ CREATE TABLE IF NOT EXISTS audit_log (
 CREATE INDEX IF NOT EXISTS idx_audit_log_user ON audit_log (user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_log_action ON audit_log (action, created_at DESC);
 
--- Enable RLS - only admins can read
+-- Enable RLS - only the user who created the log can see it
 ALTER TABLE audit_log ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "audit_log_admin_only" ON audit_log
-FOR ALL
-USING (
-  EXISTS (
-    SELECT 1 FROM profiles
-    WHERE id = auth.uid()
-    AND role = 'admin'
-  )
-);
+-- Drop existing policy if exists
+DROP POLICY IF EXISTS "audit_log_admin_only" ON audit_log;
+DROP POLICY IF EXISTS "audit_log_owner_read" ON audit_log;
+
+-- Users can only see their own audit logs
+CREATE POLICY "audit_log_owner_read" ON audit_log
+FOR SELECT
+USING (user_id = auth.uid());
 
 -- Function to log actions
 DROP FUNCTION IF EXISTS log_audit(text, text, text, jsonb, jsonb);
@@ -290,18 +289,17 @@ CREATE TABLE IF NOT EXISTS content_flags (
 CREATE INDEX IF NOT EXISTS idx_content_flags_pending 
 ON content_flags (reviewed, flagged_at DESC) WHERE NOT reviewed;
 
--- Enable RLS
+-- Enable RLS - content flags are internal, deny public access
 ALTER TABLE content_flags ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "content_flags_admin_only" ON content_flags
+-- Drop existing policy if exists
+DROP POLICY IF EXISTS "content_flags_admin_only" ON content_flags;
+DROP POLICY IF EXISTS "content_flags_deny_public" ON content_flags;
+
+-- Deny all public access (only accessible via service role/dashboard)
+CREATE POLICY "content_flags_deny_public" ON content_flags
 FOR ALL
-USING (
-  EXISTS (
-    SELECT 1 FROM profiles
-    WHERE id = auth.uid()
-    AND role = 'admin'
-  )
-);
+USING (false);
 
 -- Function to check for suspicious content
 DROP FUNCTION IF EXISTS check_suspicious_content() CASCADE;
@@ -392,18 +390,17 @@ CREATE TABLE IF NOT EXISTS blocklist (
 
 CREATE INDEX IF NOT EXISTS idx_blocklist_lookup ON blocklist (type, value);
 
--- Enable RLS
+-- Enable RLS - blocklist is internal, deny public access
 ALTER TABLE blocklist ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "blocklist_admin_only" ON blocklist
+-- Drop existing policy if exists
+DROP POLICY IF EXISTS "blocklist_admin_only" ON blocklist;
+DROP POLICY IF EXISTS "blocklist_deny_public" ON blocklist;
+
+-- Deny all public access (only accessible via service role/dashboard)
+CREATE POLICY "blocklist_deny_public" ON blocklist
 FOR ALL
-USING (
-  EXISTS (
-    SELECT 1 FROM profiles
-    WHERE id = auth.uid()
-    AND role = 'admin'
-  )
-);
+USING (false);
 
 -- Function to check blocklist
 DROP FUNCTION IF EXISTS is_blocked(text, text);
