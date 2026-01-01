@@ -1105,12 +1105,8 @@ export default function BrowseView({
           {renderFilterChips()}
         </div>
       </div>
-      {/* Mobile Banner Ad */}
-      <div className="max-w-7xl mx-auto px-4 pt-3">
-        <InFeedAd />
-      </div>
       
-      {/* Results Section */}
+      {/* Results Section */}}
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between items-center mt-6 mb-6 bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-md border border-gray-100 dark:border-gray-700">
           <h2 id="results-heading" className="text-2xl font-bold text-gray-800 dark:text-white">
@@ -1264,6 +1260,11 @@ export default function BrowseView({
                   </div>
                 </div>
               )}
+              
+              {/* Ad Banner - Bottom */}
+              <div className="mt-4">
+                <InFeedAd />
+              </div>
             </>
           )
         )}
