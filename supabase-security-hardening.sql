@@ -203,8 +203,8 @@ END;
 $$;
 
 -- Cleanup old rate limit entries (run as scheduled job)
--- Drop first to handle return type change
-DROP FUNCTION IF EXISTS cleanup_old_rate_limits();
+-- Drop first with CASCADE to handle dependent triggers
+DROP FUNCTION IF EXISTS cleanup_old_rate_limits() CASCADE;
 CREATE FUNCTION cleanup_old_rate_limits()
 RETURNS void
 LANGUAGE plpgsql
