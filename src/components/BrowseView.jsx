@@ -499,32 +499,9 @@ export default function BrowseView({
                   </button>
                 </div>
               </div>
-              
-              {/* Quick Filters */}
-              <div className="flex flex-wrap gap-2 mt-6 pt-6 border-t border-gray-100">
-                <span className="text-sm font-semibold text-gray-600 mr-3 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-500" />
-                  Popular:
-                </span>
-                {['Sandton', 'Soweto', 'Pretoria', 'Cape Town', 'Durban', 'Midrand'].map(area => (
-                  <button
-                    key={area}
-                    onClick={() => setSearchLocation(area)}
-                    className={`text-sm px-5 py-2 rounded-full transition-all duration-150 font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-[#E63946]/30 border border-gray-200 ${
-                      searchLocation.toLowerCase().includes(area.toLowerCase())
-                        ? 'bg-[#E63946] text-white scale-105 ring-2 ring-[#E63946]/40 shadow-lg'
-                        : 'bg-gray-100 text-gray-600 hover:bg-[#E63946]/10 hover:text-[#E63946] active:scale-95'
-                    }`}
-                    aria-label={`Search popular area: ${area}`}
-                    tabIndex={0}
-                  >
-                    {area}
-                  </button>
-                ))}
-              </div>
             </div>
 
-            {/* Two Column Layout: Listings + Sidebar */}
+            {/* Two Column Layout: Listings + Sidebar */}}
             <div className="flex gap-6 lg:gap-8">
               {/* Main Listings Area */}
               <div className="flex-1">
@@ -876,9 +853,9 @@ export default function BrowseView({
                 </div>
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-3">
               <button 
-                className="bg-gradient-to-r from-[#E63946] to-[#c5303c] hover:from-[#c5303c] hover:to-[#a52833] text-white px-6 py-3 rounded-xl transition-all duration-200 font-bold shadow-lg hover:shadow-xl text-sm flex items-center gap-2 active:scale-95" 
+                className="flex-1 bg-gradient-to-r from-[#E63946] to-[#c5303c] hover:from-[#c5303c] hover:to-[#a52833] text-white px-4 py-3 rounded-xl transition-all duration-200 font-bold shadow-lg hover:shadow-xl text-sm flex items-center justify-center gap-2 active:scale-95" 
                 onClick={() => { if (searchLocation) addRecentSearch(searchLocation); }} 
                 aria-label="Search submit"
               >
@@ -888,29 +865,11 @@ export default function BrowseView({
               <button
                 type="button"
                 onClick={saveCurrentSearch}
-                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all active:scale-95 flex items-center gap-2"
+                className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2"
               >
                 <Sparkles className="w-4 h-4" />
                 Save Search
               </button>
-            </div>
-            
-            {/* Popular Areas Quick Select */}
-            <div className="flex flex-wrap gap-2 items-center">
-              <span className="text-sm text-gray-600 dark:text-gray-400 font-semibold">Popular:</span>
-              {['Sandton', 'Soweto', 'Pretoria', 'Cape Town', 'Durban', 'Johannesburg'].map(area => (
-                <button
-                  key={area}
-                  onClick={() => { setSearchLocation(area); addRecentSearch(area); }}
-                  className={`text-sm px-4 py-2 rounded-xl font-medium transition-all duration-200 ${
-                    searchLocation.toLowerCase() === area.toLowerCase()
-                      ? 'bg-gradient-to-r from-[#E63946] to-[#c5303c] text-white shadow-md scale-105'
-                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-[#E63946] border-2 border-gray-200 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-800 shadow-sm'
-                  }`}
-                >
-                  {area}
-                </button>
-              ))}
             </div>
 
             {/* Quick Filter Chips */}
