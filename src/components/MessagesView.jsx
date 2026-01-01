@@ -123,7 +123,7 @@ export default function MessagesView({
   // If showing PropertyManagement (groups tab)
   if (activeTab === 'groups') {
     return (
-      <div className="min-h-[calc(100vh-140px)] pb-20 bg-gradient-to-b from-slate-50 to-gray-100 dark:from-gray-900 dark:to-gray-900">
+      <div className="min-h-[calc(100vh-140px)] pb-20 bg-gradient-to-b from-slate-50 to-gray-100 dark:from-gray-900 dark:to-gray-900 -mx-4 sm:-mx-6 lg:-mx-8">
         {/* Tab Header */}
         <div className="sticky top-0 z-20 bg-gradient-to-r from-[#1D3557] via-[#2d4a6f] to-[#1D3557] text-white shadow-xl overflow-hidden">
           {/* Animated shine effect */}
@@ -202,7 +202,7 @@ export default function MessagesView({
     }
 
     return (
-      <div className="min-h-[calc(100vh-140px)] pb-20 bg-gradient-to-b from-slate-50 to-gray-100 dark:from-gray-900 dark:to-gray-900 transition-all duration-300">
+      <div className="min-h-[calc(100vh-140px)] pb-20 bg-gradient-to-b from-slate-50 to-gray-100 dark:from-gray-900 dark:to-gray-900 transition-all duration-300 -mx-4 sm:-mx-6 lg:-mx-8">
         {/* Premium Header */}
         <div className="sticky top-0 z-20 bg-gradient-to-r from-[#1D3557] via-[#2d4a6f] to-[#1D3557] text-white shadow-xl overflow-hidden">
           {/* Animated shine effect */}
