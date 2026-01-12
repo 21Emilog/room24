@@ -331,6 +331,15 @@ export async function fetchAllListings() {
     landlordPhoto: listing.landlord_photo,
     createdAt: listing.created_at,
     listingType: listing.listing_type || 'room',
+    // Guesthouse/BnB specific fields
+    priceType: listing.price_type || 'monthly',
+    minStay: listing.min_stay || 1,
+    maxStay: listing.max_stay || 0,
+    checkInTime: listing.check_in_time || '14:00',
+    checkOutTime: listing.check_out_time || '10:00',
+    breakfastIncluded: listing.breakfast_included || false,
+    cleaningFee: listing.cleaning_fee || '',
+    houseRules: listing.house_rules || '',
   }));
 }
 
@@ -365,6 +374,15 @@ export async function createListing(listingData) {
       landlord_email: listingData.landlordEmail,
       landlord_photo: listingData.landlordPhoto,
       listing_type: listingData.listingType || 'room',
+      // Guesthouse/BnB specific fields
+      price_type: listingData.priceType || 'monthly',
+      min_stay: listingData.minStay || 1,
+      max_stay: listingData.maxStay || 0,
+      check_in_time: listingData.checkInTime || '14:00',
+      check_out_time: listingData.checkOutTime || '10:00',
+      breakfast_included: listingData.breakfastIncluded || false,
+      cleaning_fee: listingData.cleaningFee || null,
+      house_rules: listingData.houseRules || null,
     })
     .select()
     .single();
@@ -425,6 +443,15 @@ export async function updateListing(listingId, updates) {
   if (updates.availableDate !== undefined) dbUpdates.available_date = updates.availableDate;
   if (updates.amenities !== undefined) dbUpdates.amenities = updates.amenities;
   if (updates.listingType !== undefined) dbUpdates.listing_type = updates.listingType;
+  // Guesthouse/BnB specific fields
+  if (updates.priceType !== undefined) dbUpdates.price_type = updates.priceType;
+  if (updates.minStay !== undefined) dbUpdates.min_stay = updates.minStay;
+  if (updates.maxStay !== undefined) dbUpdates.max_stay = updates.maxStay;
+  if (updates.checkInTime !== undefined) dbUpdates.check_in_time = updates.checkInTime;
+  if (updates.checkOutTime !== undefined) dbUpdates.check_out_time = updates.checkOutTime;
+  if (updates.breakfastIncluded !== undefined) dbUpdates.breakfast_included = updates.breakfastIncluded;
+  if (updates.cleaningFee !== undefined) dbUpdates.cleaning_fee = updates.cleaningFee;
+  if (updates.houseRules !== undefined) dbUpdates.house_rules = updates.houseRules;
 
   const { data, error } = await supabase
     .from('listings')

@@ -784,6 +784,15 @@ const handleUpdateListing = async (listingId, listingData) => {
     availableDate: listingData.availableDate,
     amenities: listingData.amenities || [],
     listingType: listingData.listingType || 'room',
+    // Guesthouse/BnB fields
+    priceType: listingData.priceType || 'monthly',
+    minStay: listingData.minStay || 1,
+    maxStay: listingData.maxStay || 0,
+    checkInTime: listingData.checkInTime || '14:00',
+    checkOutTime: listingData.checkOutTime || '10:00',
+    breakfastIncluded: listingData.breakfastIncluded || false,
+    cleaningFee: listingData.cleaningFee || null,
+    houseRules: listingData.houseRules || null,
   };
 
   try {
@@ -2623,7 +2632,18 @@ const createDefaultListingForm = () => ({
   genderPreference: 'any',
   premium: false,
   contactPhone: '',
-  contactWhatsapp: ''
+  contactWhatsapp: '',
+  // Guesthouse/BnB specific fields
+  priceType: 'monthly', // 'monthly', 'nightly', 'weekly'
+  nightlyPrice: '',
+  weeklyPrice: '',
+  minStay: 1, // minimum nights
+  maxStay: 30, // maximum nights (0 = no limit)
+  checkInTime: '14:00',
+  checkOutTime: '10:00',
+  breakfastIncluded: false,
+  cleaningFee: '',
+  houseRules: '',
 });
 
 function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
@@ -3216,7 +3236,155 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
             </div>
 
             {/* Price */}
-            <div>
+            {/* Pricing Section - Different for guesthouse vs room */}
+            {formData.listingType === 'guesthouse' ? (
+              /* Guesthouse/BnB Pricing */
+              <div className="space-y-4 p-4 bg-purple-50 rounded-2xl border-2 border-purple-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xl">🏨</span>
+                  <h4 className="font-bold text-purple-800">Guesthouse Pricing</h4>
+                </div>
+                
+                {/* Price Type Selector */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-800 mb-2">How do you want to charge?</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { value: 'nightly', label: 'Per Night', icon: '🌙' },
+                      { value: 'weekly', label: 'Per Week', icon: '📅' },
+                      { value: 'monthly', label: 'Per Month', icon: '🗓️' },
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, priceType: opt.value })}
+                        className={`py-2.5 px-3 rounded-xl font-medium transition-all text-sm flex items-center justify-center gap-2 ${
+                          formData.priceType === opt.value
+                            ? 'bg-gradient-to-r from-purple-500 to-violet-600 text-white shadow-lg'
+                            : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                        }`}
+                      >
+                        <span>{opt.icon}</span>
+                        <span>{opt.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Price Input */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-800 mb-2">
+                    {formData.priceType === 'nightly' ? 'Price per Night (R) *' : 
+                     formData.priceType === 'weekly' ? 'Price per Week (R) *' : 'Price per Month (R) *'}
+                  </label>
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
+                      <span className="text-white font-bold text-sm">R</span>
+                    </div>
+                    <input
+                      type="number"
+                      required
+                      value={formData.price}
+                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                      placeholder={formData.priceType === 'nightly' ? '350' : formData.priceType === 'weekly' ? '2000' : '6000'}
+                      min="50"
+                      className="w-full pl-14 pr-4 py-3.5 border-2 border-purple-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all placeholder-gray-400 text-lg font-semibold"
+                    />
+                  </div>
+                </div>
+
+                {/* Min/Max Stay */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-800 mb-2">Minimum Stay (nights)</label>
+                    <input
+                      type="number"
+                      value={formData.minStay}
+                      onChange={(e) => setFormData({ ...formData, minStay: parseInt(e.target.value) || 1 })}
+                      min="1"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-800 mb-2">Maximum Stay (nights)</label>
+                    <input
+                      type="number"
+                      value={formData.maxStay}
+                      onChange={(e) => setFormData({ ...formData, maxStay: parseInt(e.target.value) || 0 })}
+                      min="0"
+                      placeholder="0 = no limit"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Check-in/Check-out Times */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-800 mb-2">🕐 Check-in Time</label>
+                    <input
+                      type="time"
+                      value={formData.checkInTime}
+                      onChange={(e) => setFormData({ ...formData, checkInTime: e.target.value })}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-800 mb-2">🕐 Check-out Time</label>
+                    <input
+                      type="time"
+                      value={formData.checkOutTime}
+                      onChange={(e) => setFormData({ ...formData, checkOutTime: e.target.value })}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Extras */}
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, breakfastIncluded: !formData.breakfastIncluded })}
+                    className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
+                      formData.breakfastIncluded
+                        ? 'border-purple-500 bg-purple-100'
+                        : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                  >
+                    <span className="text-xl">🍳</span>
+                    <div className="text-left">
+                      <p className="font-semibold text-sm text-gray-800">Breakfast</p>
+                      <p className="text-xs text-gray-500">{formData.breakfastIncluded ? 'Included' : 'Not included'}</p>
+                    </div>
+                  </button>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-800 mb-2">🧹 Cleaning Fee (R)</label>
+                    <input
+                      type="number"
+                      value={formData.cleaningFee}
+                      onChange={(e) => setFormData({ ...formData, cleaningFee: e.target.value })}
+                      placeholder="0 = none"
+                      min="0"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                </div>
+
+                {/* House Rules */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-800 mb-2">📋 House Rules (optional)</label>
+                  <textarea
+                    value={formData.houseRules}
+                    onChange={(e) => setFormData({ ...formData, houseRules: e.target.value })}
+                    placeholder="E.g., No smoking, No parties, Quiet hours after 10pm..."
+                    rows="2"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+              </div>
+            ) : (
+              /* Room/Backroom Pricing - Monthly */
+              <div>
               <label className="block text-sm font-semibold text-gray-800 mb-2">
                 Monthly Price (R) *
                 {formData.price && parseFloat(formData.price) >= 500 && parseFloat(formData.price) <= 50000 && !errors.price && (
@@ -3256,6 +3424,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                 <p className="text-gray-500 text-xs mt-1.5">💡 Suggested range: R500 - R50,000 per month</p>
               )}
             </div>
+            )}
 
             {/* Section: Location */}
             <div className="border-b border-gray-100 pb-2 mb-4 mt-8">
@@ -3810,6 +3979,15 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
     additionalCosts: listing?.additionalCosts || [],
     expiryDays: listing?.expiryDays || 10,
     listingType: listing?.listingType || 'room',
+    // Guesthouse/BnB fields
+    priceType: listing?.priceType || 'monthly',
+    minStay: listing?.minStay || 1,
+    maxStay: listing?.maxStay || 0,
+    checkInTime: listing?.checkInTime || '14:00',
+    checkOutTime: listing?.checkOutTime || '10:00',
+    breakfastIncluded: listing?.breakfastIncluded || false,
+    cleaningFee: listing?.cleaningFee || '',
+    houseRules: listing?.houseRules || '',
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -3950,20 +4128,155 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
             {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
           </div>
 
-          {/* Price */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-2">Monthly Rent (R) *</label>
-            <input
-              type="number"
-              value={formData.price}
-              onChange={(e) => { setFormData({ ...formData, price: e.target.value }); setErrors({ ...errors, price: '' }); }}
-              className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-red-100 focus:border-red-500 ${
-                errors.price ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-gray-300'
-              }`}
-              placeholder="3500"
-            />
-            {errors.price && <p className="text-red-500 text-xs mt-1">{errors.price}</p>}
-          </div>
+          {/* Price - Conditional based on listing type */}
+          {formData.listingType === 'guesthouse' ? (
+            /* Guesthouse/BnB Pricing */
+            <div className="space-y-4 p-4 bg-purple-50 rounded-2xl border-2 border-purple-200">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xl">🏨</span>
+                <h4 className="font-bold text-purple-800">Guesthouse Pricing</h4>
+              </div>
+              
+              {/* Price Type Selector */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">How do you charge?</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: 'nightly', label: 'Per Night', icon: '🌙' },
+                    { value: 'weekly', label: 'Per Week', icon: '📅' },
+                    { value: 'monthly', label: 'Per Month', icon: '🗓️' },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, priceType: opt.value })}
+                      className={`py-2 px-2 rounded-xl font-medium transition-all text-xs flex items-center justify-center gap-1 ${
+                        formData.priceType === opt.value
+                          ? 'bg-gradient-to-r from-purple-500 to-violet-600 text-white shadow-lg'
+                          : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                      }`}
+                    >
+                      <span>{opt.icon}</span>
+                      <span>{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Price Input */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">
+                  {formData.priceType === 'nightly' ? 'Price per Night (R) *' : 
+                   formData.priceType === 'weekly' ? 'Price per Week (R) *' : 'Price per Month (R) *'}
+                </label>
+                <input
+                  type="number"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  placeholder={formData.priceType === 'nightly' ? '350' : formData.priceType === 'weekly' ? '2000' : '6000'}
+                  className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              {/* Min/Max Stay */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-800 mb-2">Min Stay (nights)</label>
+                  <input
+                    type="number"
+                    value={formData.minStay}
+                    onChange={(e) => setFormData({ ...formData, minStay: parseInt(e.target.value) || 1 })}
+                    min="1"
+                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-800 mb-2">Max Stay (nights)</label>
+                  <input
+                    type="number"
+                    value={formData.maxStay}
+                    onChange={(e) => setFormData({ ...formData, maxStay: parseInt(e.target.value) || 0 })}
+                    min="0"
+                    placeholder="0 = no limit"
+                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+              </div>
+
+              {/* Check-in/Check-out */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-800 mb-2">🕐 Check-in</label>
+                  <input
+                    type="time"
+                    value={formData.checkInTime}
+                    onChange={(e) => setFormData({ ...formData, checkInTime: e.target.value })}
+                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-800 mb-2">🕐 Check-out</label>
+                  <input
+                    type="time"
+                    value={formData.checkOutTime}
+                    onChange={(e) => setFormData({ ...formData, checkOutTime: e.target.value })}
+                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+              </div>
+
+              {/* Extras */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, breakfastIncluded: !formData.breakfastIncluded })}
+                  className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all ${
+                    formData.breakfastIncluded ? 'border-purple-500 bg-purple-100' : 'border-gray-200 bg-white'
+                  }`}
+                >
+                  <span>🍳</span>
+                  <span className="text-sm font-medium">{formData.breakfastIncluded ? 'Breakfast ✓' : 'No Breakfast'}</span>
+                </button>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-800 mb-1">Cleaning Fee (R)</label>
+                  <input
+                    type="number"
+                    value={formData.cleaningFee}
+                    onChange={(e) => setFormData({ ...formData, cleaningFee: e.target.value })}
+                    placeholder="0"
+                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+              </div>
+
+              {/* House Rules */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">📋 House Rules</label>
+                <textarea
+                  value={formData.houseRules}
+                  onChange={(e) => setFormData({ ...formData, houseRules: e.target.value })}
+                  placeholder="No smoking, No parties, Quiet hours..."
+                  rows="2"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+            </div>
+          ) : (
+            /* Room/Backroom - Monthly Rent */
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">Monthly Rent (R) *</label>
+              <input
+                type="number"
+                value={formData.price}
+                onChange={(e) => { setFormData({ ...formData, price: e.target.value }); setErrors({ ...errors, price: '' }); }}
+                className={`w-full px-4 py-3 border-2 rounded-xl transition-all focus:ring-2 focus:ring-red-100 focus:border-red-500 ${
+                  errors.price ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-gray-300'
+                }`}
+                placeholder="3500"
+              />
+              {errors.price && <p className="text-red-500 text-xs mt-1">{errors.price}</p>}
+            </div>
+          )}
 
           {/* Additional Costs */}
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">

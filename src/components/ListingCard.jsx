@@ -207,7 +207,11 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
           <div className="flex items-center gap-3">
             <p className="text-[#E63946] font-extrabold text-xl tracking-tight">
               R{formattedPrice}
-              <span className="text-sm font-medium text-gray-400 dark:text-gray-500 ml-0.5">/mo</span>
+              <span className="text-sm font-medium text-gray-400 dark:text-gray-500 ml-0.5">
+                {listing.listingType === 'guesthouse' 
+                  ? (listing.priceType === 'nightly' ? '/night' : listing.priceType === 'weekly' ? '/week' : '/mo')
+                  : '/mo'}
+              </span>
             </p>
             {avgRating && (
               <div className="flex items-center gap-1 text-xs bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded-lg border border-amber-100 dark:border-amber-700">
