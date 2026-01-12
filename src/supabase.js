@@ -210,14 +210,37 @@ export async function ensureProfileRecord(userId) {
   }
 }
 
+// Helper to sanitize phone numbers for database constraint
+function sanitizePhone(phone) {
+  if (!phone) return null; // Use NULL instead of empty string
+  // Remove spaces, dashes, parentheses, dots
+  const cleaned = phone.replace(/[\s\-\(\)\.]/g, '');
+  // Only return if it looks like a valid phone (7-15 digits, optional + prefix)
+  if (/^[+]?[0-9]{7,15}$/.test(cleaned)) {
+    return cleaned;
+  }
+  return null; // Invalid format, store as NULL
+}
+
+// Helper to validate email format
+function sanitizeEmail(email) {
+  if (!email || !email.trim()) return null;
+  const trimmed = email.trim().toLowerCase();
+  // Basic email validation
+  if (/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(trimmed)) {
+    return trimmed;
+  }
+  return null;
+}
+
 export async function syncProfileToSupabase(userId, profileData = {}) {
   if (!userId) return false;
 
   const payload = {
-    display_name: profileData.displayName || profileData.name || '',
-    email: profileData.email || '',
-    phone: profileData.phone || '',
-    whatsapp: profileData.whatsapp || '',
+    display_name: (profileData.displayName || profileData.name || '').trim() || null,
+    email: sanitizeEmail(profileData.email),
+    phone: sanitizePhone(profileData.phone),
+    whatsapp: profileData.whatsapp || null,
     user_type: profileData.userType || 'renter',
     photo_url: profileData.photoURL || profileData.photo || '',
     landlord_complete: !!profileData.landlordComplete,
