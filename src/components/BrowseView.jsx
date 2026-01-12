@@ -32,6 +32,7 @@ export default function BrowseView({
   const [initialLoad, setInitialLoad] = useState(true);
   const [favorites, setFavorites] = useState([]);
   const [roomType, setRoomType] = useState(''); // '', 'private', 'shared'
+  const [listingType, setListingType] = useState(''); // '', 'room', 'backroom', 'guesthouse'
   const [leaseDuration, setLeaseDuration] = useState(''); // '', '1-3', '4-6', '7-12', '12+'
   const [petFriendly, setPetFriendly] = useState(false);
   const [genderPreference, setGenderPreference] = useState(''); // '', 'male', 'female', 'any'
@@ -121,6 +122,8 @@ export default function BrowseView({
       }
       const storedRoomType = localStorage.getItem('filter-room-type');
       if (storedRoomType) setRoomType(storedRoomType);
+      const storedListingType = localStorage.getItem('filter-listing-type');
+      if (storedListingType) setListingType(storedListingType);
       const storedLease = localStorage.getItem('filter-lease-duration');
       if (storedLease) setLeaseDuration(storedLease);
       const storedPets = localStorage.getItem('filter-pet-friendly');
@@ -160,6 +163,9 @@ export default function BrowseView({
   useEffect(() => {
     try { localStorage.setItem('filter-room-type', roomType); } catch {}
   }, [roomType]);
+  useEffect(() => {
+    try { localStorage.setItem('filter-listing-type', listingType); } catch {}
+  }, [listingType]);
   useEffect(() => {
     try { localStorage.setItem('filter-lease-duration', leaseDuration); } catch {}
   }, [leaseDuration]);
@@ -252,6 +258,45 @@ export default function BrowseView({
     }
   };
 
+  // Combined local filtering (on top of App.js filters)
+  const getFilteredListings = () => {
+    let filtered = listings;
+    
+    // Filter by payment method
+    if (paymentFilter) {
+      filtered = filtered.filter(l => l.paymentMethod === paymentFilter);
+    }
+    
+    // Filter by listing type
+    if (listingType) {
+      filtered = filtered.filter(l => (l.listingType || 'room') === listingType);
+    }
+    
+    // Filter by room type (private/shared)
+    if (roomType) {
+      filtered = filtered.filter(l => l.roomType === roomType);
+    }
+    
+    // Filter by lease duration
+    if (leaseDuration) {
+      filtered = filtered.filter(l => l.leaseDuration === leaseDuration);
+    }
+    
+    // Filter by pet friendly
+    if (petFriendly) {
+      filtered = filtered.filter(l => l.petFriendly === true);
+    }
+    
+    // Filter by gender preference
+    if (genderPreference) {
+      filtered = filtered.filter(l => l.genderPreference === genderPreference || l.genderPreference === 'any');
+    }
+    
+    return filtered;
+  };
+  
+  const filteredListings = getFilteredListings();
+
   const clearChip = (type, value) => {
     if (type === 'location') setSearchLocation('');
     if (type === 'priceMin') setPriceRange([0, priceRange[1]]);
@@ -259,10 +304,13 @@ export default function BrowseView({
     if (type === 'amenity') setSelectedAmenities(selectedAmenities.filter(a => a !== value));
     if (type === 'sort') setSortBy('newest');
     if (type === 'roomType') setRoomType('');
+    if (type === 'listingType') setListingType('');
     if (type === 'lease') setLeaseDuration('');
     if (type === 'pets') setPetFriendly(false);
     if (type === 'gender') setGenderPreference('');
   };
+
+  const listingTypeLabels = { room: '🛏️ Room', backroom: '🏡 Backroom', guesthouse: '🏨 Guesthouse' };
 
   const renderFilterChips = () => {
     const chips = [];
@@ -272,6 +320,7 @@ export default function BrowseView({
     selectedAmenities.forEach(a => chips.push({ type: 'amenity', label: a, value: a }));
     if (sortBy !== 'newest') chips.push({ type: 'sort', label: `Sort: ${sortBy}` });
     if (paymentFilter) chips.push({ type: 'payment', label: `Pay: ${paymentFilter}` });
+    if (listingType) chips.push({ type: 'listingType', label: listingTypeLabels[listingType] || listingType });
     if (roomType) chips.push({ type: 'roomType', label: `${roomType.charAt(0).toUpperCase() + roomType.slice(1)} room` });
     if (leaseDuration) chips.push({ type: 'lease', label: `${leaseDuration} months` });
     if (petFriendly) chips.push({ type: 'pets', label: '🐾 Pet friendly' });
@@ -299,6 +348,7 @@ export default function BrowseView({
             setSortBy('newest');
             setPaymentFilter('');
             setRoomType('');
+            setListingType('');
             setLeaseDuration('');
             setPetFriendly(false);
             setGenderPreference('');
@@ -307,6 +357,7 @@ export default function BrowseView({
             try { localStorage.removeItem('filter-price-min'); localStorage.removeItem('filter-price-max'); } catch {}
             try { localStorage.removeItem('filter-amenities'); } catch {}
             try { localStorage.removeItem('filter-room-type'); } catch {}
+            try { localStorage.removeItem('filter-listing-type'); } catch {}
             try { localStorage.removeItem('filter-lease-duration'); } catch {}
             try { localStorage.removeItem('filter-pet-friendly'); } catch {}
             try { localStorage.removeItem('filter-gender-preference'); } catch {}
@@ -524,7 +575,7 @@ export default function BrowseView({
                     {Array.from({ length: 6 }).map((_, i) => <ListingSkeletonCard key={i} className="animate-pulse" />)}
                   </div>
                 ) : (
-                  (paymentFilter ? listings.filter(l => l.paymentMethod === paymentFilter) : listings).length === 0 ? (
+                  filteredListings.length === 0 ? (
                     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-12 text-center shadow-sm flex flex-col items-center justify-center">
                       <div className="w-24 h-24 mb-6 flex items-center justify-center">
                         <svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -565,11 +616,11 @@ export default function BrowseView({
                     </div>
                   ) : (
                     <div className={`grid gap-6 ${
-                      (paymentFilter ? listings.filter(l => l.paymentMethod === paymentFilter) : listings).length <= 2 
+                      filteredListings.length <= 2 
                         ? 'grid-cols-1 lg:grid-cols-2' 
                         : 'grid-cols-1 lg:grid-cols-2 xl:grid-cols-3'
                     }`}>
-                      {(paymentFilter ? listings.filter(l => l.paymentMethod === paymentFilter) : listings).map((listing, idx) => (
+                      {filteredListings.map((listing, idx) => (
                         <React.Fragment key={listing.id}>
                           <div className="animate-fadeInUp" style={{ animationDelay: `${idx * 60}ms` }}>
                             <ListingCard listing={listing} onClick={() => onSelectListing(listing)} />
@@ -904,6 +955,27 @@ export default function BrowseView({
               >
                 🏠 Available Now
               </button>
+              {/* Listing Type Quick Filters */}
+              <button
+                onClick={() => setListingType(listingType === 'backroom' ? '' : 'backroom')}
+                className={`text-sm px-4 py-2 rounded-xl transition-all duration-200 flex items-center gap-1.5 font-medium ${
+                  listingType === 'backroom'
+                    ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-md scale-105'
+                    : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 border-2 border-emerald-200 dark:border-emerald-800'
+                }`}
+              >
+                🏡 Backrooms
+              </button>
+              <button
+                onClick={() => setListingType(listingType === 'guesthouse' ? '' : 'guesthouse')}
+                className={`text-sm px-4 py-2 rounded-xl transition-all duration-200 flex items-center gap-1.5 font-medium ${
+                  listingType === 'guesthouse'
+                    ? 'bg-gradient-to-r from-purple-500 to-violet-600 text-white shadow-md scale-105'
+                    : 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 border-2 border-purple-200 dark:border-purple-800'
+                }`}
+              >
+                🏨 Guesthouses
+              </button>
               <button
                 onClick={() => toggleAmenity('WiFi')}
                 className={`text-sm px-4 py-2 rounded-xl transition-all duration-200 flex items-center gap-1.5 font-medium ${
@@ -1009,9 +1081,35 @@ export default function BrowseView({
           </div>
           {showAdvancedFilters && (
             <div className="mt-4 p-5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg space-y-5">
+              {/* Listing Type - NEW */}
+              <div>
+                <label className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 block flex items-center gap-2">🏠 Property Type</label>
+                <div className="flex gap-2 flex-wrap">
+                  {[
+                    { label: '🛏️ Room', value: 'room' },
+                    { label: '🏡 Backroom', value: 'backroom' },
+                    { label: '🏨 Guesthouse', value: 'guesthouse' }
+                  ].map(type => (
+                    <button
+                      key={type.value}
+                      onClick={() => setListingType(listingType === type.value ? '' : type.value)}
+                      className={`px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all ${
+                        listingType === type.value
+                          ? type.value === 'backroom' 
+                            ? 'bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-500/30'
+                            : type.value === 'guesthouse'
+                            ? 'bg-purple-500 text-white border-purple-500 shadow-lg shadow-purple-500/30'
+                            : 'bg-blue-500 text-white border-blue-500 shadow-lg shadow-blue-500/30'
+                          : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                      }`}
+                    >{type.label}</button>
+                  ))}
+                </div>
+              </div>
+
               {/* Room Type */}
               <div>
-                <label className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 block flex items-center gap-2">🏠 Room Type</label>
+                <label className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 block flex items-center gap-2">🚪 Room Type</label>
                 <div className="flex gap-3">
                   {['Private', 'Shared'].map(type => (
                     <button
@@ -1129,7 +1227,7 @@ export default function BrowseView({
             {Array.from({ length: 8 }).map((_, i) => <ListingSkeletonCard key={i} />)}
           </div>
         ) : (
-          (paymentFilter ? listings.filter(l => l.paymentMethod === paymentFilter) : listings).length === 0 ? (
+          filteredListings.length === 0 ? (
             <div className="bg-gradient-to-br from-white via-slate-50 to-blue-50 dark:from-gray-800 dark:via-gray-800 dark:to-gray-800 rounded-3xl border-2 border-dashed border-gray-200 dark:border-gray-600 p-12 md:p-16 text-center shadow-lg relative overflow-hidden">
               {/* Decorative elements */}
               <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-br from-red-50 to-transparent rounded-br-full opacity-50" />
@@ -1182,7 +1280,7 @@ export default function BrowseView({
           ) : (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-items-center stagger-animation">
-                {(paymentFilter ? listings.filter(l => l.paymentMethod === paymentFilter) : listings).map((listing, idx) => (
+                {filteredListings.map((listing, idx) => (
                   <React.Fragment key={listing.id}>
                     <ListingCard
                       listing={listing}
@@ -1191,7 +1289,7 @@ export default function BrowseView({
                       onToggleFavorite={toggleFavorite}
                       index={idx}
                     />
-                    {(idx + 1) % 8 === 0 && idx !== listings.length - 1 && (
+                    {(idx + 1) % 8 === 0 && idx !== filteredListings.length - 1 && (
                       <div className="sm:col-span-2 lg:col-span-3 xl:col-span-4">
                         <InFeedAd />
                       </div>

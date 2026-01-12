@@ -2616,6 +2616,7 @@ const createDefaultListingForm = () => ({
   longitude: null,
   paymentMethod: 'Bank and Cash',
   roomType: 'private',
+  listingType: 'room', // 'room', 'backroom', 'guesthouse'
   leaseDuration: '7-12',
   petFriendly: false,
   genderPreference: 'any',
@@ -3144,6 +3145,39 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                 </div>
                 Basic Information
               </h3>
+            </div>
+
+            {/* Listing Type Selector */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-3">
+                🏠 What are you listing? *
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {[
+                  { value: 'room', label: 'Room', icon: '🛏️', description: 'Private or shared room in a house' },
+                  { value: 'backroom', label: 'Backroom', icon: '🏡', description: 'Separate backyard unit' },
+                  { value: 'guesthouse', label: 'Guesthouse/BnB', icon: '🏨', description: 'Short or long-term guesthouse' }
+                ].map(type => (
+                  <button
+                    key={type.value}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, listingType: type.value })}
+                    className={`p-4 rounded-2xl border-2 transition-all text-left ${
+                      formData.listingType === type.value
+                        ? 'border-[#E63946] bg-gradient-to-br from-red-50 to-rose-50 shadow-lg scale-[1.02]'
+                        : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="text-2xl">{type.icon}</span>
+                      <span className={`font-bold ${formData.listingType === type.value ? 'text-[#E63946]' : 'text-gray-800'}`}>
+                        {type.label}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500">{type.description}</p>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Title */}
@@ -3866,6 +3900,39 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-6">
+          {/* Listing Type Selector */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-800 mb-3">
+              🏠 Property Type
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                { value: 'room', label: 'Room', icon: '🛏️', description: 'Private or shared room' },
+                { value: 'backroom', label: 'Backroom', icon: '🏡', description: 'Separate backyard unit' },
+                { value: 'guesthouse', label: 'Guesthouse/BnB', icon: '🏨', description: 'Short or long-term' }
+              ].map(type => (
+                <button
+                  key={type.value}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, listingType: type.value })}
+                  className={`p-3 rounded-xl border-2 transition-all text-left ${
+                    (formData.listingType || 'room') === type.value
+                      ? 'border-[#E63946] bg-red-50 shadow-md'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xl">{type.icon}</span>
+                    <span className={`font-semibold text-sm ${(formData.listingType || 'room') === type.value ? 'text-[#E63946]' : 'text-gray-800'}`}>
+                      {type.label}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500">{type.description}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Title */}
           <div>
             <label className="block text-sm font-semibold text-gray-800 mb-2">Listing Title *</label>

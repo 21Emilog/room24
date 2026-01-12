@@ -16,6 +16,13 @@ function formatRelativeTime(date) {
   return date.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' });
 }
 
+// Listing type configuration
+const listingTypeConfig = {
+  room: { label: 'Room', icon: '🛏️', color: 'from-blue-500 to-blue-600', bgColor: 'bg-blue-500', textColor: 'text-blue-600' },
+  backroom: { label: 'Backroom', icon: '🏡', color: 'from-emerald-500 to-green-600', bgColor: 'bg-emerald-500', textColor: 'text-emerald-600' },
+  guesthouse: { label: 'Guesthouse', icon: '🏨', color: 'from-purple-500 to-violet-600', bgColor: 'bg-purple-500', textColor: 'text-purple-600' }
+};
+
 export default function ListingCard({ listing, onClick, isFavorite, onToggleFavorite }) {
   const addressLine = [listing.streetAddress, listing.location].filter(Boolean).join(', ');
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -120,6 +127,13 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
           
           {/* Additional badges row */}
           <div className="absolute top-12 right-3 flex flex-col gap-1.5 items-end">
+            {/* Listing Type Badge */}
+            {listing.listingType && listing.listingType !== 'room' && (
+              <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold text-white shadow-lg bg-gradient-to-r ${listingTypeConfig[listing.listingType]?.color || 'from-gray-500 to-gray-600'}`}>
+                <span>{listingTypeConfig[listing.listingType]?.icon}</span>
+                {listingTypeConfig[listing.listingType]?.label}
+              </div>
+            )}
             {isNew && (
               <div className="px-2 py-1 rounded-lg text-[10px] font-bold bg-gradient-to-r from-red-500 to-red-500 text-white shadow-lg uppercase tracking-wider animate-pulse">
                 ✨ New
@@ -209,6 +223,19 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
         
         {/* Payment method & availability badges */}
         <div className="flex flex-wrap gap-2 mb-3">
+          {/* Listing Type Badge */}
+          {listing.listingType && (
+            <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg font-semibold border ${
+              listing.listingType === 'backroom' 
+                ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
+                : listing.listingType === 'guesthouse'
+                ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800'
+                : 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800'
+            }`}>
+              <span aria-hidden="true">{listingTypeConfig[listing.listingType]?.icon || '🛏️'}</span>
+              {listingTypeConfig[listing.listingType]?.label || 'Room'}
+            </span>
+          )}
           {listing.paymentMethod && (
             <span className="inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs px-2.5 py-1 rounded-lg font-medium border border-emerald-100 dark:border-emerald-800">
               <span aria-hidden="true">💳</span> {listing.paymentMethod}
