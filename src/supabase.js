@@ -330,6 +330,7 @@ export async function fetchAllListings() {
     landlordEmail: listing.landlord_email,
     landlordPhoto: listing.landlord_photo,
     createdAt: listing.created_at,
+    listingType: listing.listing_type || 'room',
   }));
 }
 
@@ -363,6 +364,7 @@ export async function createListing(listingData) {
       landlord_phone: listingData.landlordPhone,
       landlord_email: listingData.landlordEmail,
       landlord_photo: listingData.landlordPhoto,
+      listing_type: listingData.listingType || 'room',
     })
     .select()
     .single();
@@ -422,6 +424,7 @@ export async function updateListing(listingId, updates) {
   if (updates.status !== undefined) dbUpdates.status = updates.status;
   if (updates.availableDate !== undefined) dbUpdates.available_date = updates.availableDate;
   if (updates.amenities !== undefined) dbUpdates.amenities = updates.amenities;
+  if (updates.listingType !== undefined) dbUpdates.listing_type = updates.listingType;
 
   const { data, error } = await supabase
     .from('listings')
