@@ -783,6 +783,7 @@ const handleUpdateListing = async (listingId, listingData) => {
     status: listingData.status || 'available',
     availableDate: listingData.availableDate,
     amenities: listingData.amenities || [],
+    listingType: listingData.listingType || 'room',
   };
 
   try {
@@ -3808,6 +3809,7 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
     contactWhatsapp: listing?.contactWhatsapp || '',
     additionalCosts: listing?.additionalCosts || [],
     expiryDays: listing?.expiryDays || 10,
+    listingType: listing?.listingType || 'room',
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);

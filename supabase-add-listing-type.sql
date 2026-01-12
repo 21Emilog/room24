@@ -7,9 +7,10 @@
 ALTER TABLE listings 
 ADD COLUMN IF NOT EXISTS listing_type text DEFAULT 'room';
 
--- Optionally add a check constraint for valid values
+-- Drop constraint if exists, then add it
+ALTER TABLE listings DROP CONSTRAINT IF EXISTS valid_listing_type;
 ALTER TABLE listings 
-ADD CONSTRAINT IF NOT EXISTS valid_listing_type 
+ADD CONSTRAINT valid_listing_type 
 CHECK (listing_type IN ('room', 'backroom', 'guesthouse'));
 
 -- Create index for filtering by listing type
