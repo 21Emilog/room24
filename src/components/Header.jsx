@@ -2,14 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Menu, X, Bell, User, LogOut, Search, PlusCircle, Heart, Settings, ChevronDown, Eye, EyeOff, MapPin, Moon, Sun, MessageSquare } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 
-// RentMzansi Logo Component
+// RentMzansi Logo Component - uses PNG image
 const Logo = ({ className = "w-10 h-10" }) => (
-  <svg viewBox="0 0 100 120" className={className}>
-    <path d="M50,5 Q70,5 80,20 Q90,35 80,50 L50,90 L20,50 Q10,35 20,20 Q30,5 50,5 Z" fill="#E63946"/>
-    <polygon points="50,30 40,40 40,55 60,55 60,40" fill="#F1FAEE"/>
-    <rect x="45" y="45" width="10" height="10" fill="#F1FAEE"/>
-    <circle cx="50" cy="50" r="3" fill="#1D3557"/>
-  </svg>
+  <img 
+    src="/logo192.png" 
+    alt="RentMzansi" 
+    className={`${className} object-contain`}
+  />
 );
 
 // Theme Toggle Component - compact button for header

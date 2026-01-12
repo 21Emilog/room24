@@ -4,14 +4,13 @@ import { X, Users, Shield, MapPin, Heart, Zap, Mail, Globe } from 'lucide-react'
 export default function AboutModal({ onClose }) {
   const APP_VERSION = '1.0.0';
   
-  // Inline SVG logo component
+  // Logo component using PNG image
   const Logo = () => (
-    <svg viewBox="0 0 100 120" className="w-16 h-16">
-      <path d="M50,5 Q70,5 80,20 Q90,35 80,50 L50,90 L20,50 Q10,35 20,20 Q30,5 50,5 Z" fill="#F1FAEE"/>
-      <polygon points="50,30 40,40 40,55 60,55 60,40" fill="#E63946"/>
-      <rect x="45" y="45" width="10" height="10" fill="#E63946"/>
-      <circle cx="50" cy="50" r="3" fill="#1D3557"/>
-    </svg>
+    <img 
+      src="/logo192.png" 
+      alt="RentMzansi" 
+      className="w-16 h-16 object-contain"
+    />
   );
 
   return (
