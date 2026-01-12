@@ -240,51 +240,56 @@ export async function syncProfileToSupabase(userId, profileData = {}) {
     display_name: (profileData.displayName || profileData.name || '').trim() || null,
     email: sanitizeEmail(profileData.email),
     phone: sanitizePhone(profileData.phone),
-    whatsapp: profileData.whatsapp || null,
+    whatsapp: profileData.whatsapp?.trim() || null,
     user_type: profileData.userType || 'renter',
-    photo_url: profileData.photoURL || profileData.photo || '',
+    photo_url: profileData.photoURL || profileData.photo || null,
     landlord_complete: !!profileData.landlordComplete,
     landlord_info: profileData.landlordInfo || null,
     notification_prefs: profileData.notificationPrefs || null,
     updated_at: new Date().toISOString(),
   };
 
-  // First, check if profile exists
-  const { data: existing, error: fetchError } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('id', userId)
-    .maybeSingle();
-
-  if (fetchError) {
-    console.error('Error checking profile:', fetchError);
-    throw fetchError;
-  }
-
-  if (existing) {
-    // Update existing profile
-    const { error: updateError } = await supabase
+  try {
+    // First, check if profile exists
+    const { data: existing, error: fetchError } = await supabase
       .from('profiles')
-      .update(payload)
-      .eq('id', userId);
+      .select('id')
+      .eq('id', userId)
+      .maybeSingle();
 
-    if (updateError) {
-      console.error('syncProfileToSupabase update failed:', updateError);
-      throw updateError;
+    if (fetchError) {
+      console.error('Error checking profile:', fetchError);
+      return false; // Don't throw, just return false
     }
-  } else {
-    // Insert new profile
-    const { error: insertError } = await supabase
-      .from('profiles')
-      .insert({ id: userId, ...payload });
 
-    if (insertError) {
-      console.error('syncProfileToSupabase insert failed:', insertError);
-      throw insertError;
+    if (existing) {
+      // Update existing profile
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update(payload)
+        .eq('id', userId);
+
+      if (updateError) {
+        console.error('syncProfileToSupabase update failed:', updateError.message);
+        return false;
+      }
+    } else {
+      // Insert new profile
+      const { error: insertError } = await supabase
+        .from('profiles')
+        .insert({ id: userId, ...payload });
+
+      if (insertError) {
+        console.error('syncProfileToSupabase insert failed:', insertError.message);
+        return false;
+      }
     }
+
+    return true;
+  } catch (err) {
+    console.error('syncProfileToSupabase error:', err);
+    return false;
   }
-
-  return true;
 }
 
 // ===========================
