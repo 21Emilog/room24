@@ -18,9 +18,9 @@ function formatRelativeTime(date) {
 
 // Listing type configuration
 const listingTypeConfig = {
-  room: { label: 'Room', icon: '🛏️', color: 'from-blue-500 to-blue-600', bgColor: 'bg-blue-500', textColor: 'text-blue-600' },
-  backroom: { label: 'Backroom', icon: '🏡', color: 'from-emerald-500 to-green-600', bgColor: 'bg-emerald-500', textColor: 'text-emerald-600' },
-  guesthouse: { label: 'Guesthouse', icon: '🏨', color: 'from-purple-500 to-violet-600', bgColor: 'bg-purple-500', textColor: 'text-purple-600' }
+  room: { label: 'Room for Rent', icon: '🛏️', color: 'from-blue-500 to-blue-600', bgColor: 'bg-blue-500', textColor: 'text-blue-600', headerBg: 'bg-gradient-to-r from-blue-500 to-blue-600' },
+  backroom: { label: 'Backroom', icon: '🏡', color: 'from-emerald-500 to-green-600', bgColor: 'bg-emerald-500', textColor: 'text-emerald-600', headerBg: 'bg-gradient-to-r from-emerald-500 to-green-600' },
+  guesthouse: { label: 'Guesthouse / BnB', icon: '🏨', color: 'from-purple-500 to-violet-600', bgColor: 'bg-purple-500', textColor: 'text-purple-600', headerBg: 'bg-gradient-to-r from-purple-500 to-violet-600' }
 };
 
 export default function ListingCard({ listing, onClick, isFavorite, onToggleFavorite }) {
@@ -61,6 +61,17 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(); } }}
       aria-label={`${listing.title} - R${formattedPrice} per month in ${listing.location || 'unknown location'}`}
     >
+      {/* Listing Type Header - Shows what type of property */}
+      {(() => {
+        const typeConfig = listingTypeConfig[listing.listingType] || listingTypeConfig.room;
+        return (
+          <div className={`${typeConfig.headerBg} px-3 py-1.5 flex items-center justify-center gap-2`}>
+            <span className="text-sm">{typeConfig.icon}</span>
+            <span className="text-xs font-bold text-white uppercase tracking-wider">{typeConfig.label}</span>
+          </div>
+        );
+      })()}
+      
       {/* Image Section */}
       {listing.photos && listing.photos.length > 0 ? (
         <div className="relative bg-gray-200 dark:bg-gray-700 aspect-[4/3] overflow-hidden">
@@ -127,13 +138,6 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
           
           {/* Additional badges row */}
           <div className="absolute top-12 right-3 flex flex-col gap-1.5 items-end">
-            {/* Listing Type Badge */}
-            {listing.listingType && listing.listingType !== 'room' && (
-              <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold text-white shadow-lg bg-gradient-to-r ${listingTypeConfig[listing.listingType]?.color || 'from-gray-500 to-gray-600'}`}>
-                <span>{listingTypeConfig[listing.listingType]?.icon}</span>
-                {listingTypeConfig[listing.listingType]?.label}
-              </div>
-            )}
             {isNew && (
               <div className="px-2 py-1 rounded-lg text-[10px] font-bold bg-gradient-to-r from-red-500 to-red-500 text-white shadow-lg uppercase tracking-wider animate-pulse">
                 ✨ New
