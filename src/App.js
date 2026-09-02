@@ -425,16 +425,19 @@ export default function RentalPlatform() {
           }
         } else {
           // No profile - create minimal one
+          const pendingOAuthType = localStorage.getItem('pending-oauth-user-type');
+          const resolvedType = localUserType || pendingOAuthType || 'renter';
+          localStorage.removeItem('pending-oauth-user-type');
           const newProfile = {
             displayName: user.user_metadata?.full_name || user.email?.split('@')[0] || '',
             email: user.email || '',
-            userType: localUserType || 'renter',
+            userType: resolvedType,
             createdAt: new Date().toISOString(),
-            landlordComplete: localOnboardingComplete,
+            landlordComplete: resolvedType === 'renter' ? true : localOnboardingComplete,
           };
           saveProfile(user.id, newProfile);
           setUserProfile(newProfile);
-          setUserType(localUserType || 'renter');
+          setUserType(resolvedType);
           
           // Sync new profile to Supabase
           try {
@@ -476,16 +479,19 @@ export default function RentalPlatform() {
             console.warn('Failed to sync profile on session restore:', syncErr);
           }
         } else {
+          const pendingOAuthType = localStorage.getItem('pending-oauth-user-type');
+          const resolvedType = localUserType || pendingOAuthType || 'renter';
+          localStorage.removeItem('pending-oauth-user-type');
           const newProfile = {
             displayName: user.user_metadata?.full_name || user.email?.split('@')[0] || '',
             email: user.email || '',
-            userType: localUserType || 'renter',
+            userType: resolvedType,
             createdAt: new Date().toISOString(),
-            landlordComplete: localOnboardingComplete,
+            landlordComplete: resolvedType === 'renter' ? true : localOnboardingComplete,
           };
           saveProfile(user.id, newProfile);
           setUserProfile(newProfile);
-          setUserType(localUserType || 'renter');
+          setUserType(resolvedType);
           
           // Sync new profile to Supabase
           try {
@@ -5028,8 +5034,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
     
     try {
       if (mode === 'signup') {
-        // Everyone signs up as renter by default, they can change to landlord in profile settings
-        const result = await authFunctions.signUp(form.email, form.password, form.name, 'renter', form.phone.trim(), captchaToken);
+        const result = await authFunctions.signUp(form.email, form.password, form.name, form.type, form.phone.trim(), captchaToken);
         if (result?.pendingConfirmation) {
           // Brand-new account created - Supabase emailed a confirmation link.
           // Keep the modal open and show a clear, non-alarming success state
@@ -5264,6 +5269,39 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
           {/* Email/Password Form (signin/signup) */}
           {(mode === 'signin' || mode === 'signup') && (
             <>
+              {/* Account Type (signup only) */}
+              {mode === 'signup' && (
+                <div className="group">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2.5">I am a... <span className="text-red-500">*</span></label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, type: 'renter' })}
+                      className={`flex flex-col items-center gap-2 px-4 py-3.5 border-2 rounded-2xl transition-all duration-200 font-semibold text-sm ${
+                        form.type === 'renter'
+                          ? 'border-[#E63946] bg-red-50 text-[#E63946]'
+                          : 'border-gray-200 text-gray-500 hover:border-gray-300 bg-gray-50/50'
+                      }`}
+                    >
+                      <Search className="w-5 h-5" />
+                      Looking to rent
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, type: 'landlord' })}
+                      className={`flex flex-col items-center gap-2 px-4 py-3.5 border-2 rounded-2xl transition-all duration-200 font-semibold text-sm ${
+                        form.type === 'landlord'
+                          ? 'border-[#E63946] bg-red-50 text-[#E63946]'
+                          : 'border-gray-200 text-gray-500 hover:border-gray-300 bg-gray-50/50'
+                      }`}
+                    >
+                      <Home className="w-5 h-5" />
+                      Listing a property
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Name (signup only) */}
               {mode === 'signup' && (
                 <div className="group">

@@ -106,7 +106,16 @@ export async function signInWithEmail(email, password, captchaToken) {
 }
 
 // Sign in with Google
-export async function signInWithGoogle() {
+export async function signInWithGoogle(userType = 'renter') {
+  // The OAuth flow navigates away and back, so React state (and the user's
+  // renter/landlord choice) would otherwise be lost. Stash it in localStorage
+  // so App.js can pick it up once the session comes back after redirect.
+  try {
+    localStorage.setItem('pending-oauth-user-type', userType === 'landlord' ? 'landlord' : 'renter');
+  } catch (e) {
+    // localStorage may be unavailable (e.g. private browsing) - non-fatal
+  }
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
