@@ -214,7 +214,7 @@ export async function ensureProfileRecord(userId) {
 function sanitizePhone(phone) {
   if (!phone) return null; // Use NULL instead of empty string
   // Remove spaces, dashes, parentheses, dots
-  const cleaned = phone.replace(/[\s\-\(\)\.]/g, '');
+  const cleaned = phone.replace(/[\s\-().]/g, '');
   // Only return if it looks like a valid phone (7-15 digits, optional + prefix)
   if (/^[+]?[0-9]{7,15}$/.test(cleaned)) {
     return cleaned;

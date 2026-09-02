@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense } from 'react';
-import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone, Sparkles, TrendingUp, ShieldCheck, ChevronDown, ArrowLeft, RefreshCw, AlertCircle, GitCompare, MessageSquare, Copy, MessageCircle, Camera } from 'lucide-react';
+import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone, Sparkles, TrendingUp, ShieldCheck, ChevronDown, ArrowLeft, RefreshCw, GitCompare, MessageSquare, Copy, MessageCircle, Camera } from 'lucide-react';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import BrowseView from './components/BrowseView';
@@ -8,7 +8,7 @@ import OfflineIndicator from './components/OfflineIndicator';
 import BackToTop from './components/BackToTop';
 import TurnstileWidget from './components/TurnstileWidget';
 import { getNotifications, addNotification, checkAreaSubscriptions, subscribeToArea as subscribeToAreaEngine, unsubscribeFromArea, getAreaSubscriptions, getCompareList, clearCompareList, removeFromCompare, getLandlordQuickReplies, saveLandlordQuickReplies } from './utils/notificationEngine';
-import { loadListingTemplate, saveListingTemplate, clearListingTemplate } from './utils/listingTemplateStorage';
+import { loadListingTemplate, saveListingTemplate } from './utils/listingTemplateStorage';
 import { getOrCreateConversation, getUnreadCount as getChatUnreadCount, subscribeToNewMessages, getUserConversations } from './chat';
 import { requestNotificationPermission, showMessageNotification, shouldAskForPermission, markPermissionAsked } from './utils/pushNotifications';
 import { 
@@ -2737,11 +2737,10 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
   });
   // geocodingStatus removed - using inline validation
   const [errors, setErrors] = useState({});
-  const [showPhotoEditor, setShowPhotoEditor] = useState(false);
   const reverseGeocodeCacheRef = React.useRef({});
   // lastGeocodeSource removed - geocode lookup feature removed
   const [fullAddressInput, setFullAddressInput] = useState('');
-  const [isFullAddressEditing, setIsFullAddressEditing] = useState(false);
+  const [isFullAddressEditing] = useState(false);
 
   useEffect(() => {
     if (!landlordId) return;
@@ -3027,14 +3026,6 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
   };
   */
 
-  const toggleAmenity = (amenity) => {
-    if (formData.amenities.includes(amenity)) {
-      setFormData({ ...formData, amenities: formData.amenities.filter(a => a !== amenity) });
-    } else {
-      setFormData({ ...formData, amenities: [...formData.amenities, amenity] });
-    }
-  };
-
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
@@ -3136,14 +3127,6 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
       location: derivedLocation,
       streetAddress: street
     });
-  };
-
-  const handleResetSavedTemplate = () => {
-    if (!landlordId) return;
-    clearListingTemplate(landlordId);
-    const blank = createDefaultListingForm();
-    setFormData(blank);
-    setFullAddressInput('');
   };
 
   const handlePhotoUpload = (e) => {
