@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, ArrowLeft, Zap, ChevronDown, ChevronUp, MoreVertical, Flag, X, Image, Paperclip, Loader2, Building2, UserPlus, Check, Smile, Reply, Heart, Ban, MessageCircle, Mic, CheckCheck, Clock, Sparkles, Trash2 } from 'lucide-react';
+import { Send, ArrowLeft, Zap, ChevronDown, ChevronUp, MoreVertical, Flag, X, Image, Paperclip, Loader2, Building2, UserPlus, Check, Smile, Reply, Heart, Ban, MessageCircle, Mic, CheckCheck, Clock, Sparkles, Trash2, Sun, CloudSun, Moon, MapPin, Wifi, Car, Utensils, Hand } from 'lucide-react';
 import { 
   getMessages, 
   sendMessage, 
@@ -98,9 +98,16 @@ function formatLastSeen(lastSeenDate) {
 // Greeting based on time of day
 function getGreeting() {
   const hour = new Date().getHours();
-  if (hour < 12) return '☀️ Good morning';
-  if (hour < 17) return '🌤️ Good afternoon';
-  return '🌙 Good evening';
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
+function GreetingIcon({ className }) {
+  const hour = new Date().getHours();
+  if (hour < 12) return <Sun className={className} />;
+  if (hour < 17) return <CloudSun className={className} />;
+  return <Moon className={className} />;
 }
 
 function formatMessageTime(dateString) {
@@ -609,7 +616,7 @@ export default function ChatWindow({
       // Update in local state
       setMessages(prev => prev.map(m => 
         m.id === showDeleteModal.id 
-          ? { ...m, content: '🚫 This message was deleted', message_type: 'deleted', voice_url: null }
+          ? { ...m, content: 'This message was deleted', message_type: 'deleted', voice_url: null }
           : m
       ));
       setShowDeleteModal(null);
@@ -939,11 +946,11 @@ export default function ChatWindow({
             <div className="p-4">
               {/* Message Preview */}
               <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-xl">
-                <p className="text-sm text-gray-600 dark:text-gray-300 truncate">
+                <p className="text-sm text-gray-600 dark:text-gray-300 truncate flex items-center gap-1.5">
                   {showDeleteModal.content?.startsWith('[Image]') 
-                    ? '📷 Photo'
+                    ? (<><Image className="w-3.5 h-3.5 flex-shrink-0" /> Photo</>)
                     : showDeleteModal.message_type === 'voice'
-                    ? '🎤 Voice message'
+                    ? (<><Mic className="w-3.5 h-3.5 flex-shrink-0" /> Voice message</>)
                     : showDeleteModal.content?.substring(0, 100)}
                 </p>
               </div>
@@ -1130,8 +1137,8 @@ export default function ChatWindow({
                 Last seen {formatLastSeen(otherUserLastSeen)}
               </p>
             ) : listing ? (
-              <p className="text-sm text-white/80 truncate font-medium">
-                💬 {listing.title}
+              <p className="text-sm text-white/80 truncate font-medium flex items-center gap-1.5">
+                <MessageCircle className="w-3.5 h-3.5" /> {listing.title}
               </p>
             ) : null}
           </div>
@@ -1226,7 +1233,7 @@ export default function ChatWindow({
                   {listing.title}
                 </p>
                 <p className="text-sm text-white/90 truncate flex items-center gap-1.5">
-                  <span>📍</span> {listing.location}
+                  <MapPin className="w-3.5 h-3.5" /> {listing.location}
                 </p>
               </div>
             </div>
@@ -1236,8 +1243,8 @@ export default function ChatWindow({
           <div className="flex items-center justify-between px-4 py-3 bg-white/50 dark:bg-gray-800/50 border-t border-amber-100 dark:border-amber-800/30">
             <div className="flex items-center gap-3">
               {listing.amenities?.slice(0, 3).map((amenity, i) => (
-                <span key={i} className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2.5 py-1 rounded-lg font-medium">
-                  {amenity === 'WiFi' ? '📶' : amenity === 'Parking' ? '🚗' : amenity === 'Kitchen' ? '🍳' : '✓'} {amenity}
+                <span key={i} className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2.5 py-1 rounded-lg font-medium inline-flex items-center gap-1">
+                  {amenity === 'WiFi' ? <Wifi className="w-3 h-3" /> : amenity === 'Parking' ? <Car className="w-3 h-3" /> : amenity === 'Kitchen' ? <Utensils className="w-3 h-3" /> : <Check className="w-3 h-3" />} {amenity}
                 </span>
               ))}
             </div>
@@ -1269,10 +1276,11 @@ export default function ChatWindow({
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
             </div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{getGreeting()}!</h3>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 flex items-center justify-center gap-2"><GreetingIcon className="w-5 h-5" />{getGreeting()}!</h3>
             <p className="font-semibold text-gray-700 dark:text-gray-300 mb-1">Start your conversation</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 max-w-[260px]">
-              Say hi to {otherUser?.display_name?.split(' ')[0] || 'them'} and ask about the room! 👋
+            <p className="text-sm text-gray-500 dark:text-gray-400 max-w-[260px] inline-flex items-center gap-1.5 flex-wrap justify-center">
+              <span>Say hi to {otherUser?.display_name?.split(' ')[0] || 'them'} and ask about the room!</span>
+              <Hand className="w-4 h-4 flex-shrink-0" />
             </p>
           </div>
         ) : (

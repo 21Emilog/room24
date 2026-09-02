@@ -5,7 +5,7 @@ import {
   Crown, User, Clock, Link2, Share2, Loader2, Shield, ShieldOff, 
   MessageSquareOff, Settings, ShieldCheck, Star, Phone, BookUser, UserCheck,
   Mic, Play, Pause, Circle, UserMinus, Volume2, LogOut, Ban, Contact, AlertCircle,
-  Image, Paperclip
+  Image, Paperclip, Smartphone, Lightbulb
 } from 'lucide-react';
 
 import { getSavedContacts, saveContact, deleteContact, searchContacts } from '../utils/savedContacts';
@@ -1421,8 +1421,8 @@ function AddTenantModal({ property, currentUser, showToast, onClose, onAdded }) 
                     )}
                   </button>
                   
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-4">
-                    📱 Works on mobile devices with Contact Picker API support
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-4 flex items-center justify-center gap-1.5">
+                    <Smartphone className="w-3.5 h-3.5 flex-shrink-0" /> Works on mobile devices with Contact Picker API support
                   </p>
                 </div>
               ) : (
@@ -1495,8 +1495,8 @@ function AddTenantModal({ property, currentUser, showToast, onClose, onAdded }) 
                           </p>
                         )}
                       </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-3 text-center">
-                        💡 Share an invite link with them to join the app!
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-3 text-center flex items-center justify-center gap-1.5">
+                        <Lightbulb className="w-3.5 h-3.5 flex-shrink-0" /> Share an invite link with them to join the app!
                       </p>
                     </div>
                   )}
@@ -1639,8 +1639,8 @@ function AddTenantModal({ property, currentUser, showToast, onClose, onAdded }) 
                 )}
               </button>
 
-              <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-                💡 Tip: When this person registers with the same phone number, you can add them instantly!
+              <p className="text-xs text-center text-gray-500 dark:text-gray-400 flex items-center justify-center gap-1.5">
+                <Lightbulb className="w-3.5 h-3.5 flex-shrink-0" /> Tip: When this person registers with the same phone number, you can add them instantly!
               </p>
             </div>
           )}
@@ -1974,7 +1974,7 @@ function PropertyChatView({ property, currentUser, showToast, onBack }) {
       await sendPropertyMessage({
         propertyId: property.id,
         senderId: currentUser.id,
-        content: '🎤 Voice message',
+        content: 'Voice message',
         messageType: 'voice',
         voiceUrl: urlData.publicUrl,
         voiceDuration: Math.round(recordingDuration)
@@ -2157,7 +2157,7 @@ function PropertyChatView({ property, currentUser, showToast, onBack }) {
       await deletePropertyMessageForEveryone(showDeleteModal.id, currentUser.id);
       setMessages(prev => prev.map(m => 
         m.id === showDeleteModal.id 
-          ? { ...m, content: '🚫 This message was deleted', message_type: 'deleted', voice_url: null }
+          ? { ...m, content: 'This message was deleted', message_type: 'deleted', voice_url: null }
           : m
       ));
       setShowDeleteModal(null);
@@ -2531,11 +2531,11 @@ function PropertyChatView({ property, currentUser, showToast, onBack }) {
             <div className="p-4">
               {/* Message Preview */}
               <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-xl">
-                <p className="text-sm text-gray-600 dark:text-gray-300 truncate">
+                <p className="text-sm text-gray-600 dark:text-gray-300 truncate flex items-center gap-1.5">
                   {showDeleteModal.content?.startsWith('[Image]') 
-                    ? '📷 Photo'
+                    ? (<><Image className="w-3.5 h-3.5 flex-shrink-0" /> Photo</>)
                     : showDeleteModal.voice_url
-                    ? '🎤 Voice message'
+                    ? (<><Mic className="w-3.5 h-3.5 flex-shrink-0" /> Voice message</>)
                     : showDeleteModal.content?.substring(0, 100)}
                 </p>
               </div>

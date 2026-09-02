@@ -1114,7 +1114,7 @@ export async function deletePropertyMessageForEveryone(messageId, senderId) {
     const { error } = await supabase
       .from('property_messages')
       .update({ 
-        content: '🚫 This message was deleted',
+        content: 'This message was deleted',
         deleted_at: new Date().toISOString(),
         voice_url: null,
         voice_duration: null,

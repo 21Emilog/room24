@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Users, Shield, MapPin, Heart, Zap, Mail, Globe } from 'lucide-react';
+import { X, Users, Shield, MapPin, Heart, Zap, Mail, Globe, Check } from 'lucide-react';
 
 export default function AboutModal({ onClose }) {
   const APP_VERSION = '1.0.0';
@@ -153,19 +153,19 @@ export default function AboutModal({ onClose }) {
             </p>
             <ul className="space-y-2 text-sm">
               <li className="flex items-center gap-2">
-                <span className="w-5 h-5 bg-[#E63946] rounded-full flex items-center justify-center text-xs">✓</span>
+                <span className="w-5 h-5 bg-[#E63946] rounded-full flex items-center justify-center text-xs"><Check className="w-3 h-3 text-white" /></span>
                 Free listing - no upfront costs
               </li>
               <li className="flex items-center gap-2">
-                <span className="w-5 h-5 bg-[#E63946] rounded-full flex items-center justify-center text-xs">✓</span>
+                <span className="w-5 h-5 bg-[#E63946] rounded-full flex items-center justify-center text-xs"><Check className="w-3 h-3 text-white" /></span>
                 Direct tenant inquiries via phone/WhatsApp
               </li>
               <li className="flex items-center gap-2">
-                <span className="w-5 h-5 bg-[#E63946] rounded-full flex items-center justify-center text-xs">✓</span>
+                <span className="w-5 h-5 bg-[#E63946] rounded-full flex items-center justify-center text-xs"><Check className="w-3 h-3 text-white" /></span>
                 Premium listings for extra visibility
               </li>
               <li className="flex items-center gap-2">
-                <span className="w-5 h-5 bg-[#E63946] rounded-full flex items-center justify-center text-xs">✓</span>
+                <span className="w-5 h-5 bg-[#E63946] rounded-full flex items-center justify-center text-xs"><Check className="w-3 h-3 text-white" /></span>
                 Manage multiple properties easily
               </li>
             </ul>
@@ -198,8 +198,8 @@ export default function AboutModal({ onClose }) {
 
           {/* Footer */}
           <div className="border-t border-gray-200 dark:border-gray-700 pt-6 text-center">
-            <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
-              Made with ❤️ in Mzansi 🇿🇦
+            <p className="text-gray-500 dark:text-gray-400 text-sm mb-4 flex items-center justify-center gap-1.5">
+              Made with <Heart className="w-4 h-4 text-[#E63946] fill-[#E63946]" /> in Mzansi, South Africa
             </p>
             <button
               onClick={onClose}

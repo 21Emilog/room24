@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { Megaphone } from 'lucide-react';
 
 /**
  * AdBanner Component - Google AdSense Integration
@@ -43,7 +44,7 @@ export default function AdBanner({
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
           <div className="flex items-center justify-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center shadow-inner">
-              <span className="text-lg animate-float">📢</span>
+              <Megaphone className="w-5 h-5 text-gray-500 animate-float" />
             </div>
             <div className="text-left">
               <p className="text-sm font-semibold text-gray-500">Advertisement</p>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Search, MapPin, User, Phone, Mail, ArrowLeft, ShieldCheck, Star, Maximize, ExternalLink, Share2, Copy, MessageCircle, Eye, GitCompare, Zap, Calendar, Clock, Award, Home, ChevronRight } from 'lucide-react';
+import { X, Search, MapPin, User, Phone, Mail, ArrowLeft, ShieldCheck, Star, Maximize, ExternalLink, Share2, Copy, MessageCircle, Eye, GitCompare, Zap, Calendar, Clock, Award, Home, ChevronRight, Video, DollarSign, AlertTriangle, CheckCircle } from 'lucide-react';
 import VirtualTourViewer from './VirtualTourViewer';
 import { trackListingView, trackUserViewedListing, addToCompare, getCompareList, removeFromCompare, trackLandlordContactClick, getResponseTimeBadge } from '../utils/notificationEngine';
 import { calculateQualityScore, getQualityLabel } from '../utils/qualityScore';
@@ -361,7 +361,7 @@ export default function ListingDetailModal({ listing, landlord, onClose, current
           {listing.videoTour && (
             <div className="mb-4">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-lg">🎥</span>
+                <Video className="w-5 h-5 text-purple-600" />
                 <h4 className="font-bold text-gray-800">Video Tour</h4>
                 <span className="bg-purple-100 text-purple-700 text-xs font-semibold px-2 py-0.5 rounded-full">NEW</span>
               </div>
@@ -425,7 +425,7 @@ export default function ListingDetailModal({ listing, landlord, onClose, current
           {listing.additionalCosts && listing.additionalCosts.length > 0 && (
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
               <h4 className="font-semibold text-amber-800 mb-2 flex items-center gap-2">
-                <span>💰</span> Additional Costs
+                <DollarSign className="w-4 h-4" /> Additional Costs
               </h4>
               <div className="space-y-2">
                 {listing.additionalCosts.filter(c => c.name && c.amount).map((cost, index) => (
@@ -440,8 +440,8 @@ export default function ListingDetailModal({ listing, landlord, onClose, current
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-amber-600 mt-3 border-t border-amber-200 pt-2">
-                ⚠️ These costs are in addition to the monthly rent shown above
+              <p className="text-xs text-amber-600 mt-3 border-t border-amber-200 pt-2 flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" /> These costs are in addition to the monthly rent shown above
               </p>
             </div>
           )}
@@ -658,15 +658,15 @@ export default function ListingDetailModal({ listing, landlord, onClose, current
                   <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 mb-3">
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="text-white text-lg">⚠️</span>
+                        <AlertTriangle className="w-5 h-5 text-white" />
                       </div>
                       <div>
                         <h5 className="font-bold text-amber-800 mb-1">Safety Warning</h5>
                         <p className="text-sm text-amber-700 leading-relaxed">
                           <strong>Never pay a deposit or any money before viewing the room in person.</strong> Always meet the landlord at the property and verify everything before making any payments.
                         </p>
-                        <p className="text-xs text-amber-600 mt-2 font-medium">
-                          🛡️ RentMzansi does not handle payments. Report suspicious listings immediately.
+                        <p className="text-xs text-amber-600 mt-2 font-medium flex items-center gap-1.5">
+                          <ShieldCheck className="w-3.5 h-3.5 flex-shrink-0" /> RentMzansi does not handle payments. Report suspicious listings immediately.
                         </p>
                       </div>
                     </div>
@@ -772,7 +772,7 @@ export default function ListingDetailModal({ listing, landlord, onClose, current
             return (
               <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 mb-4 border border-blue-200">
                 <h4 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <span className="text-xl">🏠</span>
+                  <Home className="w-5 h-5 text-blue-600" />
                   Similar Rooms You Might Like
                 </h4>
                 <div className="space-y-3">
@@ -904,7 +904,7 @@ export default function ListingDetailModal({ listing, landlord, onClose, current
                 {viewingStatus === 'sent' ? (
                   <div className="p-6 text-center">
                     <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <span className="text-3xl">✅</span>
+                      <CheckCircle className="w-9 h-9 text-green-600" />
                     </div>
                     <h5 className="font-bold text-gray-900 text-lg mb-2">Request Sent!</h5>
                     <p className="text-gray-600 text-sm mb-4">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart3, Zap, Bug } from 'lucide-react';
+import { BarChart3, Zap, Bug, Lock } from 'lucide-react';
 
 export default function AnalyticsConsentModal({ onAccept, onDecline }) {
   return (
@@ -55,7 +55,7 @@ export default function AnalyticsConsentModal({ onAccept, onDecline }) {
 
           <div className="bg-gradient-to-r from-gray-50 to-blue-50 border border-blue-100 rounded-xl p-4 mb-6">
             <div className="flex items-start gap-2">
-              <span className="text-lg">🔒</span>
+              <Lock className="w-5 h-5 text-gray-600 flex-shrink-0" />
               <div>
                 <p className="text-xs font-semibold text-gray-700 mb-1">Privacy Promise</p>
                 <p className="text-xs text-gray-600">

@@ -91,7 +91,7 @@ export function checkViewedListingPriceDrops(userId, currentListings) {
       const drop = parseFloat(viewedData.price) - parseFloat(listing.price);
       notifications.push({
         type: 'price-drop',
-        title: '💰 Price Drop!',
+        title: 'Price Drop!',
         body: `"${listing.title}" dropped by R${drop.toLocaleString()} to R${parseFloat(listing.price).toLocaleString()}/month`,
         listingId,
         oldPrice: viewedData.price,
@@ -371,7 +371,7 @@ export function checkAreaSubscriptions(userId, currentListings) {
       if (listingLocation.includes(areaLower) || listingFullAddress.includes(areaLower)) {
         notifications.push({
           type: 'area-alert',
-          title: `🏠 New Room in ${area}!`,
+          title: `New Room in ${area}!`,
           body: `"${listing.title}" - R${listing.price}/month in ${listing.location}`,
           listingId: listingId,
           area: area,

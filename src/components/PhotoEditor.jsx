@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { X, Camera, Upload, Crop, Move, Trash2, Check } from 'lucide-react';
+import { X, Camera, Upload, Crop, Move, Trash2, Check, Star, Sparkles } from 'lucide-react';
 import { compressImage } from '../utils/imageCompression';
 
 export default function PhotoEditor({ photos, onPhotosChange, onClose, maxPhotos = 5 }) {
@@ -167,7 +167,7 @@ export default function PhotoEditor({ photos, onPhotosChange, onClose, maxPhotos
                 <div key={index} className="relative group rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300">
                   {index === 0 && (
                     <div className="absolute top-2 left-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-xs px-2.5 py-1 rounded-full font-bold z-10 shadow-lg flex items-center gap-1">
-                      <span>⭐</span> Cover
+                      <Star className="w-3 h-3 fill-white" /> Cover
                     </div>
                   )}
                   <img
@@ -245,8 +245,8 @@ export default function PhotoEditor({ photos, onPhotosChange, onClose, maxPhotos
                     />
                   </div>
                   <div className="mt-4 text-center">
-                    <p className="text-sm text-gray-500 bg-gray-50 rounded-lg px-4 py-2 inline-block">
-                      ✨ Drag to adjust crop area
+                    <p className="text-sm text-gray-500 bg-gray-50 rounded-lg px-4 py-2 inline-flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4" /> Drag to adjust crop area
                     </p>
                   </div>
                 </div>

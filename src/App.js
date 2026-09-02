@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense } from 'react';
-import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone, Sparkles, TrendingUp, ShieldCheck, ChevronDown, ArrowLeft, RefreshCw, GitCompare, MessageSquare, Copy, MessageCircle, Camera } from 'lucide-react';
+import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone, Sparkles, TrendingUp, ShieldCheck, ChevronDown, ArrowLeft, RefreshCw, GitCompare, MessageSquare, Copy, MessageCircle, Camera, DollarSign, Lock, Bed, DoorOpen, Building2, Moon, FileText, Wifi, Car, Utensils, PawPrint, WashingMachine, Sofa, Lightbulb, PartyPopper, Video, Clock, Snowflake, Trees, Waves, Dumbbell, Pencil } from 'lucide-react';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import BrowseView from './components/BrowseView';
@@ -307,7 +307,7 @@ export default function RentalPlatform() {
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === 'accepted') {
         setShowInstallBanner(false);
-        showToast('RentMzansi installed! Check your home screen', 'success', '🎉 Installed!');
+        showToast('RentMzansi installed! Check your home screen', 'success', 'Installed!');
       }
       setDeferredPrompt(null);
     } else {
@@ -316,14 +316,14 @@ export default function RentalPlatform() {
                        || window.navigator.standalone === true;
       
       if (isInstalled) {
-        showToast('RentMzansi is already installed on your device!', 'success', '✅ Already Installed');
+        showToast('RentMzansi is already installed on your device!', 'success', 'Already Installed');
       } else {
         // iOS or browser that doesn't support install prompt
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
         if (isIOS) {
-          showToast('Tap the Share button (□↑) at the bottom, then "Add to Home Screen"', 'info', '📱 Install on iPhone');
+          showToast('Tap the Share button (□↑) at the bottom, then "Add to Home Screen"', 'info', 'Install on iPhone');
         } else {
-          showToast('Click the menu (⋮) then "Install app" or "Add to Home Screen"', 'info', '📱 Install RentMzansi');
+          showToast('Click the menu (⋮) then "Install app" or "Add to Home Screen"', 'info', 'Install RentMzansi');
         }
       }
     }
@@ -552,7 +552,7 @@ export default function RentalPlatform() {
     
     const result = subscribeToAreaEngine(userId, area);
     if (result.success) {
-      showToast(result.message, 'success', '🔔 Alert Created!');
+      showToast(result.message, 'success', 'Alert Created!');
     } else {
       showToast(result.message, 'info');
     }
@@ -931,7 +931,7 @@ const handleRelistListing = async (listingId) => {
     setListings(updatedListings);
     localStorage.setItem('listings', JSON.stringify(updatedListings));
     
-    showToast(`Listing relisted for ${expiryDays} days!`, 'success', '🎉 Relisted!');
+    showToast(`Listing relisted for ${expiryDays} days!`, 'success', 'Relisted!');
   } catch (err) {
     console.error('Failed to relist:', err);
     showToast('Failed to relist. Please try again.', 'error');
@@ -2031,7 +2031,7 @@ function ProfileView({ user, onEdit, onUpdatePrefs, onSignOut, linkedProviders, 
               {/* WhatsApp - only if set */}
               {user.whatsapp && (
                 <div className="bg-gray-50 rounded-lg p-2.5 flex items-center gap-2">
-                  <span className="text-sm">💬</span>
+                  <MessageCircle className="w-4 h-4 text-gray-500" />
                   <div className="min-w-0 flex-1">
                     <p className="text-[10px] text-gray-500">WhatsApp</p>
                     <p className="text-xs font-semibold text-gray-800 truncate">{user.whatsapp}</p>
@@ -2478,7 +2478,7 @@ function EditProfileView({ user, onSubmit, onCancel }) {
                   aria-describedby={errors.name ? 'edit-name-error' : undefined}
                   className={`w-full px-4 py-3.5 border-2 ${errors.name ? 'border-red-400 bg-red-50 ring-4 ring-red-100' : 'border-gray-200 hover:border-gray-300'} bg-gray-50/50 focus:bg-white text-gray-800 rounded-2xl focus:ring-4 focus:ring-violet-200 focus:border-violet-500 transition-all duration-200 placeholder-gray-400`}
                 />
-                {errors.name && touched.name && <p id="edit-name-error" className="mt-1.5 text-xs text-red-600 font-medium flex items-center gap-1"><span>⚠</span>{errors.name}</p>}
+                {errors.name && touched.name && <p id="edit-name-error" className="mt-1.5 text-xs text-red-600 font-medium flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" />{errors.name}</p>}
               </div>
 
               <div>
@@ -2496,7 +2496,7 @@ function EditProfileView({ user, onSubmit, onCancel }) {
                     className={`w-full pl-11 pr-4 py-3.5 border-2 ${errors.phone ? 'border-red-400 bg-red-50 ring-4 ring-red-100' : 'border-gray-200 hover:border-gray-300'} bg-gray-50/50 focus:bg-white text-gray-800 rounded-2xl focus:ring-4 focus:ring-violet-200 focus:border-violet-500 transition-all duration-200 placeholder-gray-400`}
                   />
                 </div>
-                {errors.phone && touched.phone && <p id="edit-phone-error" className="mt-1.5 text-xs text-red-600 font-medium flex items-center gap-1"><span>⚠</span>{errors.phone}</p>}
+                {errors.phone && touched.phone && <p id="edit-phone-error" className="mt-1.5 text-xs text-red-600 font-medium flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" />{errors.phone}</p>}
               </div>
 
               <div>
@@ -2514,13 +2514,13 @@ function EditProfileView({ user, onSubmit, onCancel }) {
                     className={`w-full pl-11 pr-4 py-3.5 border-2 ${errors.email ? 'border-red-400 bg-red-50 ring-4 ring-red-100' : 'border-gray-200 hover:border-gray-300'} bg-gray-50/50 focus:bg-white text-gray-800 rounded-2xl focus:ring-4 focus:ring-violet-200 focus:border-violet-500 transition-all duration-200 placeholder-gray-400`}
                   />
                 </div>
-                {errors.email && touched.email && <p id="edit-email-error" className="mt-1.5 text-xs text-red-600 font-medium flex items-center gap-1"><span>⚠</span>{errors.email}</p>}
+                {errors.email && touched.email && <p id="edit-email-error" className="mt-1.5 text-xs text-red-600 font-medium flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" />{errors.email}</p>}
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-800 mb-2">WhatsApp (optional)</label>
                 <div className="relative">
-                  <span className="absolute left-4 top-3 text-lg">💬</span>
+                  <MessageCircle className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
                   <input
                     type="tel"
                     value={formData.whatsapp}
@@ -3172,11 +3172,11 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
         <div className="max-w-3xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between gap-2">
             {[
-              { num: 1, label: 'Type', icon: '🏠' },
-              { num: 2, label: 'Basics', icon: '💰' },
-              { num: 3, label: 'Location', icon: '📍' },
-              { num: 4, label: 'Details', icon: '📋' },
-              { num: 5, label: 'Photos', icon: '📸' },
+              { num: 1, label: 'Type', icon: Home },
+              { num: 2, label: 'Basics', icon: DollarSign },
+              { num: 3, label: 'Location', icon: MapPin },
+              { num: 4, label: 'Details', icon: FileText },
+              { num: 5, label: 'Photos', icon: Camera },
             ].map((step, index) => (
               <React.Fragment key={step.num}>
                 <button
@@ -3194,7 +3194,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                       ? 'bg-emerald-500 text-white'
                       : 'bg-gray-200 text-gray-500'
                   }`}>
-                    {currentStep > step.num ? '✓' : step.icon}
+                    {currentStep > step.num ? <CheckCircle className="w-5 h-5" /> : <step.icon className="w-5 h-5" />}
                   </div>
                   <span className={`text-xs font-medium ${currentStep === step.num ? 'text-[#E63946]' : 'text-gray-500'}`}>
                     {step.label}
@@ -3224,9 +3224,9 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto">
                 {[
-                  { value: 'room', label: 'Room', icon: '🛏️', description: 'A private or shared room inside a house', color: 'blue' },
-                  { value: 'backroom', label: 'Backroom', icon: '🏡', description: 'A separate unit in the backyard', color: 'emerald' },
-                  { value: 'guesthouse', label: 'Guesthouse', icon: '🏨', description: 'Short or long-term accommodation', color: 'purple' }
+                  { value: 'room', label: 'Room', icon: Bed, description: 'A private or shared room inside a house', color: 'blue' },
+                  { value: 'backroom', label: 'Backroom', icon: DoorOpen, description: 'A separate unit in the backyard', color: 'emerald' },
+                  { value: 'guesthouse', label: 'Guesthouse', icon: Building2, description: 'Short or long-term accommodation', color: 'purple' }
                 ].map(type => (
                   <button
                     key={type.value}
@@ -3240,7 +3240,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                         : 'border-gray-200 bg-white hover:border-gray-300'
                     }`}
                   >
-                    <div className="text-5xl mb-3">{type.icon}</div>
+                    <type.icon className="w-10 h-10 mb-3 mx-auto text-gray-700" />
                     <h4 className={`font-bold text-lg mb-1 ${
                       formData.listingType === type.value 
                         ? type.color === 'blue' ? 'text-blue-600' :
@@ -3261,7 +3261,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
             <div className="p-6 md:p-8 space-y-6">
               <div className="text-center mb-6">
                 <h3 className="text-2xl font-bold text-gray-800 mb-2">
-                  {formData.listingType === 'guesthouse' ? '💰 Pricing & Basics' : '💰 Rent & Title'}
+                  {formData.listingType === 'guesthouse' ? 'Pricing & Basics' : 'Rent & Title'}
                 </h3>
                 <p className="text-gray-500">Tell us about your {formData.listingType || 'room'}</p>
               </div>
@@ -3285,16 +3285,16 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
               {formData.listingType === 'guesthouse' ? (
                 <div className="bg-purple-50 rounded-2xl p-5 border border-purple-200 space-y-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-2xl">🏨</span>
+                    <Building2 className="w-6 h-6 text-purple-700" />
                     <span className="font-bold text-purple-800">Guesthouse Pricing</span>
                   </div>
                   
                   {/* Price Type */}
                   <div className="grid grid-cols-3 gap-2">
                     {[
-                      { value: 'nightly', label: 'Per Night', icon: '🌙' },
-                      { value: 'weekly', label: 'Per Week', icon: '📅' },
-                      { value: 'monthly', label: 'Per Month', icon: '🗓️' },
+                      { value: 'nightly', label: 'Per Night', icon: Moon },
+                      { value: 'weekly', label: 'Per Week', icon: Calendar },
+                      { value: 'monthly', label: 'Per Month', icon: Calendar },
                     ].map(opt => (
                       <button
                         key={opt.value}
@@ -3306,7 +3306,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                             : 'bg-white text-gray-600 border border-gray-200 hover:border-purple-300'
                         }`}
                       >
-                        <span className="text-lg">{opt.icon}</span>
+                        <span className="text-lg"><opt.icon className="w-5 h-5" /></span>
                         <span>{opt.label}</span>
                       </button>
                     ))}
@@ -3419,7 +3419,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
           {currentStep === 3 && (
             <div className="p-6 md:p-8 space-y-6">
               <div className="text-center mb-6">
-                <h3 className="text-2xl font-bold text-gray-800 mb-2">📍 Where is your property?</h3>
+                <h3 className="text-2xl font-bold text-gray-800 mb-2 flex items-center justify-center gap-2"><MapPin className="w-6 h-6" /> Where is your property?</h3>
                 <p className="text-gray-500">Help renters find your location</p>
               </div>
 
@@ -3436,9 +3436,10 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
               </div>
 
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <p className="text-sm text-blue-700">
-                  <strong>💡 Tip:</strong> The more specific your address, the easier it is for renters to find you. 
-                  Include landmarks if helpful.
+                <p className="text-sm text-blue-700 flex items-start gap-1.5">
+                  <Lightbulb className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <span><strong>Tip:</strong> The more specific your address, the easier it is for renters to find you. 
+                  Include landmarks if helpful.</span>
                 </p>
               </div>
             </div>
@@ -3448,7 +3449,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
           {currentStep === 4 && (
             <div className="p-6 md:p-8 space-y-6">
               <div className="text-center mb-6">
-                <h3 className="text-2xl font-bold text-gray-800 mb-2">📋 Property Details</h3>
+                <h3 className="text-2xl font-bold text-gray-800 mb-2">Property Details</h3>
                 <p className="text-gray-500">Tell us more about your {formData.listingType || 'room'}</p>
               </div>
 
@@ -3466,7 +3467,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
-                      <span className="text-2xl mb-2 block">🔒</span>
+                      <Lock className="w-6 h-6 mb-2 text-gray-600" />
                       <span className="font-semibold">Private Room</span>
                     </button>
                     <button
@@ -3505,7 +3506,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
               {/* Guesthouse specific - Check-in/out times */}
               {formData.listingType === 'guesthouse' && (
                 <div className="bg-purple-50 rounded-xl p-4 border border-purple-200 space-y-4">
-                  <h4 className="font-semibold text-purple-800">🏨 Guesthouse Settings</h4>
+                  <h4 className="font-semibold text-purple-800 flex items-center gap-2"><Building2 className="w-5 h-5" /> Guesthouse Settings</h4>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-medium text-gray-600 mb-1">Check-in time</label>
@@ -3534,8 +3535,8 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                         formData.breakfastIncluded ? 'border-purple-500 bg-purple-100' : 'border-gray-200 bg-white'
                       }`}
                     >
-                      <span>🍳</span>
-                      <span className="font-medium text-sm">Breakfast {formData.breakfastIncluded ? '✓' : ''}</span>
+                      <Utensils className="w-4 h-4" />
+                      <span className="font-medium text-sm">Breakfast {formData.breakfastIncluded ? <CheckCircle className="inline w-4 h-4" /> : ''}</span>
                     </button>
                     <div className="flex-1">
                       <input
@@ -3607,7 +3608,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                     formData.petFriendly ? 'border-[#E63946] bg-red-50' : 'border-gray-200'
                   }`}
                 >
-                  <span className="text-2xl">🐾</span>
+                  <PawPrint className="w-6 h-6" />
                   <div className="text-left">
                     <p className="font-semibold text-sm">Pet Friendly</p>
                     <p className="text-xs text-gray-500">{formData.petFriendly ? 'Yes' : 'No'}</p>
@@ -3633,7 +3634,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
           {currentStep === 5 && (
             <div className="p-6 md:p-8 space-y-6">
               <div className="text-center mb-6">
-                <h3 className="text-2xl font-bold text-gray-800 mb-2">📸 Photos & Description</h3>
+                <h3 className="text-2xl font-bold text-gray-800 mb-2">Photos & Description</h3>
                 <p className="text-gray-500">Make your listing stand out</p>
               </div>
 
@@ -3744,7 +3745,7 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                 disabled={isSubmitting}
                 className="px-8 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-emerald-500 to-green-600 hover:shadow-lg transition-all disabled:opacity-50"
               >
-                {isSubmitting ? 'Publishing...' : '🎉 Publish Listing'}
+                {isSubmitting ? 'Publishing...' : (<><PartyPopper className="inline w-4 h-4 mr-1" /> Publish Listing</>)}
               </button>
             )}
           </div>
@@ -3785,16 +3786,16 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
   const [showPhotoEditor, setShowPhotoEditor] = useState(false);
 
   const amenityOptions = [
-    { id: 'wifi', label: 'WiFi', icon: '📶' },
-    { id: 'parking', label: 'Parking', icon: '🚗' },
-    { id: 'kitchen', label: 'Kitchen', icon: '🍳' },
-    { id: 'laundry', label: 'Laundry', icon: '🧺' },
-    { id: 'aircon', label: 'Air Conditioning', icon: '❄️' },
-    { id: 'furnished', label: 'Furnished', icon: '🛋️' },
-    { id: 'security', label: 'Security', icon: '🔒' },
-    { id: 'garden', label: 'Garden', icon: '🌳' },
-    { id: 'pool', label: 'Pool', icon: '🏊' },
-    { id: 'gym', label: 'Gym', icon: '💪' },
+    { id: 'wifi', label: 'WiFi', icon: Wifi },
+    { id: 'parking', label: 'Parking', icon: Car },
+    { id: 'kitchen', label: 'Kitchen', icon: Utensils },
+    { id: 'laundry', label: 'Laundry', icon: WashingMachine },
+    { id: 'aircon', label: 'Air Conditioning', icon: Snowflake },
+    { id: 'furnished', label: 'Furnished', icon: Sofa },
+    { id: 'security', label: 'Security', icon: Lock },
+    { id: 'garden', label: 'Garden', icon: Trees },
+    { id: 'pool', label: 'Pool', icon: Waves },
+    { id: 'gym', label: 'Gym', icon: Dumbbell },
   ];
 
   const validateForm = () => {
@@ -3873,14 +3874,14 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-6">
           {/* Listing Type Selector */}
           <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-3">
-              🏠 Property Type
+            <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+              <Home className="w-4 h-4" /> Property Type
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
-                { value: 'room', label: 'Room', icon: '🛏️', description: 'Private or shared room' },
-                { value: 'backroom', label: 'Backroom', icon: '🏡', description: 'Separate backyard unit' },
-                { value: 'guesthouse', label: 'Guesthouse/BnB', icon: '🏨', description: 'Short or long-term' }
+                { value: 'room', label: 'Room', icon: Bed, description: 'Private or shared room' },
+                { value: 'backroom', label: 'Backroom', icon: DoorOpen, description: 'Separate backyard unit' },
+                { value: 'guesthouse', label: 'Guesthouse/BnB', icon: Building2, description: 'Short or long-term' }
               ].map(type => (
                 <button
                   key={type.value}
@@ -3893,7 +3894,7 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xl">{type.icon}</span>
+                    <span className="text-xl"><type.icon className="w-5 h-5" /></span>
                     <span className={`font-semibold text-sm ${(formData.listingType || 'room') === type.value ? 'text-[#E63946]' : 'text-gray-800'}`}>
                       {type.label}
                     </span>
@@ -3924,7 +3925,7 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
             /* Guesthouse/BnB Pricing */
             <div className="space-y-4 p-4 bg-purple-50 rounded-2xl border-2 border-purple-200">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-xl">🏨</span>
+                <Building2 className="w-6 h-6 text-purple-700" />
                 <h4 className="font-bold text-purple-800">Guesthouse Pricing</h4>
               </div>
               
@@ -3933,9 +3934,9 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
                 <label className="block text-sm font-semibold text-gray-800 mb-2">How do you charge?</label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { value: 'nightly', label: 'Per Night', icon: '🌙' },
-                    { value: 'weekly', label: 'Per Week', icon: '📅' },
-                    { value: 'monthly', label: 'Per Month', icon: '🗓️' },
+                    { value: 'nightly', label: 'Per Night', icon: Moon },
+                    { value: 'weekly', label: 'Per Week', icon: Calendar },
+                    { value: 'monthly', label: 'Per Month', icon: Calendar },
                   ].map(opt => (
                     <button
                       key={opt.value}
@@ -3947,7 +3948,7 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
                           : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
                       }`}
                     >
-                      <span>{opt.icon}</span>
+                      <span><opt.icon className="w-4 h-4" /></span>
                       <span>{opt.label}</span>
                     </button>
                   ))}
@@ -3997,7 +3998,7 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
               {/* Check-in/Check-out */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-800 mb-2">🕐 Check-in</label>
+                  <label className="block text-sm font-semibold text-gray-800 mb-2">Check-in</label>
                   <input
                     type="time"
                     value={formData.checkInTime}
@@ -4006,7 +4007,7 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-800 mb-2">🕐 Check-out</label>
+                  <label className="block text-sm font-semibold text-gray-800 mb-2">Check-out</label>
                   <input
                     type="time"
                     value={formData.checkOutTime}
@@ -4025,8 +4026,8 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
                     formData.breakfastIncluded ? 'border-purple-500 bg-purple-100' : 'border-gray-200 bg-white'
                   }`}
                 >
-                  <span>🍳</span>
-                  <span className="text-sm font-medium">{formData.breakfastIncluded ? 'Breakfast ✓' : 'No Breakfast'}</span>
+                  <Utensils className="w-4 h-4" />
+                  <span className="text-sm font-medium">{formData.breakfastIncluded ? <><CheckCircle className="inline w-4 h-4" /> Breakfast</> : 'No Breakfast'}</span>
                 </button>
                 <div>
                   <label className="block text-xs font-semibold text-gray-800 mb-1">Cleaning Fee (R)</label>
@@ -4042,7 +4043,7 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
 
               {/* House Rules */}
               <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-2">📋 House Rules</label>
+                <label className="block text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2"><FileText className="w-4 h-4" /> House Rules</label>
                 <textarea
                   value={formData.houseRules}
                   onChange={(e) => setFormData({ ...formData, houseRules: e.target.value })}
@@ -4071,7 +4072,7 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
 
           {/* Additional Costs */}
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-            <label className="block text-sm font-semibold text-gray-800 mb-2">💰 Additional Costs (Optional)</label>
+            <label className="block text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2"><DollarSign className="w-4 h-4" /> Additional Costs (Optional)</label>
             <p className="text-xs text-gray-600 mb-3">Help renters budget correctly by listing any extra fees not included in the monthly rent.</p>
             
             {(formData.additionalCosts || []).map((cost, index) => (
@@ -4118,7 +4119,7 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
                   }}
                   className="p-2 text-red-500 hover:bg-red-100 rounded-lg transition-colors"
                 >
-                  ✕
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             ))}
@@ -4198,7 +4199,7 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
 
           {/* Listing Duration / Expiry */}
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-            <label className="block text-sm font-semibold text-gray-800 mb-2">⏰ Listing Duration</label>
+            <label className="block text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2"><Clock className="w-4 h-4" /> Listing Duration</label>
             <p className="text-xs text-gray-600 mb-3">How long should this listing stay active? After expiry, it will be moved to your "My Rooms" for relisting.</p>
             <div className="grid grid-cols-4 gap-2">
               {[
@@ -4221,8 +4222,8 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
                 </button>
               ))}
             </div>
-            <p className="text-xs text-blue-600 mt-3">
-              💡 This helps keep the platform fresh and avoids stale listings. You can easily relist anytime.
+            <p className="text-xs text-blue-600 mt-3 flex items-center gap-1.5">
+              <Lightbulb className="w-3.5 h-3.5 flex-shrink-0" /> This helps keep the platform fresh and avoids stale listings. You can easily relist anytime.
             </p>
           </div>
 
@@ -4271,7 +4272,7 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
                       : 'bg-gray-50 text-gray-600 border-2 border-transparent hover:bg-gray-100'
                   }`}
                 >
-                  <span>{amenity.icon}</span>
+                  <span><amenity.icon className="w-4 h-4" /></span>
                   <span>{amenity.label}</span>
                 </button>
               ))}
@@ -4281,7 +4282,7 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
           {/* Contact Details */}
           <div className="bg-gradient-to-r from-blue-50 to-red-50 border border-blue-200 rounded-xl p-4">
             <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
-              📞 Contact Details
+              <Phone className="w-4 h-4" /> Contact Details
               <span className="text-xs font-normal text-gray-500">(How tenants can reach you)</span>
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -4290,7 +4291,7 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
                   Phone Number (for calls)
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">📱</span>
+                  <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="tel"
                     value={formData.contactPhone}
@@ -4306,7 +4307,7 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
                   WhatsApp Number
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-green-500">💬</span>
+                  <MessageCircle className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" />
                   <input
                     type="tel"
                     value={formData.contactWhatsapp}
@@ -4348,7 +4349,7 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
             {formData.photos.length < 5 && (
               <label className="block cursor-pointer">
                 <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-[#E63946] hover:bg-red-50/50 transition-all">
-                  <div className="text-3xl mb-2">📸</div>
+                  <Camera className="w-8 h-8 mb-2 mx-auto text-gray-400" />
                   <p className="text-gray-600 text-sm font-medium">Click to add photos</p>
                   <p className="text-gray-400 text-xs mt-1">Up to 5 photos</p>
                 </div>
@@ -4366,17 +4367,17 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
               <button
                 type="button"
                 onClick={() => setShowPhotoEditor(true)}
-                className="mt-3 text-sm text-[#E63946] hover:text-[#c5303c] font-medium"
+                className="mt-3 text-sm text-[#E63946] hover:text-[#c5303c] font-medium inline-flex items-center gap-1"
               >
-                ✏️ Edit Photos
+                <Pencil className="w-3.5 h-3.5" /> Edit Photos
               </button>
             )}
           </div>
 
           {/* Video Tour */}
           <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-2">
-              🎥 Video Tour <span className="text-gray-400 font-normal">(Optional)</span>
+            <label className="block text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
+              <Video className="w-4 h-4" /> Video Tour <span className="text-gray-400 font-normal">(Optional)</span>
             </label>
             
             {formData.videoTour ? (
@@ -4397,7 +4398,7 @@ function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
             ) : (
               <label className="block cursor-pointer">
                 <div className="border-2 border-dashed border-purple-300 rounded-xl p-4 text-center hover:border-purple-500 hover:bg-purple-50/50 transition-all">
-                  <div className="text-2xl mb-1">🎥</div>
+                  <Video className="w-6 h-6 mb-1 mx-auto text-purple-400" />
                   <p className="text-gray-600 text-sm font-medium">Add Video Tour</p>
                   <p className="text-gray-400 text-xs">Max 60 sec, 50MB</p>
                 </div>
@@ -4607,8 +4608,8 @@ function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus, 
                               className={`w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500 ${listing.status === 'rented' ? 'grayscale' : ''}`} 
                             />
                             {listing.photos.length > 1 && (
-                              <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-xs font-medium">
-                                📷 {listing.photos.length}
+                              <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                                <Camera className="w-3 h-3" /> {listing.photos.length}
                               </div>
                             )}
                             <button
@@ -4624,8 +4625,8 @@ function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus, 
                             </button>
                             {/* Expiry countdown badge */}
                             {daysLeft !== null && daysLeft <= 3 && (
-                              <div className="absolute bottom-3 left-3 bg-amber-500 text-white px-2.5 py-1 rounded-full text-xs font-bold shadow-lg animate-pulse">
-                                ⏰ {daysLeft <= 0 ? 'Expiring today' : `${daysLeft}d left`}
+                              <div className="absolute bottom-3 left-3 bg-amber-500 text-white px-2.5 py-1 rounded-full text-xs font-bold shadow-lg animate-pulse flex items-center gap-1">
+                                <Clock className="w-3 h-3" /> {daysLeft <= 0 ? 'Expiring today' : `${daysLeft}d left`}
                               </div>
                             )}
                           </div>
@@ -4649,11 +4650,13 @@ function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus, 
                           <h3 className="font-bold text-lg text-gray-800 mb-1 line-clamp-1 uppercase tracking-wide">{listing.title}</h3>
                           <div className="text-[#E63946] font-bold text-xl mb-1">R{listing.price?.toLocaleString()}<span className="text-sm font-normal text-gray-500">/month</span></div>
                           {listing.additionalCosts && listing.additionalCosts.filter(c => c.name && c.amount).length > 0 && (
-                            <p className="text-xs text-amber-600 mb-1">💰 +{listing.additionalCosts.filter(c => c.name && c.amount).length} additional cost{listing.additionalCosts.filter(c => c.name && c.amount).length > 1 ? 's' : ''}</p>
+                            <p className="text-xs text-amber-600 mb-1 flex items-center gap-1">
+                              <DollarSign className="w-3.5 h-3.5" /> +{listing.additionalCosts.filter(c => c.name && c.amount).length} additional cost{listing.additionalCosts.filter(c => c.name && c.amount).length > 1 ? 's' : ''}
+                            </p>
                           )}
                           {daysLeft !== null && (
-                            <p className={`text-xs mb-2 ${daysLeft <= 3 ? 'text-amber-600 font-medium' : 'text-gray-500'}`}>
-                              ⏰ Expires in {daysLeft} day{daysLeft !== 1 ? 's' : ''}
+                            <p className={`text-xs mb-2 flex items-center gap-1 ${daysLeft <= 3 ? 'text-amber-600 font-medium' : 'text-gray-500'}`}>
+                              <Clock className="w-3.5 h-3.5" /> Expires in {daysLeft} day{daysLeft !== 1 ? 's' : ''}
                             </p>
                           )}
                           <div className="flex items-center text-sm mb-4">
@@ -4706,15 +4709,15 @@ function MyListingsView({ listings, onDelete, onCreate, onEdit, onToggleStatus, 
                             alt="Room" 
                             className="w-full h-48 object-cover grayscale group-hover:grayscale-0 transition-all duration-500" 
                           />
-                          <div className="absolute top-3 left-3 bg-amber-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">
-                            ⏰ Expired
+                          <div className="absolute top-3 left-3 bg-amber-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" /> Expired
                           </div>
                         </div>
                       ) : (
                         <div className="relative h-48 bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center">
                           <Home className="w-16 h-16 text-amber-300" />
-                          <div className="absolute top-3 left-3 bg-amber-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">
-                            ⏰ Expired
+                          <div className="absolute top-3 left-3 bg-amber-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" /> Expired
                           </div>
                         </div>
                       )}
@@ -5282,7 +5285,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
                 }`}
                 placeholder="john@example.com"
               />
-              {errors.email && <p className="text-rose-500 text-xs mt-2 flex items-center gap-1.5 font-medium"><span>⚠</span>{errors.email}</p>}
+              {errors.email && <p className="text-rose-500 text-xs mt-2 flex items-center gap-1.5 font-medium"><AlertTriangle className="w-3.5 h-3.5" />{errors.email}</p>}
             </div>
           )}
 
@@ -5302,7 +5305,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
                     }`}
                     placeholder="John Doe"
                   />
-                  {errors.name && <p className="text-rose-500 text-xs mt-2 flex items-center gap-1.5 font-medium"><span>⚠</span>{errors.name}</p>}
+                  {errors.name && <p className="text-rose-500 text-xs mt-2 flex items-center gap-1.5 font-medium"><AlertTriangle className="w-3.5 h-3.5" />{errors.name}</p>}
                 </div>
               )}
 
@@ -5314,7 +5317,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
                     <span className="text-xs text-gray-400 font-normal ml-2">(Required for contact matching)</span>
                   </label>
                   <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">📱</span>
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input 
                       type="tel" 
                       value={form.phone} 
@@ -5325,7 +5328,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
                       placeholder="081 234 5678"
                     />
                   </div>
-                  {errors.phone && <p className="text-rose-500 text-xs mt-2 flex items-center gap-1.5 font-medium"><span>⚠</span>{errors.phone}</p>}
+                  {errors.phone && <p className="text-rose-500 text-xs mt-2 flex items-center gap-1.5 font-medium"><AlertTriangle className="w-3.5 h-3.5" />{errors.phone}</p>}
                 </div>
               )}
 
@@ -5341,7 +5344,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
                   }`}
                   placeholder="john@example.com"
                 />
-                {errors.email && <p className="text-rose-500 text-xs mt-2 flex items-center gap-1.5 font-medium"><span>⚠</span>{errors.email}</p>}
+                {errors.email && <p className="text-rose-500 text-xs mt-2 flex items-center gap-1.5 font-medium"><AlertTriangle className="w-3.5 h-3.5" />{errors.email}</p>}
               </div>
 
               {/* Password */}
@@ -5356,7 +5359,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
                   }`}
                   placeholder="••••••••"
                 />
-                {errors.password && <p className="text-rose-500 text-xs mt-2 flex items-center gap-1.5 font-medium"><span>⚠</span>{errors.password}</p>}
+                {errors.password && <p className="text-rose-500 text-xs mt-2 flex items-center gap-1.5 font-medium"><AlertTriangle className="w-3.5 h-3.5" />{errors.password}</p>}
               </div>
 
               {/* Confirm Password (signup only) */}
@@ -5372,7 +5375,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
                     }`}
                     placeholder="••••••••"
                   />
-                  {errors.confirmPassword && <p className="text-rose-500 text-xs mt-2 flex items-center gap-1.5 font-medium"><span>⚠</span>{errors.confirmPassword}</p>}
+                  {errors.confirmPassword && <p className="text-rose-500 text-xs mt-2 flex items-center gap-1.5 font-medium"><AlertTriangle className="w-3.5 h-3.5" />{errors.confirmPassword}</p>}
                 </div>
               )}
 
@@ -5415,7 +5418,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
               />
               {captchaError && (
                 <p className="text-rose-500 text-xs mt-2 flex items-center gap-1.5 font-medium">
-                  <span>⚠</span>{captchaError}
+                  <AlertTriangle className="w-3.5 h-3.5" />{captchaError}
                 </p>
               )}
             </div>

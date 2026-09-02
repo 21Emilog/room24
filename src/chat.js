@@ -969,7 +969,7 @@ export async function deleteMessageForEveryone(messageId, senderId) {
     const { error } = await supabase
       .from('messages')
       .update({ 
-        content: '🚫 This message was deleted',
+        content: 'This message was deleted',
         deleted_at: new Date().toISOString(),
         voice_url: null,
         voice_duration: null,

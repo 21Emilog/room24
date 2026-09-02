@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Home, MapPin, User, ShieldCheck, Star, Heart, Clock } from 'lucide-react';
+import { Home, MapPin, User, ShieldCheck, Star, Heart, Clock, Bed, DoorOpen, Building2, Camera, Check, Sparkles, DollarSign, CreditCard, Calendar } from 'lucide-react';
 
 function formatRelativeTime(date) {
   const now = new Date();
@@ -18,9 +18,9 @@ function formatRelativeTime(date) {
 
 // Listing type configuration
 const listingTypeConfig = {
-  room: { label: 'Room for Rent', icon: '🛏️', color: 'from-blue-500 to-blue-600', bgColor: 'bg-blue-500', textColor: 'text-blue-600', headerBg: 'bg-gradient-to-r from-blue-500 to-blue-600' },
-  backroom: { label: 'Backroom', icon: '🏡', color: 'from-emerald-500 to-green-600', bgColor: 'bg-emerald-500', textColor: 'text-emerald-600', headerBg: 'bg-gradient-to-r from-emerald-500 to-green-600' },
-  guesthouse: { label: 'Guesthouse / BnB', icon: '🏨', color: 'from-purple-500 to-violet-600', bgColor: 'bg-purple-500', textColor: 'text-purple-600', headerBg: 'bg-gradient-to-r from-purple-500 to-violet-600' }
+  room: { label: 'Room for Rent', icon: Bed, color: 'from-blue-500 to-blue-600', bgColor: 'bg-blue-500', textColor: 'text-blue-600', headerBg: 'bg-gradient-to-r from-blue-500 to-blue-600' },
+  backroom: { label: 'Backroom', icon: DoorOpen, color: 'from-emerald-500 to-green-600', bgColor: 'bg-emerald-500', textColor: 'text-emerald-600', headerBg: 'bg-gradient-to-r from-emerald-500 to-green-600' },
+  guesthouse: { label: 'Guesthouse / BnB', icon: Building2, color: 'from-purple-500 to-violet-600', bgColor: 'bg-purple-500', textColor: 'text-purple-600', headerBg: 'bg-gradient-to-r from-purple-500 to-violet-600' }
 };
 
 export default function ListingCard({ listing, onClick, isFavorite, onToggleFavorite }) {
@@ -66,7 +66,7 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
         const typeConfig = listingTypeConfig[listing.listingType] || listingTypeConfig.room;
         return (
           <div className={`${typeConfig.headerBg} px-3 py-1.5 flex items-center justify-center gap-2`}>
-            <span className="text-sm">{typeConfig.icon}</span>
+            <typeConfig.icon className="w-3.5 h-3.5 text-white" />
             <span className="text-xs font-bold text-white uppercase tracking-wider">{typeConfig.label}</span>
           </div>
         );
@@ -122,7 +122,7 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
           <div className="absolute top-3 right-3 flex gap-2 flex-wrap justify-end">
             {listing.photos.length > 1 && (
               <div className="bg-black/70 backdrop-blur-sm text-white px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1">
-                <span aria-hidden="true">📷</span> {listing.photos.length}
+                <Camera aria-hidden="true" className="w-3.5 h-3.5" /> {listing.photos.length}
               </div>
             )}
             <div
@@ -132,15 +132,15 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
                   : 'bg-gray-700/90 text-white'
               }`}
             >
-              {listing.status === 'available' ? '✓ Available' : 'Rented'}
+              {listing.status === 'available' ? <span className="inline-flex items-center gap-1"><Check className="w-3 h-3" /> Available</span> : 'Rented'}
             </div>
           </div>
           
           {/* Additional badges row */}
           <div className="absolute top-12 right-3 flex flex-col gap-1.5 items-end">
             {isNew && (
-              <div className="px-2 py-1 rounded-lg text-[10px] font-bold bg-gradient-to-r from-red-500 to-red-500 text-white shadow-lg uppercase tracking-wider animate-pulse">
-                ✨ New
+              <div className="px-2 py-1 rounded-lg text-[10px] font-bold bg-gradient-to-r from-red-500 to-red-500 text-white shadow-lg uppercase tracking-wider animate-pulse flex items-center gap-1">
+                <Sparkles className="w-3 h-3" /> New
               </div>
             )}
             {(listing.landlordVerified || listing.landlord?.idNumber) && (
@@ -182,7 +182,7 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
               listing.status === 'available' ? 'bg-emerald-500 text-white' : 'bg-gray-700 text-white'
             }`}
           >
-            {listing.status === 'available' ? '✓ Available' : 'Rented'}
+            {listing.status === 'available' ? <span className="inline-flex items-center gap-1"><Check className="w-3 h-3" /> Available</span> : 'Rented'}
           </div>
         </div>
       )}
@@ -224,7 +224,7 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
           {/* Additional costs indicator */}
           {listing.additionalCosts && listing.additionalCosts.filter(c => c.name && c.amount).length > 0 && (
             <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
-              <span>💰</span> +additional costs apply
+              <DollarSign className="w-3.5 h-3.5" /> +additional costs apply
             </p>
           )}
         </div>
@@ -240,22 +240,22 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
                 ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800'
                 : 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800'
             }`}>
-              <span aria-hidden="true">{listingTypeConfig[listing.listingType]?.icon || '🛏️'}</span>
+              {(() => { const TypeIcon = listingTypeConfig[listing.listingType]?.icon || Bed; return <TypeIcon aria-hidden="true" className="w-3.5 h-3.5" />; })()}
               {listingTypeConfig[listing.listingType]?.label || 'Room'}
             </span>
           )}
           {listing.paymentMethod && (
             <span className="inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs px-2.5 py-1 rounded-lg font-medium border border-emerald-100 dark:border-emerald-800">
-              <span aria-hidden="true">💳</span> {listing.paymentMethod}
+              <CreditCard aria-hidden="true" className="w-3.5 h-3.5" /> {listing.paymentMethod}
             </span>
           )}
           {isAvailableNow ? (
             <span className="inline-flex items-center gap-1.5 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs px-2.5 py-1 rounded-lg font-medium border border-green-100 dark:border-green-800">
-              <span aria-hidden="true">🏠</span> Available Now
+              <Home aria-hidden="true" className="w-3.5 h-3.5" /> Available Now
             </span>
           ) : isAvailableSoon && availableDate && (
             <span className="inline-flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs px-2.5 py-1 rounded-lg font-medium border border-blue-100 dark:border-blue-800">
-              <span aria-hidden="true">📅</span> {availableDate.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' })}
+              <Calendar aria-hidden="true" className="w-3.5 h-3.5" /> {availableDate.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' })}
             </span>
           )}
         </div>

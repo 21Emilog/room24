@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, ZoomIn, ZoomOut, RotateCcw, Maximize2 } from 'lucide-react';
+import { X, ZoomIn, ZoomOut, RotateCcw, Maximize2, Home } from 'lucide-react';
 
 export default function VirtualTourViewer({ photos, initialIndex = 0, onClose }) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
@@ -132,7 +132,7 @@ export default function VirtualTourViewer({ photos, initialIndex = 0, onClose })
         <div className="flex items-center justify-between">
           <div className="text-white">
             <h3 className="text-lg font-semibold flex items-center gap-2">
-              <span className="text-xl">🏠</span>
+              <Home className="w-5 h-5" />
               Virtual Tour
             </h3>
             <p className="text-sm text-gray-300 flex items-center gap-1">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Home, MapPin, Clock, Sparkles, ArrowRight, Building2, Shield, Zap, Bell, TrendingUp, Eye, Filter, X, ChevronRight, MessageCircle } from 'lucide-react';
+import { Search, Home, MapPin, Clock, Sparkles, ArrowRight, Building2, Shield, Zap, Bell, TrendingUp, Eye, Filter, X, ChevronRight, MessageCircle, PawPrint, DollarSign, Wifi, Car, CreditCard, DoorOpen, Bed } from 'lucide-react';
 import ListingCard from './ListingCard';
 import ListingSkeletonCard from './ListingSkeletonCard';
 import { InFeedAd } from './AdBanner';
@@ -310,7 +310,7 @@ export default function BrowseView({
     if (type === 'gender') setGenderPreference('');
   };
 
-  const listingTypeLabels = { room: '🛏️ Room', backroom: '🏡 Backroom', guesthouse: '🏨 Guesthouse' };
+  const listingTypeLabels = { room: 'Room', backroom: 'Backroom', guesthouse: 'Guesthouse' };
 
   const renderFilterChips = () => {
     const chips = [];
@@ -323,7 +323,7 @@ export default function BrowseView({
     if (listingType) chips.push({ type: 'listingType', label: listingTypeLabels[listingType] || listingType });
     if (roomType) chips.push({ type: 'roomType', label: `${roomType.charAt(0).toUpperCase() + roomType.slice(1)} room` });
     if (leaseDuration) chips.push({ type: 'lease', label: `${leaseDuration} months` });
-    if (petFriendly) chips.push({ type: 'pets', label: '🐾 Pet friendly' });
+    if (petFriendly) chips.push({ type: 'pets', label: 'Pet friendly' });
     if (genderPreference) chips.push({ type: 'gender', label: `${genderPreference.charAt(0).toUpperCase() + genderPreference.slice(1)} only` });
     if (chips.length === 0) return null;
     return (
@@ -337,7 +337,7 @@ export default function BrowseView({
             tabIndex={0}
           >
             <span>{chip.label}</span>
-            <span aria-hidden="true" className="ml-1 text-base">✕</span>
+            <X aria-hidden="true" className="ml-1 w-3.5 h-3.5" />
           </button>
         ))}
         <button
@@ -415,7 +415,7 @@ export default function BrowseView({
               <div className="grid lg:grid-cols-2 gap-12 items-center">
                 <div>
                   <div className="flex items-center gap-2 mb-6">
-                    <span className="bg-[#E63946] text-white text-xs font-bold px-3 py-1 rounded-full">🇿🇦 SOUTH AFRICA</span>
+                    <span className="bg-[#E63946] text-white text-xs font-bold px-3 py-1 rounded-full">SOUTH AFRICA</span>
                     <span className="bg-white/20 text-white text-xs font-medium px-3 py-1 rounded-full">Free to Use</span>
                   </div>
                   <h1 className="text-5xl font-extrabold mb-6 leading-tight">
@@ -683,7 +683,7 @@ export default function BrowseView({
                     <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-bl-full" />
                     <div className="absolute bottom-0 left-0 w-16 h-16 bg-white/5 rounded-tr-full" />
                     
-                    <h3 className="font-bold mb-5 text-lg relative">✨ Why RentMzansi?</h3>
+                    <h3 className="font-bold mb-5 text-lg relative flex items-center gap-2"><Sparkles className="w-5 h-5" /> Why RentMzansi?</h3>
                     <div className="space-y-4 relative">
                       <div className="flex items-center gap-4 p-3 bg-white/10 rounded-xl backdrop-blur-sm">
                         <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
@@ -774,7 +774,7 @@ export default function BrowseView({
             {/* Badge */}
             <div className="flex items-center gap-2 mb-5" style={{ animation: 'slide-up 0.5s ease-out' }}>
               <div className="flex items-center gap-2 bg-white/15 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 shadow-lg">
-                <span className="text-lg">🇿🇦</span>
+                <MapPin className="w-4 h-4" />
                 <span className="text-sm font-semibold">South Africa's #1 Room Finder</span>
               </div>
             </div>
@@ -934,7 +934,7 @@ export default function BrowseView({
                     : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 border-2 border-emerald-200 dark:border-emerald-800 hover:border-emerald-300'
                 }`}
               >
-                💰 Under R3,000
+                <DollarSign className="w-4 h-4" /> Under R3,000
               </button>
               <button
                 onClick={() => setPetFriendly(!petFriendly)}
@@ -944,7 +944,7 @@ export default function BrowseView({
                     : 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50 border-2 border-amber-200 dark:border-amber-800 hover:border-amber-300'
                 }`}
               >
-                🐾 Pet Friendly
+                <PawPrint className="w-4 h-4" /> Pet Friendly
               </button>
               <button
                 onClick={() => {
@@ -953,7 +953,7 @@ export default function BrowseView({
                 }}
                 className="text-sm px-4 py-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 border-2 border-blue-200 dark:border-blue-800 hover:border-blue-300 transition-all duration-200 flex items-center gap-1.5 font-medium"
               >
-                🏠 Available Now
+                <Home className="w-4 h-4" /> Available Now
               </button>
               {/* Listing Type Quick Filters */}
               <button
@@ -964,7 +964,7 @@ export default function BrowseView({
                     : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 border-2 border-emerald-200 dark:border-emerald-800'
                 }`}
               >
-                🏡 Backrooms
+                <DoorOpen className="w-4 h-4" /> Backrooms
               </button>
               <button
                 onClick={() => setListingType(listingType === 'guesthouse' ? '' : 'guesthouse')}
@@ -974,7 +974,7 @@ export default function BrowseView({
                     : 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 border-2 border-purple-200 dark:border-purple-800'
                 }`}
               >
-                🏨 Guesthouses
+                <Building2 className="w-4 h-4" /> Guesthouses
               </button>
               <button
                 onClick={() => toggleAmenity('WiFi')}
@@ -984,7 +984,7 @@ export default function BrowseView({
                     : 'bg-red-50 dark:bg-red-900/30 text-[#E63946] hover:bg-red-100 dark:hover:bg-red-900/50 border-2 border-red-200 dark:border-red-800 hover:border-red-300'
                 }`}
               >
-                📶 WiFi
+                <Wifi className="w-4 h-4" /> WiFi
               </button>
               <button
                 onClick={() => toggleAmenity('Parking')}
@@ -994,7 +994,7 @@ export default function BrowseView({
                     : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 hover:border-slate-300'
                 }`}
               >
-                🚗 Parking
+                <Car className="w-4 h-4" /> Parking
               </button>
             </div>
 
@@ -1053,7 +1053,7 @@ export default function BrowseView({
               </select>
             </div>
             <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-gray-50 to-slate-100 dark:from-gray-700 dark:to-gray-800 border border-gray-200 dark:border-gray-600">
-              <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">💳 Payment:</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400 font-medium flex items-center gap-1"><CreditCard className="w-4 h-4" /> Payment:</span>
               <select
                 value={paymentFilter}
                 onChange={(e) => setPaymentFilter(e.target.value)}
@@ -1083,17 +1083,17 @@ export default function BrowseView({
             <div className="mt-4 p-5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg space-y-5">
               {/* Listing Type - NEW */}
               <div>
-                <label className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 block flex items-center gap-2">🏠 Property Type</label>
+                <label className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 block flex items-center gap-2"><Home className="w-4 h-4" /> Property Type</label>
                 <div className="flex gap-2 flex-wrap">
                   {[
-                    { label: '🛏️ Room', value: 'room' },
-                    { label: '🏡 Backroom', value: 'backroom' },
-                    { label: '🏨 Guesthouse', value: 'guesthouse' }
+                    { label: 'Room', value: 'room', Icon: Bed },
+                    { label: 'Backroom', value: 'backroom', Icon: DoorOpen },
+                    { label: 'Guesthouse', value: 'guesthouse', Icon: Building2 }
                   ].map(type => (
                     <button
                       key={type.value}
                       onClick={() => setListingType(listingType === type.value ? '' : type.value)}
-                      className={`px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all ${
+                      className={`px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all inline-flex items-center gap-1.5 ${
                         listingType === type.value
                           ? type.value === 'backroom' 
                             ? 'bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-500/30'
@@ -1102,14 +1102,14 @@ export default function BrowseView({
                             : 'bg-blue-500 text-white border-blue-500 shadow-lg shadow-blue-500/30'
                           : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                       }`}
-                    >{type.label}</button>
+                    ><type.Icon className="w-4 h-4" />{type.label}</button>
                   ))}
                 </div>
               </div>
 
               {/* Room Type */}
               <div>
-                <label className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 block flex items-center gap-2">🚪 Room Type</label>
+                <label className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 block flex items-center gap-2"><DoorOpen className="w-4 h-4" /> Room Type</label>
                 <div className="flex gap-3">
                   {['Private', 'Shared'].map(type => (
                     <button
@@ -1157,7 +1157,7 @@ export default function BrowseView({
                     onChange={(e) => setPetFriendly(e.target.checked)}
                     className="w-4 h-4 text-[#E63946] border-gray-300 dark:border-gray-600 rounded focus:ring-[#E63946]"
                   />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">🐾 Pet Friendly</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5"><PawPrint className="w-4 h-4" /> Pet Friendly</span>
                 </label>
               </div>
 

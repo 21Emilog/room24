@@ -211,8 +211,8 @@ export function Testimonials() {
     <div className="py-16 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
       <div className="max-w-7xl mx-auto px-4">
         <div className="text-center mb-12">
-          <span className="inline-block bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-sm font-bold px-4 py-1.5 rounded-full mb-4">
-            ⭐ TESTIMONIALS
+          <span className="inline-flex items-center gap-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-sm font-bold px-4 py-1.5 rounded-full mb-4">
+            <Star className="w-3.5 h-3.5 fill-amber-500" /> TESTIMONIALS
           </span>
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
             What Our <span className="text-[#E63946]">Users</span> Say
@@ -278,8 +278,12 @@ export function CallToAction({ onSignUp }) {
             List Your Property
           </button>
         </div>
-        <p className="text-white/60 text-sm mt-6">
-          ✓ No credit card required · ✓ Free for renters · ✓ Cancel anytime
+        <p className="text-white/60 text-sm mt-6 flex items-center justify-center gap-1.5 flex-wrap">
+          <span className="inline-flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> No credit card required</span>
+          <span>·</span>
+          <span className="inline-flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> Free for renters</span>
+          <span>·</span>
+          <span className="inline-flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> Cancel anytime</span>
         </p>
       </div>
     </div>

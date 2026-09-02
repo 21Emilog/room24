@@ -135,7 +135,7 @@ export function showMessageNotification(message, senderName, onNavigate) {
     : message.content;
 
   return showNotification({
-    title: `💬 New message from ${senderName}`,
+    title: `New message from ${senderName}`,
     body: messagePreview || 'You have a new message',
     tag: `message-${message.conversation_id}`, // Group by conversation
     data: { 
@@ -154,7 +154,7 @@ export function showMessageNotification(message, senderName, onNavigate) {
  */
 export function showInquiryNotification(listingTitle, renterName, onNavigate) {
   return showNotification({
-    title: '🏠 New Inquiry!',
+    title: 'New Inquiry!',
     body: `${renterName} is interested in "${listingTitle}"`,
     tag: 'new-inquiry',
     data: { type: 'inquiry' },
