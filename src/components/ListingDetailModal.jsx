@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Search, MapPin, User, Phone, Mail, ArrowLeft, ShieldCheck, Star, Maximize, ExternalLink, Share2, Copy, MessageCircle, Eye, GitCompare, Zap, Calendar, Clock, Award, Home, ChevronRight, Video, DollarSign, AlertTriangle, CheckCircle } from 'lucide-react';
+import { X, Search, MapPin, User, Phone, Mail, ArrowLeft, ShieldCheck, Maximize, ExternalLink, Share2, Copy, MessageCircle, Eye, GitCompare, Zap, Calendar, Clock, Award, Home, ChevronRight, Video, DollarSign, AlertTriangle, CheckCircle } from 'lucide-react';
 import VirtualTourViewer from './VirtualTourViewer';
 import { trackListingView, trackUserViewedListing, addToCompare, getCompareList, removeFromCompare, trackLandlordContactClick, getResponseTimeBadge } from '../utils/notificationEngine';
 import { calculateQualityScore, getQualityLabel } from '../utils/qualityScore';
@@ -150,22 +150,7 @@ export default function ListingDetailModal({ listing, landlord, onClose, current
   const [viewingTime, setViewingTime] = useState('');
   const [viewingMessage, setViewingMessage] = useState('');
   const [viewingStatus, setViewingStatus] = useState('idle'); // idle, sending, sent
-  
-  // Reviews state
   const listingKey = listing?.id || `${listing.title}-${listing.createdAt || 'na'}`;
-  const reviewsStorageKey = `reviews-${listingKey}`;
-  const [reviews, setReviews] = useState(() => {
-    try {
-      const raw = localStorage.getItem(reviewsStorageKey);
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  });
-  const [newRating, setNewRating] = useState(0);
-  const [hoverRating, setHoverRating] = useState(0);
-  const [newComment, setNewComment] = useState('');
-  const [submitStatus, setSubmitStatus] = useState('idle');
   
   // Track view and get view count on mount
   useEffect(() => {
@@ -267,32 +252,6 @@ export default function ListingDetailModal({ listing, landlord, onClose, current
       }, 1200);
     } catch (err) {
       setReportStatus('error');
-    }
-  };
-
-  // Reviews helpers
-  const avgRating = reviews.length
-    ? Math.round((reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length) * 10) / 10
-    : 0;
-
-  const handleSubmitReview = (e) => {
-    e.preventDefault();
-    if (!newRating || newRating < 1) return;
-    try {
-      const entry = {
-        rating: newRating,
-        comment: newComment.trim(),
-        timestamp: Date.now(),
-      };
-      const next = [...reviews, entry];
-      setReviews(next);
-      localStorage.setItem(reviewsStorageKey, JSON.stringify(next));
-      setSubmitStatus('submitted');
-      setNewRating(0);
-      setNewComment('');
-      setTimeout(() => setSubmitStatus('idle'), 1200);
-    } catch {
-      setSubmitStatus('error');
     }
   };
 
@@ -528,17 +487,6 @@ export default function ListingDetailModal({ listing, landlord, onClose, current
               </a>
             )}
           </div>
-          {/* Rating summary */}
-          <div className="flex items-center gap-2 mb-4">
-            <div className="flex items-center">
-              {[0,1,2,3,4].map(i => (
-                <Star key={i} className={`w-5 h-5 ${avgRating > i ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`} />
-              ))}
-            </div>
-            <span className="text-sm text-gray-700">
-              {reviews.length > 0 ? `${avgRating} • ${reviews.length} review${reviews.length>1?'s':''}` : 'No reviews yet'}
-            </span>
-          </div>
           {listing.paymentMethod && (
             <div className="bg-gradient-to-r from-emerald-50 to-red-50 border border-emerald-200 rounded-xl p-4 mb-4">
               <div className="flex items-center gap-2">
@@ -550,76 +498,6 @@ export default function ListingDetailModal({ listing, landlord, onClose, current
           <div className="bg-gray-50 rounded-xl p-4 mb-4">
             <h4 className="font-semibold mb-2 text-gray-800">Description</h4>
             <p className="text-gray-600 leading-relaxed">{listing.description || 'No description provided.'}</p>
-          </div>
-          {/* Reviews list */}
-          <div className="bg-gray-50 rounded-xl p-4 mb-4">
-            <h4 className="font-semibold mb-3 text-gray-800">Reviews</h4>
-            {reviews.length === 0 && (
-              <p className="text-sm text-gray-500">No reviews yet. Be the first to leave one.</p>
-            )}
-            {reviews.length > 0 && (
-              <div className="space-y-3">
-                {reviews.slice().reverse().map((r, idx) => (
-                  <div key={idx} className="border border-gray-200 rounded-md p-3">
-                    <div className="flex items-center gap-1 mb-1">
-                      {[0,1,2,3,4].map(i => (
-                        <Star key={i} className={`w-4 h-4 ${r.rating > i ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`} />
-                      ))}
-                      <span className="ml-2 text-xs text-gray-500">
-                        {new Date(r.timestamp).toLocaleDateString()}
-                      </span>
-                    </div>
-                    {r.comment && <p className="text-sm text-gray-700">{r.comment}</p>}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          {/* Add a review */}
-          <div className="bg-white rounded-xl p-4 mb-4 border border-gray-200 shadow-sm">
-            <h4 className="font-semibold mb-2 text-gray-800">Leave a Review</h4>
-            <form onSubmit={handleSubmitReview} className="space-y-3">
-              <div className="flex items-center gap-2">
-                {[1,2,3,4,5].map(val => (
-                  <button
-                    key={val}
-                    type="button"
-                    onMouseEnter={() => setHoverRating(val)}
-                    onMouseLeave={() => setHoverRating(0)}
-                    onClick={() => setNewRating(val)}
-                    className="focus:outline-none transition-transform hover:scale-110"
-                    aria-label={`Rate ${val} star${val>1?'s':''}`}
-                  >
-                    <Star className={`w-6 h-6 transition-colors ${((hoverRating || newRating) >= val) ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`} />
-                  </button>
-                ))}
-                <span className="text-xs text-gray-600">{newRating ? `${newRating}/5` : 'Select rating'}</span>
-              </div>
-              <div>
-                <textarea
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Share details about your experience (optional)"
-                  className="w-full border-2 border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#E63946] focus:border-transparent transition-all"
-                  rows={3}
-                />
-              </div>
-              <div className="flex items-center justify-end gap-2">
-                <button
-                  type="submit"
-                  disabled={!newRating || submitStatus === 'submitted'}
-                  className="text-sm px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#E63946] to-[#c5303c] hover:from-[#c5303c] hover:to-[#a52833] text-white font-semibold disabled:opacity-50 shadow-md transition-all"
-                >
-                  {submitStatus === 'submitted' ? 'Saved' : 'Submit Review'}
-                </button>
-              </div>
-              {submitStatus === 'error' && (
-                <p className="text-xs text-red-600">Failed to save review. Try again.</p>
-              )}
-              {submitStatus === 'submitted' && (
-                <p className="text-xs text-green-600">Review saved locally.</p>
-              )}
-            </form>
           </div>
           {landlord && (
             <div className="bg-white rounded-2xl p-5 mb-4 border-2 border-red-200 shadow-sm">

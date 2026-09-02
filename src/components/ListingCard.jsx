@@ -33,12 +33,6 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
     if (onToggleFavorite) onToggleFavorite(listing.id);
   };
 
-  // Calculate average rating from reviews
-  const reviews = listing.reviews || [];
-  const avgRating = reviews.length > 0
-    ? (reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length).toFixed(1)
-    : null;
-
   // Check if listing is new (within 24 hours)
   const isNew = listing.createdAt && Date.now() - new Date(listing.createdAt).getTime() < 1000 * 60 * 60 * 24;
   
@@ -202,13 +196,6 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
                   : '/mo'}
               </span>
             </p>
-            {avgRating && (
-              <div className="flex items-center gap-1 text-xs bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded-lg border border-amber-100 dark:border-amber-700">
-                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                <span className="font-bold text-gray-700">{avgRating}</span>
-                <span className="text-gray-400">({reviews.length})</span>
-              </div>
-            )}
           </div>
           {/* Additional costs indicator */}
           {listing.additionalCosts && listing.additionalCosts.filter(c => c.name && c.amount).length > 0 && (

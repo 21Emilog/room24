@@ -4,7 +4,7 @@ import ListingCard from './ListingCard';
 import ListingSkeletonCard from './ListingSkeletonCard';
 import { InFeedAd } from './AdBanner';
 import { getSavedSearches, checkNewListings, checkPriceDrops, addNotification, saveSearch as saveSearchToEngine } from '../utils/notificationEngine';
-import { StatsSection, WhyChooseUs, Testimonials, CallToAction } from './MarketingSections';
+import { StatsSection, WhyChooseUs, CallToAction } from './MarketingSections';
 
 export default function BrowseView({
   listings,
@@ -39,7 +39,6 @@ export default function BrowseView({
   const [recentSearches, setRecentSearches] = useState([]);
   const [showWelcomeHero, setShowWelcomeHero] = useState(true);
   const [searchFocused, setSearchFocused] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
   const suggestionCacheRef = React.useRef({}); // cache: { queryLower: { data: [...], ts } }
   const SUGGESTION_TTL_MS = 15 * 60 * 1000; // 15 minutes
 
@@ -541,7 +540,7 @@ export default function BrowseView({
                     </select>
                   </div>
                   <button
-                    onClick={() => { addRecentSearch(searchLocation); setHasSearched(true); }}
+                    onClick={() => addRecentSearch(searchLocation)}
                     className="bg-gradient-to-r from-[#E63946] via-rose-500 to-[#E63946] hover:from-[#c5303c] hover:via-red-600 hover:to-[#c5303c] text-white font-bold px-10 py-4 rounded-2xl transition-all duration-300 shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 hover:scale-105 active:scale-100 flex items-center gap-2 focus:outline-none focus:ring-4 focus:ring-[#E63946]/30"
                     aria-label="Search rooms"
                     tabIndex={0}
@@ -557,16 +556,6 @@ export default function BrowseView({
             <div className="flex gap-6 lg:gap-8">
               {/* Main Listings Area */}
               <div className="flex-1">
-                {!hasSearched ? (
-                  <div className="bg-white dark:bg-gray-800 rounded-3xl border-2 border-dashed border-gray-200 dark:border-gray-700 p-12 md:p-16 text-center shadow-sm">
-                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-red-50 to-rose-100 dark:from-gray-700 dark:to-gray-700 flex items-center justify-center mx-auto mb-5">
-                      <Search className="w-10 h-10 text-[#E63946]" />
-                    </div>
-                    <h2 id="results-heading" className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Start your search</h2>
-                    <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">Enter a location and set your preferred filters above, then click Search to see available rooms.</p>
-                  </div>
-                ) : (
-                <>
                 {/* Results Header */}
                 <div className="flex items-center justify-between mb-6">
                   <div>
@@ -645,8 +634,6 @@ export default function BrowseView({
                       ))}
                     </div>
                   )
-                )}
-                </>
                 )}
               </div>
 
@@ -733,7 +720,6 @@ export default function BrowseView({
             <>
               <StatsSection listingsCount={listings.length} />
               <WhyChooseUs />
-              <Testimonials />
               <CallToAction onSignUp={onRequireAuth} />
             </>
           )}
@@ -883,7 +869,7 @@ export default function BrowseView({
                     <button
                       key={s}
                       type="button"
-                      onClick={() => { setSearchLocation(s); setLocationSuggestions([]); addRecentSearch(s); setHasSearched(true); }}
+                      onClick={() => { setSearchLocation(s); setLocationSuggestions([]); addRecentSearch(s); }}
                       className={`w-full text-left px-4 py-3 text-sm hover:bg-red-50 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors ${i > 0 ? 'border-t border-gray-100 dark:border-gray-700' : ''}`}
                     >
                       <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
@@ -905,7 +891,7 @@ export default function BrowseView({
                       key={`recent-${i}`}
                       type="button"
                       onMouseDown={(e) => e.preventDefault()} 
-                      onClick={() => { setSearchLocation(s); setSearchFocused(false); setHasSearched(true); }}
+                      onClick={() => { setSearchLocation(s); setSearchFocused(false); }}
                       className={`w-full text-left px-4 py-3 text-sm hover:bg-red-50 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors ${i > 0 ? 'border-t border-gray-100 dark:border-gray-700' : ''}`}
                     >
                       <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
@@ -920,7 +906,7 @@ export default function BrowseView({
             <div className="flex items-center gap-3">
               <button 
                 className="flex-1 bg-gradient-to-r from-[#E63946] to-[#c5303c] hover:from-[#c5303c] hover:to-[#a52833] text-white px-4 py-3 rounded-xl transition-all duration-200 font-bold shadow-lg hover:shadow-xl text-sm flex items-center justify-center gap-2 active:scale-95" 
-                onClick={() => { if (searchLocation) addRecentSearch(searchLocation); setHasSearched(true); }} 
+                onClick={() => { if (searchLocation) addRecentSearch(searchLocation); }} 
                 aria-label="Search submit"
               >
                 <Search className="w-5 h-5" />
@@ -1219,16 +1205,6 @@ export default function BrowseView({
       
       {/* Results Section */}
       <div className="max-w-7xl mx-auto px-4">
-        {!hasSearched ? (
-          <div className="mt-6 mb-6 bg-white dark:bg-gray-800 rounded-3xl border-2 border-dashed border-gray-200 dark:border-gray-700 p-10 md:p-14 text-center shadow-sm">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-red-50 to-rose-100 dark:from-gray-700 dark:to-gray-700 flex items-center justify-center mx-auto mb-5">
-              <Search className="w-10 h-10 text-[#E63946]" />
-            </div>
-            <h2 id="results-heading" className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white mb-2">Start your search</h2>
-            <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">Enter a location and set your preferred filters above, then tap Search to see available rooms.</p>
-          </div>
-        ) : (
-        <>
         <div className="flex justify-between items-center mt-6 mb-6 bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-md border border-gray-100 dark:border-gray-700">
           <h2 id="results-heading" className="text-2xl font-bold text-gray-800 dark:text-white">
             {listings.length === 0 ? (
@@ -1388,8 +1364,6 @@ export default function BrowseView({
               </div>
             </>
           )
-        )}
-        </>
         )}
       </div>
     </div>
