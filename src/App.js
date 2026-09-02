@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense } from 'react';
-import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone, Sparkles, TrendingUp, ShieldCheck, ChevronDown, ArrowLeft, RefreshCw, GitCompare, MessageSquare, Copy, MessageCircle, Camera, DollarSign, Lock, Bed, DoorOpen, Building2, Moon, FileText, Wifi, Car, Utensils, PawPrint, WashingMachine, Sofa, Lightbulb, PartyPopper, Video, Clock, Snowflake, Trees, Waves, Dumbbell, Pencil } from 'lucide-react';
+import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone, Sparkles, ArrowLeft, RefreshCw, GitCompare, MessageSquare, Copy, MessageCircle, Camera, DollarSign, Lock, Bed, DoorOpen, Building2, Moon, FileText, Wifi, Car, Utensils, PawPrint, WashingMachine, Sofa, Lightbulb, PartyPopper, Video, Clock, Snowflake, Trees, Waves, Dumbbell, Pencil } from 'lucide-react';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import BrowseView from './components/BrowseView';
@@ -134,7 +134,6 @@ export default function RentalPlatform() {
   const justCompletedOnboarding = useRef(false); // Flag to skip guard after onboarding
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [showPulsePanel, setShowPulsePanel] = useState(false);
   const [editingListing, setEditingListing] = useState(null); // Listing being edited
   const [compareList, setCompareList] = useState(() => getCompareList()); // Room comparison list
   const [showCompareView, setShowCompareView] = useState(false);
@@ -1133,36 +1132,6 @@ const filteredListings = listings
   // show a gentle callout in the header (below) so users can pick a role
   // when they want to post or set up their profile.
 
-  const marketplaceStats = useMemo(() => {
-    const now = Date.now();
-    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
-    let availableNow = 0;
-    let newThisWeek = 0;
-    const premiumLandlords = new Set();
-
-    listings.forEach(listing => {
-      if (listing.status === 'available') {
-        availableNow += 1;
-      }
-      if (listing.premium && listing.landlordId) {
-        premiumLandlords.add(listing.landlordId);
-      }
-      if (listing.createdAt) {
-        const created = new Date(listing.createdAt).getTime();
-        if (!Number.isNaN(created) && (now - created) <= sevenDaysMs) {
-          newThisWeek += 1;
-        }
-      }
-    });
-
-    return {
-      total: listings.length,
-      availableNow,
-      newThisWeek,
-      premiumHosts: premiumLandlords.size,
-    };
-  }, [listings]);
-
   return (
     <div className="relative min-h-screen overflow-hidden app-container" style={{ backgroundColor: 'var(--c-bg)' }}>
       {/* Decorative background blobs - adds personality */}
@@ -1236,83 +1205,6 @@ const filteredListings = listings
           onOpenNotifications={() => setShowNotificationsPanel(true)}
           unreadMessageCount={unreadMessageCount}
         />
-      )}
-
-      {currentView === 'browse' && (
-        <div className="px-4 sm:px-6 lg:px-8 mt-4 lg:hidden">
-          <div className="max-w-7xl mx-auto space-y-3">
-            <button
-              type="button"
-              onClick={() => setShowPulsePanel(prev => !prev)}
-              className="w-full flex items-center justify-between rounded-2xl border border-white/60 bg-white/80 backdrop-blur-lg shadow-md px-4 py-3 text-left transition-all hover:border-red-200"
-              aria-expanded={showPulsePanel ? 'true' : 'false'}
-            >
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Marketplace pulse</p>
-                <p className="text-base font-bold text-slate-900">See how RentMzansi is performing</p>
-              </div>
-              <ChevronDown className={`w-5 h-5 text-slate-500 transition-transform ${showPulsePanel ? 'rotate-180' : ''}`} />
-            </button>
-            {showPulsePanel && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 animate-fadeIn">
-                <div className="relative overflow-hidden rounded-2xl border border-white/70 bg-white/80 backdrop-blur-xl shadow-lg p-4 sm:p-5">
-                  <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-red-500/5" />
-                  <div className="relative flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-widest text-[#E63946]">Active rooms</p>
-                      <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">{marketplaceStats.availableNow}</p>
-                      <p className="text-xs text-slate-500">of {marketplaceStats.total} total</p>
-                    </div>
-                    <div className="w-12 h-12 rounded-2xl bg-red-500/15 flex items-center justify-center text-[#E63946]">
-                      <Home className="w-5 h-5" />
-                    </div>
-                  </div>
-                </div>
-                <div className="relative overflow-hidden rounded-2xl border border-white/70 bg-white/80 backdrop-blur-xl shadow-lg p-4 sm:p-5">
-                  <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-orange-500/5" />
-                  <div className="relative flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-widest text-amber-600">New this week</p>
-                      <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">{marketplaceStats.newThisWeek}</p>
-                      <p className="text-xs text-slate-500">freshly listed rooms</p>
-                    </div>
-                    <div className="w-12 h-12 rounded-2xl bg-amber-500/15 flex items-center justify-center text-amber-600">
-                      <Sparkles className="w-5 h-5" />
-                    </div>
-                  </div>
-                </div>
-                <div className="relative overflow-hidden rounded-2xl border border-white/70 bg-white/80 backdrop-blur-xl shadow-lg p-4 sm:p-5">
-                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-blue-500/5" />
-                  <div className="relative flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-widest text-indigo-600">Premium hosts</p>
-                      <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">{marketplaceStats.premiumHosts}</p>
-                      <p className="text-xs text-slate-500">standout landlords</p>
-                    </div>
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-500/15 flex items-center justify-center text-indigo-600">
-                      <ShieldCheck className="w-5 h-5" />
-                    </div>
-                  </div>
-                </div>
-                <div className="relative overflow-hidden rounded-2xl border border-white/70 bg-white/80 backdrop-blur-xl shadow-lg p-4 sm:p-5">
-                  <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-pink-500/5" />
-                  <div className="relative flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-widest text-rose-600">Momentum</p>
-                      <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-                        {marketplaceStats.total > 0 ? `${Math.max(1, Math.round((marketplaceStats.newThisWeek / Math.max(1, marketplaceStats.total)) * 100))}%` : '—'}
-                      </p>
-                      <p className="text-xs text-slate-500">new inventory share</p>
-                    </div>
-                    <div className="w-12 h-12 rounded-2xl bg-rose-500/15 flex items-center justify-center text-rose-600">
-                      <TrendingUp className="w-5 h-5" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
       )}
 
       {/* Notification Banner (Push Notifications) */}

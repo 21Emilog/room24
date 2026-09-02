@@ -61,17 +61,6 @@ export default function ListingCard({ listing, onClick, isFavorite, onToggleFavo
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(); } }}
       aria-label={`${listing.title} - R${formattedPrice} per month in ${listing.location || 'unknown location'}`}
     >
-      {/* Listing Type Header - Shows what type of property */}
-      {(() => {
-        const typeConfig = listingTypeConfig[listing.listingType] || listingTypeConfig.room;
-        return (
-          <div className={`${typeConfig.headerBg} px-3 py-1.5 flex items-center justify-center gap-2`}>
-            <typeConfig.icon className="w-3.5 h-3.5 text-white" />
-            <span className="text-xs font-bold text-white uppercase tracking-wider">{typeConfig.label}</span>
-          </div>
-        );
-      })()}
-      
       {/* Image Section */}
       {listing.photos && listing.photos.length > 0 ? (
         <div className="relative bg-gray-200 dark:bg-gray-700 aspect-[4/3] overflow-hidden">
