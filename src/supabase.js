@@ -92,7 +92,7 @@ export async function signInWithEmail(email, password, captchaToken) {
   };
 
   if (captchaToken) {
-    payload.captchaToken = captchaToken;
+    payload.options = { captchaToken };
   }
 
   const { data, error } = await supabase.auth.signInWithPassword(payload);
