@@ -4,7 +4,7 @@ import ListingCard from './ListingCard';
 import ListingSkeletonCard from './ListingSkeletonCard';
 import { InFeedAd } from './AdBanner';
 import { getSavedSearches, checkNewListings, checkPriceDrops, addNotification, saveSearch as saveSearchToEngine } from '../utils/notificationEngine';
-import { StatsSection, WhyChooseUs, CallToAction } from './MarketingSections';
+import { WhyChooseUs, CallToAction } from './MarketingSections';
 
 export default function BrowseView({
   listings,
@@ -718,7 +718,6 @@ export default function BrowseView({
           {/* Marketing Sections - Only show for non-logged-in users or if few listings */}
           {!currentUser && (
             <>
-              <StatsSection listingsCount={listings.length} />
               <WhyChooseUs />
               <CallToAction onSignUp={onRequireAuth} />
             </>

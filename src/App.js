@@ -5389,20 +5389,6 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
                 </div>
               )}
 
-              {/* Info message for landlords */}
-              {mode === 'signup' && (
-                <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Home className="w-4 h-4 text-blue-600" />
-                    </div>
-                    <p className="text-xs text-blue-700">
-                      <span className="font-semibold">Landlord?</span> Edit your profile after signup to list rooms.
-                    </p>
-                  </div>
-                </div>
-              )}
-
               {/* Forgot Password Link (signin only) */}
               {mode === 'signin' && (
                 <button
