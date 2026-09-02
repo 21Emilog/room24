@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo, useRef, Suspense } from 'react';
-import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone, Sparkles, TrendingUp, ShieldCheck, ChevronDown, ArrowLeft, RefreshCw, AlertCircle, GitCompare, MessageSquare, Copy, MessageCircle } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense } from 'react';
+import { Home, PlusCircle, Search, MapPin, X, User, Phone, Mail, Edit, CheckCircle, Heart, Calendar, Bell, AlertTriangle, LogOut, Link2, Download, Smartphone, Sparkles, TrendingUp, ShieldCheck, ChevronDown, ArrowLeft, RefreshCw, AlertCircle, GitCompare, MessageSquare, Copy, MessageCircle, Camera } from 'lucide-react';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import BrowseView from './components/BrowseView';
@@ -63,6 +63,48 @@ const LazyModalBoundary = ({ children, label }) => (
   </Suspense>
 );
 
+// --- Mobile/desktop back-button support -------------------------------------------------
+// Without this, the app never adds entries to browser history, so pressing the browser/
+// hardware back button (or a two-finger swipe on mobile) immediately leaves the site
+// instead of closing the currently open modal/view. `useBackButtonLayer` pushes a history
+// entry whenever `isOpen` becomes true, and calls `close()` when the user navigates back
+// to that entry (via the shared popstate listener set up in `useBackNavigation`).
+function useBackButtonLayer(pushNavLayer, isOpen, close) {
+  const wasOpenRef = useRef(false);
+  const closeRef = useRef(close);
+  closeRef.current = close;
+
+  useEffect(() => {
+    if (isOpen && !wasOpenRef.current) {
+      pushNavLayer(() => closeRef.current());
+    }
+    wasOpenRef.current = isOpen;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+}
+
+// Sets up the shared history stack + popstate listener used by `useBackButtonLayer` and
+// returns `pushNavLayer` for registering additional layers (e.g. the current view).
+function useBackNavigation() {
+  const navLayersRef = useRef([]);
+
+  const pushNavLayer = useCallback((closeFn) => {
+    navLayersRef.current.push(closeFn);
+    window.history.pushState({ appNavDepth: navLayersRef.current.length }, '');
+  }, []);
+
+  useEffect(() => {
+    const onPopState = () => {
+      const closeFn = navLayersRef.current.pop();
+      if (closeFn) closeFn();
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  return pushNavLayer;
+}
+
 export default function RentalPlatform() {
   const [currentView, setCurrentView] = useState('browse');
   const [userType, setUserType] = useState(null);
@@ -97,6 +139,32 @@ export default function RentalPlatform() {
   const [showCompareView, setShowCompareView] = useState(false);
   // pendingChatListing removed - handled via direct navigation
   const [unreadMessageCount, setUnreadMessageCount] = useState(0); // Chat unread count
+
+  // --- Back button handling ---------------------------------------------------------
+  // Registers a history entry for the current "view" whenever it moves away from the
+  // browse/home screen, and for each modal/overlay below, so the phone/browser back
+  // button closes them one at a time instead of leaving the site.
+  const pushNavLayer = useBackNavigation();
+  const offBrowseLayerRef = useRef(false);
+
+  useEffect(() => {
+    if (currentView !== 'browse' && !offBrowseLayerRef.current) {
+      offBrowseLayerRef.current = true;
+      pushNavLayer(() => {
+        offBrowseLayerRef.current = false;
+        setCurrentView('browse');
+      });
+    } else if (currentView === 'browse') {
+      offBrowseLayerRef.current = false;
+    }
+  }, [currentView, pushNavLayer]);
+
+  useBackButtonLayer(pushNavLayer, !!selectedListing, () => setSelectedListing(null));
+  useBackButtonLayer(pushNavLayer, showAuthModal, () => setShowAuthModal(false));
+  useBackButtonLayer(pushNavLayer, showPrivacyPolicy, () => setShowPrivacyPolicy(false));
+  useBackButtonLayer(pushNavLayer, showAbout, () => setShowAbout(false));
+  useBackButtonLayer(pushNavLayer, showNotificationsPanel, () => setShowNotificationsPanel(false));
+  useBackButtonLayer(pushNavLayer, showCompareView, () => setShowCompareView(false));
 
 
   const composedProfile = useMemo(() => {
@@ -1460,7 +1528,7 @@ const filteredListings = listings
               setShowCompareView(false);
             }}
             onSelectListing={setSelectedListing}
-            onClose={() => setShowCompareView(false)}
+            onClose={() => window.history.back()}
           />
         )}
 
@@ -1478,7 +1546,7 @@ const filteredListings = listings
               email: selectedListing.landlordEmail,
               photo: selectedListing.landlordPhoto
             }}
-            onClose={() => setSelectedListing(null)}
+            onClose={() => window.history.back()}
             currentUserId={currentUser?.id || currentUser?.uid}
             userType={userType}
             currentUser={currentUser}
@@ -1498,7 +1566,7 @@ const filteredListings = listings
         <AuthModal
           defaultType={authDefaultType}
           defaultMode={authDefaultMode}
-          onClose={() => setShowAuthModal(false)}
+          onClose={() => window.history.back()}
           onSuccess={() => {
             showToast('Signed in successfully!', 'success', 'Welcome!');
           }}
@@ -1533,13 +1601,13 @@ const filteredListings = listings
 
       {showPrivacyPolicy && (
         <LazyModalBoundary label="Opening policy...">
-          <PrivacyPolicyModal onClose={() => setShowPrivacyPolicy(false)} />
+          <PrivacyPolicyModal onClose={() => window.history.back()} />
         </LazyModalBoundary>
       )}
 
       {showAbout && (
         <LazyModalBoundary label="Loading about...">
-          <AboutModal onClose={() => setShowAbout(false)} />
+          <AboutModal onClose={() => window.history.back()} />
         </LazyModalBoundary>
       )}
 
@@ -1556,8 +1624,8 @@ const filteredListings = listings
         <LazyModalBoundary label="Loading inbox...">
           <NotificationsPanel
             onClose={() => {
-              setShowNotificationsPanel(false);
               setUnreadCount(getNotifications().filter(n => !n.read).length);
+              window.history.back();
             }}
             onSelectListing={(listingId) => {
               const listing = listings.find(l => (l.id || `${l.title}-${l.createdAt}`) === listingId);
@@ -2647,11 +2715,9 @@ const createDefaultListingForm = () => ({
 });
 
 function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
-  // Geocoding config - currently unused (geocodeAddress removed)
-  // const GEOCODER_KEY = process.env.REACT_APP_GEOCODER_API_KEY;
-  // const GEOCODER_PROVIDER = (process.env.REACT_APP_GEOCODER_PROVIDER || '').toLowerCase();
-
   const landlordId = currentUser?.id;
+  const [currentStep, setCurrentStep] = useState(1);
+  const totalSteps = 5;
   const [formData, setFormData] = useState(() => {
     const base = createDefaultListingForm();
     if (landlordId) {
@@ -3080,174 +3146,167 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
     setFullAddressInput('');
   };
 
+  const handlePhotoUpload = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    files.forEach(file => {
+      if (formData.photos.length >= 5) return;
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setFormData(prev => ({
+          ...prev,
+          photos: [...prev.photos, event.target.result].slice(0, 5)
+        }));
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-red-50 via-rose-50 to-red-50 pb-24 flex flex-col">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-[#1D3557] via-[#1D3557] to-[#2d4a6f] text-white w-full px-0 py-0">
-        <div className="w-full px-8 py-8 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <button onClick={onCancel} className="w-12 h-12 rounded-2xl bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all active:scale-95">
-              <ArrowLeft className="w-6 h-6" />
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 pb-24 flex flex-col">
+      {/* Compact Header */}
+      <div className="bg-gradient-to-r from-[#1D3557] to-[#2d4a6f] text-white w-full">
+        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button onClick={onCancel} className="w-10 h-10 rounded-xl bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all">
+              <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h2 className="text-3xl font-bold tracking-tight">Post a Room</h2>
-              <p className="text-white/80 text-base mt-1">List your space in minutes</p>
+              <h2 className="text-xl font-bold">
+                {formData.listingType === 'guesthouse' ? 'List Your Guesthouse' : 
+                 formData.listingType === 'backroom' ? 'List Your Backroom' : 'List Your Room'}
+              </h2>
+              <p className="text-white/70 text-sm">Step {currentStep} of {totalSteps}</p>
             </div>
-          </div>
-          <div className="w-14 h-14 rounded-2xl bg-[#E63946] flex items-center justify-center">
-            <Home className="w-7 h-7" />
           </div>
         </div>
       </div>
 
-      <div className="w-full px-0 flex-1 flex justify-center items-start">
-        <div className="w-full max-w-5xl mx-auto bg-white rounded-3xl shadow-2xl border border-gray-100 p-8 md:p-12 mt-[-2rem]">
-          {/* Progress Indicator */}
-          <div className="mb-8">
-            <div className="flex justify-between items-center mb-3">
-              <span className="text-sm font-semibold text-gray-700">Form Progress</span>
-              <span className="text-sm font-bold bg-gradient-to-r from-[#E63946] to-[#c5303c] bg-clip-text text-transparent">
-                {(() => {
-                  let completed = 0;
-                  const total = 5;
-                  if (formData.title && formData.title.trim().length >= 5) completed++;
-                  if (formData.price && parseFloat(formData.price) >= 500) completed++;
-                  if (formData.streetAddress && formData.location) completed++;
-                  if (formData.description && formData.description.length >= 10) completed++;
-                  if (formData.photos && formData.photos.length > 0) completed++;
-                  return `${completed}/${total} completed`;
-                })()}
-              </span>
-            </div>
-            <div className="h-3 bg-gray-100 rounded-full overflow-hidden shadow-inner">
-              <div 
-                className="h-full bg-gradient-to-r from-[#E63946] via-[#E63946] to-[#c5303c] rounded-full transition-all duration-500 relative overflow-hidden"
-                style={{
-                  boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.3)',
-                  width: `${(() => {
-                    let completed = 0;
-                    if (formData.title && formData.title.trim().length >= 5) completed++;
-                    if (formData.price && parseFloat(formData.price) >= 500) completed++;
-                    if (formData.streetAddress && formData.location) completed++;
-                    if (formData.description && formData.description.length >= 10) completed++;
-                    if (formData.photos && formData.photos.length > 0) completed++;
-                    return (completed / 5) * 100;
-                  })()}%`
-                }}
-              />
-            </div>
+      {/* Step Progress Bar */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="max-w-3xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-between gap-2">
+            {[
+              { num: 1, label: 'Type', icon: '🏠' },
+              { num: 2, label: 'Basics', icon: '💰' },
+              { num: 3, label: 'Location', icon: '📍' },
+              { num: 4, label: 'Details', icon: '📋' },
+              { num: 5, label: 'Photos', icon: '📸' },
+            ].map((step, index) => (
+              <React.Fragment key={step.num}>
+                <button
+                  onClick={() => step.num < currentStep && setCurrentStep(step.num)}
+                  className={`flex flex-col items-center gap-1 transition-all ${
+                    currentStep === step.num ? 'scale-110' : 
+                    currentStep > step.num ? 'opacity-70 hover:opacity-100 cursor-pointer' : 'opacity-40'
+                  }`}
+                  disabled={step.num > currentStep}
+                >
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg transition-all ${
+                    currentStep === step.num 
+                      ? 'bg-[#E63946] text-white shadow-lg shadow-red-200' 
+                      : currentStep > step.num
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-gray-200 text-gray-500'
+                  }`}>
+                    {currentStep > step.num ? '✓' : step.icon}
+                  </div>
+                  <span className={`text-xs font-medium ${currentStep === step.num ? 'text-[#E63946]' : 'text-gray-500'}`}>
+                    {step.label}
+                  </span>
+                </button>
+                {index < 4 && (
+                  <div className={`flex-1 h-1 rounded-full transition-all ${
+                    currentStep > step.num ? 'bg-emerald-500' : 'bg-gray-200'
+                  }`} />
+                )}
+              </React.Fragment>
+            ))}
           </div>
+        </div>
+      </div>
 
-          <div className="space-y-6">
-            {currentUser?.type === 'landlord' && (
-              <div className="bg-gradient-to-r from-red-50 to-red-50 border border-red-200 text-[#a52833] text-sm rounded-xl p-4 flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-red-500 to-[#c5303c] flex items-center justify-center flex-shrink-0">
-                  <Sparkles className="w-4 h-4 text-white" />
-                </div>
-                <div className="space-y-2">
-                  <p className="font-medium">
-                    Smart Fill Active! We remember your latest listing details so you only need to upload fresh photos next time.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={handleResetSavedTemplate}
-                    className="text-xs font-semibold text-[#c5303c] hover:text-[#8a1f28] transition-colors flex items-center gap-1"
-                  >
-                    <RefreshCw className="w-3 h-3" /> Reset saved info
-                  </button>
-                </div>
+      <div className="flex-1 w-full max-w-3xl mx-auto px-4 py-6">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+          
+          {/* STEP 1: Property Type */}
+          {currentStep === 1 && (
+            <div className="p-6 md:p-8">
+              <div className="text-center mb-8">
+                <h3 className="text-2xl font-bold text-gray-800 mb-2">What are you listing?</h3>
+                <p className="text-gray-500">Select the type of property you want to rent out</p>
               </div>
-            )}
-            {/* Section: Basic Info */}
-            <div className="border-b border-gray-100 pb-2 mb-4">
-              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-red-500 to-[#c5303c] flex items-center justify-center">
-                  <Edit className="w-4 h-4 text-white" />
-                </div>
-                Basic Information
-              </h3>
-            </div>
-
-            {/* Listing Type Selector */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-3">
-                🏠 What are you listing? *
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto">
                 {[
-                  { value: 'room', label: 'Room', icon: '🛏️', description: 'Private or shared room in a house' },
-                  { value: 'backroom', label: 'Backroom', icon: '🏡', description: 'Separate backyard unit' },
-                  { value: 'guesthouse', label: 'Guesthouse/BnB', icon: '🏨', description: 'Short or long-term guesthouse' }
+                  { value: 'room', label: 'Room', icon: '🛏️', description: 'A private or shared room inside a house', color: 'blue' },
+                  { value: 'backroom', label: 'Backroom', icon: '🏡', description: 'A separate unit in the backyard', color: 'emerald' },
+                  { value: 'guesthouse', label: 'Guesthouse', icon: '🏨', description: 'Short or long-term accommodation', color: 'purple' }
                 ].map(type => (
                   <button
                     key={type.value}
                     type="button"
                     onClick={() => setFormData({ ...formData, listingType: type.value })}
-                    className={`p-4 rounded-2xl border-2 transition-all text-left ${
+                    className={`p-6 rounded-2xl border-2 transition-all text-center hover:shadow-lg ${
                       formData.listingType === type.value
-                        ? 'border-[#E63946] bg-gradient-to-br from-red-50 to-rose-50 shadow-lg scale-[1.02]'
-                        : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
+                        ? type.color === 'blue' ? 'border-blue-500 bg-blue-50 shadow-lg' :
+                          type.color === 'emerald' ? 'border-emerald-500 bg-emerald-50 shadow-lg' :
+                          'border-purple-500 bg-purple-50 shadow-lg'
+                        : 'border-gray-200 bg-white hover:border-gray-300'
                     }`}
                   >
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="text-2xl">{type.icon}</span>
-                      <span className={`font-bold ${formData.listingType === type.value ? 'text-[#E63946]' : 'text-gray-800'}`}>
-                        {type.label}
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-500">{type.description}</p>
+                    <div className="text-5xl mb-3">{type.icon}</div>
+                    <h4 className={`font-bold text-lg mb-1 ${
+                      formData.listingType === type.value 
+                        ? type.color === 'blue' ? 'text-blue-600' :
+                          type.color === 'emerald' ? 'text-emerald-600' : 'text-purple-600'
+                        : 'text-gray-800'
+                    }`}>
+                      {type.label}
+                    </h4>
+                    <p className="text-sm text-gray-500">{type.description}</p>
                   </button>
                 ))}
               </div>
             </div>
+          )}
 
-            {/* Title */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">
-                Room Title *
-                {formData.title && formData.title.trim().length >= 5 && !errors.title && (
-                  <span className="ml-2 text-emerald-600 text-xs font-medium">✓ Looks good</span>
-                )}
-              </label>
-              <div className="relative">
+          {/* STEP 2: Basics (Title, Price, Availability) */}
+          {currentStep === 2 && (
+            <div className="p-6 md:p-8 space-y-6">
+              <div className="text-center mb-6">
+                <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                  {formData.listingType === 'guesthouse' ? '💰 Pricing & Basics' : '💰 Rent & Title'}
+                </h3>
+                <p className="text-gray-500">Tell us about your {formData.listingType || 'room'}</p>
+              </div>
+
+              {/* Title */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Give your listing a catchy title
+                </label>
                 <input
                   type="text"
-                  required
                   value={formData.title}
-                  onChange={(e) => {
-                    setFormData({ ...formData, title: e.target.value });
-                    validateField('title', e.target.value);
-                  }}
-                  onBlur={(e) => validateField('title', e.target.value)}
-                  placeholder="e.g., Cozy backroom with private bathroom"
-                  className={`w-full px-4 py-3.5 pr-10 border-2 ${
-                    errors.title ? 'border-red-400 bg-red-50' : 
-                    formData.title && formData.title.trim().length >= 5 ? 'border-[#E63946] bg-red-50/30' : 
-                    'border-gray-200 hover:border-gray-300'
-                  } text-gray-800 rounded-xl focus:ring-2 ${
-                    errors.title ? 'focus:ring-red-400' : 'focus:ring-[#E63946]'
-                  } focus:border-transparent transition-all placeholder-gray-400`}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder={formData.listingType === 'guesthouse' ? 'e.g., Cozy BnB near OR Tambo' : 'e.g., Spacious room in Sandton'}
+                  className="w-full px-4 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#E63946] focus:border-transparent text-lg"
                 />
-                {formData.title && formData.title.trim().length >= 5 && !errors.title && (
-                  <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />
-                )}
+                <p className="text-xs text-gray-400 mt-1">Min 5 characters</p>
               </div>
-              {errors.title && <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {errors.title}</p>}
-            </div>
 
-            {/* Price */}
-            {/* Pricing Section - Different for guesthouse vs room */}
-            {formData.listingType === 'guesthouse' ? (
-              /* Guesthouse/BnB Pricing */
-              <div className="space-y-4 p-4 bg-purple-50 rounded-2xl border-2 border-purple-200">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xl">🏨</span>
-                  <h4 className="font-bold text-purple-800">Guesthouse Pricing</h4>
-                </div>
-                
-                {/* Price Type Selector */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-800 mb-2">How do you want to charge?</label>
+              {/* Price Section - Different for guesthouse */}
+              {formData.listingType === 'guesthouse' ? (
+                <div className="bg-purple-50 rounded-2xl p-5 border border-purple-200 space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl">🏨</span>
+                    <span className="font-bold text-purple-800">Guesthouse Pricing</span>
+                  </div>
+                  
+                  {/* Price Type */}
                   <div className="grid grid-cols-3 gap-2">
                     {[
                       { value: 'nightly', label: 'Per Night', icon: '🌙' },
@@ -3258,710 +3317,459 @@ function AddListingView({ onSubmit, onCancel, currentUser, onRequireAuth }) {
                         key={opt.value}
                         type="button"
                         onClick={() => setFormData({ ...formData, priceType: opt.value })}
-                        className={`py-2.5 px-3 rounded-xl font-medium transition-all text-sm flex items-center justify-center gap-2 ${
+                        className={`py-3 px-2 rounded-xl font-medium transition-all text-sm flex flex-col items-center gap-1 ${
                           formData.priceType === opt.value
-                            ? 'bg-gradient-to-r from-purple-500 to-violet-600 text-white shadow-lg'
-                            : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                            ? 'bg-purple-600 text-white shadow-lg'
+                            : 'bg-white text-gray-600 border border-gray-200 hover:border-purple-300'
                         }`}
                       >
-                        <span>{opt.icon}</span>
+                        <span className="text-lg">{opt.icon}</span>
                         <span>{opt.label}</span>
                       </button>
                     ))}
                   </div>
-                </div>
 
-                {/* Price Input */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-800 mb-2">
-                    {formData.priceType === 'nightly' ? 'Price per Night (R) *' : 
-                     formData.priceType === 'weekly' ? 'Price per Week (R) *' : 'Price per Month (R) *'}
-                  </label>
-                  <div className="relative">
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
-                      <span className="text-white font-bold text-sm">R</span>
-                    </div>
-                    <input
-                      type="number"
-                      required
-                      value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                      placeholder={formData.priceType === 'nightly' ? '350' : formData.priceType === 'weekly' ? '2000' : '6000'}
-                      min="50"
-                      className="w-full pl-14 pr-4 py-3.5 border-2 border-purple-200 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all placeholder-gray-400 text-lg font-semibold"
-                    />
-                  </div>
-                </div>
-
-                {/* Min/Max Stay */}
-                <div className="grid grid-cols-2 gap-3">
+                  {/* Price Input */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-800 mb-2">Minimum Stay (nights)</label>
-                    <input
-                      type="number"
-                      value={formData.minStay}
-                      onChange={(e) => setFormData({ ...formData, minStay: parseInt(e.target.value) || 1 })}
-                      min="1"
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-800 mb-2">Maximum Stay (nights)</label>
-                    <input
-                      type="number"
-                      value={formData.maxStay}
-                      onChange={(e) => setFormData({ ...formData, maxStay: parseInt(e.target.value) || 0 })}
-                      min="0"
-                      placeholder="0 = no limit"
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500"
-                    />
-                  </div>
-                </div>
-
-                {/* Check-in/Check-out Times */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-800 mb-2">🕐 Check-in Time</label>
-                    <input
-                      type="time"
-                      value={formData.checkInTime}
-                      onChange={(e) => setFormData({ ...formData, checkInTime: e.target.value })}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-800 mb-2">🕐 Check-out Time</label>
-                    <input
-                      type="time"
-                      value={formData.checkOutTime}
-                      onChange={(e) => setFormData({ ...formData, checkOutTime: e.target.value })}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500"
-                    />
-                  </div>
-                </div>
-
-                {/* Extras */}
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, breakfastIncluded: !formData.breakfastIncluded })}
-                    className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
-                      formData.breakfastIncluded
-                        ? 'border-purple-500 bg-purple-100'
-                        : 'border-gray-200 bg-white hover:border-gray-300'
-                    }`}
-                  >
-                    <span className="text-xl">🍳</span>
-                    <div className="text-left">
-                      <p className="font-semibold text-sm text-gray-800">Breakfast</p>
-                      <p className="text-xs text-gray-500">{formData.breakfastIncluded ? 'Included' : 'Not included'}</p>
-                    </div>
-                  </button>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-800 mb-2">🧹 Cleaning Fee (R)</label>
-                    <input
-                      type="number"
-                      value={formData.cleaningFee}
-                      onChange={(e) => setFormData({ ...formData, cleaningFee: e.target.value })}
-                      placeholder="0 = none"
-                      min="0"
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500"
-                    />
-                  </div>
-                </div>
-
-                {/* House Rules */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-800 mb-2">📋 House Rules (optional)</label>
-                  <textarea
-                    value={formData.houseRules}
-                    onChange={(e) => setFormData({ ...formData, houseRules: e.target.value })}
-                    placeholder="E.g., No smoking, No parties, Quiet hours after 10pm..."
-                    rows="2"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500"
-                  />
-                </div>
-              </div>
-            ) : (
-              /* Room/Backroom Pricing - Monthly */
-              <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">
-                Monthly Price (R) *
-                {formData.price && parseFloat(formData.price) >= 500 && parseFloat(formData.price) <= 50000 && !errors.price && (
-                  <span className="ml-2 text-emerald-600 text-xs font-medium">✓ Valid price</span>
-                )}
-              </label>
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-red-500 flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">R</span>
-                </div>
-                <input
-                  type="number"
-                  required
-                  value={formData.price}
-                  onChange={(e) => {
-                    setFormData({ ...formData, price: e.target.value });
-                    validateField('price', e.target.value);
-                  }}
-                  onBlur={(e) => validateField('price', e.target.value)}
-                  placeholder="2500"
-                  min="500"
-                  max="50000"
-                  className={`w-full pl-14 pr-4 py-3.5 border-2 ${
-                    errors.price ? 'border-red-400 bg-red-50' : 
-                    formData.price && parseFloat(formData.price) >= 500 && parseFloat(formData.price) <= 50000 ? 'border-[#E63946] bg-red-50/30' : 
-                    'border-gray-200 hover:border-gray-300'
-                  } text-gray-800 rounded-xl focus:ring-2 ${
-                    errors.price ? 'focus:ring-red-400' : 'focus:ring-[#E63946]'
-                  } focus:border-transparent transition-all placeholder-gray-400 text-lg font-semibold`}
-                />
-                {formData.price && parseFloat(formData.price) >= 500 && parseFloat(formData.price) <= 50000 && !errors.price && (
-                  <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />
-                )}
-              </div>
-              {errors.price && <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {errors.price}</p>}
-              {!errors.price && formData.price && (
-                <p className="text-gray-500 text-xs mt-1.5">💡 Suggested range: R500 - R50,000 per month</p>
-              )}
-            </div>
-            )}
-
-            {/* Section: Location */}
-            <div className="border-b border-gray-100 pb-2 mb-4 mt-8">
-              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-red-500 to-[#c5303c] flex items-center justify-center">
-                  <MapPin className="w-4 h-4 text-white" />
-                </div>
-                Location Details
-              </h3>
-            </div>
-
-            {/* Full Address */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-1">Full South African Address *</label>
-              <p className="text-xs text-gray-500 mb-2">📍 Example: 5170 Molefe St, Ivory Park, Midrand, 1693</p>
-              <textarea
-                required
-                rows="2"
-                value={fullAddressInput}
-                onChange={(e) => handleFullAddressChange(e.target.value)}
-                onFocus={() => setIsFullAddressEditing(true)}
-                onBlur={(e) => { setIsFullAddressEditing(false); handleFullAddressChange(e.target.value); }}
-                placeholder="Type the full street + suburb + city + postal code"
-                className={`w-full px-4 py-3.5 border-2 ${errors.location ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-gray-300'} bg-white text-gray-800 rounded-xl focus:ring-2 ${errors.location ? 'focus:ring-red-400' : 'focus:ring-[#E63946]'} focus:border-transparent transition placeholder-gray-400`}
-              />
-              {errors.location && <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1" aria-live="assertive"><AlertCircle className="w-3 h-3" /> {errors.location}</p>}
-              {!errors.location && (
-                <p className="text-gray-500 text-xs mt-1.5">
-                  Include the street/stand number plus suburb, city, and postal code. Commas are optional.
-                </p>
-              )}
-            </div>
-
-            {/* Address Confirmation Section */}
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-5">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                </div>
-                <div>
-                  <p className="font-semibold text-green-800">Address saved</p>
-                  <p className="text-sm text-green-700">Your address will be shown to potential renters.</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Section: Room Details */}
-            <div className="border-b border-gray-100 pb-2 mb-4 mt-8">
-              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-red-500 to-[#c5303c] flex items-center justify-center">
-                  <Home className="w-4 h-4 text-white" />
-                </div>
-                Room Details
-              </h3>
-            </div>
-
-            {/* Status and Available Date - Two columns */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-2">Status</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {['available', 'rented'].map(status => (
-                    <button
-                      key={status}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, status })}
-                      className={`py-3 px-4 rounded-xl font-medium transition-all text-sm ${
-                        formData.status === status
-                          ? status === 'available' 
-                            ? 'bg-emerald-500 text-white shadow-lg scale-[1.02]' 
-                            : 'bg-gray-500 text-white shadow-lg scale-[1.02]'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-transparent'
-                      }`}
-                    >
-                      {status === 'available' ? '● Available' : '○ Rented'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-2">
-                  <Calendar className="w-4 h-4 inline mr-1" />
-                  Available Date
-                </label>
-                <input
-                  type="date"
-                  value={formData.availableDate}
-                  onChange={(e) => setFormData({ ...formData, availableDate: e.target.value })}
-                  className="w-full px-4 py-3.5 border-2 border-gray-200 hover:border-gray-300 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-[#E63946] focus:border-transparent transition"
-                />
-              </div>
-            </div>
-
-            {/* Payment Method */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">💳 Payment Method</label>
-              <div className="grid grid-cols-3 gap-2">
-                {['Bank and Cash', 'Cash Only', 'Bank Only'].map(method => (
-                  <button
-                    key={method}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, paymentMethod: method })}
-                    className={`py-3 px-3 rounded-xl font-medium transition-all text-xs md:text-sm text-center ${
-                      formData.paymentMethod === method
-                        ? 'bg-gradient-to-r from-red-500 to-[#c5303c] text-white shadow-lg scale-[1.02]'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-transparent'
-                    }`}
-                  >
-                    {method}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Room Type and Lease Duration - Two columns */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-2">🚪 Room Type</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {[{ value: 'private', label: 'Private Room', icon: '🔒' }, { value: 'shared', label: 'Shared Room', icon: '👥' }].map(type => (
-                    <button
-                      key={type.value}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, roomType: type.value })}
-                      className={`py-3 px-3 rounded-xl font-medium transition-all text-sm flex items-center justify-center gap-2 ${
-                        formData.roomType === type.value
-                          ? 'bg-gradient-to-r from-red-500 to-[#c5303c] text-white shadow-lg scale-[1.02]'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-transparent'
-                      }`}
-                    >
-                      <span>{type.icon}</span>
-                      <span className="hidden sm:inline">{type.label.split(' ')[0]}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-2">📅 Lease Duration</label>
-                <select
-                  value={formData.leaseDuration}
-                  onChange={(e) => setFormData({ ...formData, leaseDuration: e.target.value })}
-                  className="w-full px-4 py-3.5 border-2 border-gray-200 hover:border-gray-300 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-[#E63946] focus:border-transparent transition cursor-pointer"
-                >
-                  <option value="1-3">1-3 months (Short)</option>
-                  <option value="4-6">4-6 months (Medium)</option>
-                  <option value="7-12">7-12 months (Long)</option>
-                  <option value="12+">12+ months (Extended)</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Pet Friendly and Gender Preference */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button
-                type="button"
-                onClick={() => setFormData({ ...formData, petFriendly: !formData.petFriendly })}
-                className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
-                  formData.petFriendly
-                    ? 'border-[#E63946] bg-red-50 shadow-md scale-[1.02]'
-                    : 'border-gray-200 bg-white hover:border-gray-300'
-                }`}
-              >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl ${
-                  formData.petFriendly ? 'bg-red-500 text-white' : 'bg-gray-100'
-                }`}>
-                  🐾
-                </div>
-                <div className="text-left">
-                  <p className="font-semibold text-gray-800">Pet Friendly</p>
-                  <p className="text-xs text-gray-500">{formData.petFriendly ? 'Pets welcome!' : 'No pets allowed'}</p>
-                </div>
-                <div className={`ml-auto w-6 h-6 rounded-full flex items-center justify-center ${
-                  formData.petFriendly ? 'bg-red-500 text-white' : 'bg-gray-200'
-                }`}>
-                  {formData.petFriendly && <CheckCircle className="w-4 h-4" />}
-                </div>
-              </button>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-2">👤 Gender Preference</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[{ value: 'any', label: 'Any', icon: '👥' }, { value: 'male', label: 'Male', icon: '👨' }, { value: 'female', label: 'Female', icon: '👩' }].map(option => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, genderPreference: option.value })}
-                      className={`py-2.5 px-3 rounded-xl font-medium transition-all text-xs flex flex-col items-center gap-1 ${
-                        formData.genderPreference === option.value
-                          ? 'bg-gradient-to-r from-red-500 to-[#c5303c] text-white shadow-lg scale-[1.02]'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-transparent'
-                      }`}
-                    >
-                      <span className="text-lg">{option.icon}</span>
-                      <span>{option.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Premium Flag */}
-            <button
-              type="button"
-              onClick={() => setFormData({ ...formData, premium: !formData.premium })}
-              className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
-                formData.premium
-                  ? 'border-amber-400 bg-gradient-to-r from-amber-50 to-yellow-50 shadow-md scale-[1.01]'
-                  : 'border-gray-200 bg-white hover:border-gray-300'
-              }`}
-            >
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                formData.premium ? 'bg-gradient-to-br from-amber-400 to-yellow-500' : 'bg-gray-100'
-              }`}>
-                <Sparkles className={`w-6 h-6 ${formData.premium ? 'text-white' : 'text-gray-400'}`} />
-              </div>
-              <div className="text-left flex-1">
-                <p className="font-bold text-gray-800">Premium Listing</p>
-                <p className="text-xs text-gray-500">Highlight & priority sorting in search results</p>
-              </div>
-              <div className={`w-12 h-6 rounded-full transition-all relative ${
-                formData.premium ? 'bg-amber-400' : 'bg-gray-300'
-              }`}>
-                <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${
-                  formData.premium ? 'left-7' : 'left-1'
-                }`} />
-              </div>
-            </button>
-
-            {/* Section: Contact */}
-            <div className="border-b border-gray-100 pb-2 mb-4 mt-8">
-              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-red-500 to-[#c5303c] flex items-center justify-center">
-                  <Phone className="w-4 h-4 text-white" />
-                </div>
-                Contact Details
-              </h3>
-              <p className="text-xs text-gray-500 mt-1 ml-9">How tenants can reach you</p>
-            </div>
-
-            {/* Contact Details */}
-            <div className="bg-gradient-to-br from-red-50 via-red-50 to-red-50 border border-red-200 rounded-2xl p-5">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    📱 Phone Number
-                  </label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#E63946]" />
-                    <input
-                      type="tel"
-                      value={formData.contactPhone}
-                      onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
-                      placeholder="e.g., 071 234 5678"
-                      className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-200 hover:border-red-300 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-[#E63946] focus:border-transparent transition placeholder-gray-400"
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1.5">For direct calls from tenants</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    💬 WhatsApp Number
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xl">💬</span>
-                    <input
-                      type="tel"
-                      value={formData.contactWhatsapp}
-                      onChange={(e) => setFormData({ ...formData, contactWhatsapp: e.target.value })}
-                      placeholder="e.g., 071 234 5678"
-                      className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-200 hover:border-red-300 bg-white text-gray-800 rounded-xl focus:ring-2 focus:ring-[#E63946] focus:border-transparent transition placeholder-gray-400"
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1.5">Leave blank if same as phone</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Section: Description & Media */}
-            <div className="border-b border-gray-100 pb-2 mb-4 mt-8">
-              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-red-500 to-[#c5303c] flex items-center justify-center">
-                  <Edit className="w-4 h-4 text-white" />
-                </div>
-                Description & Media
-              </h3>
-            </div>
-
-            {/* Description */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">
-                ✍️ Description 
-                {formData.description && (
-                  <span className={`ml-2 text-xs font-medium ${
-                    formData.description.length > 500 
-                      ? 'text-red-500' 
-                      : formData.description.length >= 10 
-                        ? 'text-emerald-600' 
-                        : 'text-gray-500'
-                  }`}>
-                    {formData.description.length}/500 characters
-                    {formData.description.length >= 10 && formData.description.length <= 500 && ' ✓'}
-                  </span>
-                )}
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => {
-                  setFormData({ ...formData, description: e.target.value });
-                  validateField('description', e.target.value);
-                }}
-                onBlur={(e) => validateField('description', e.target.value)}
-                placeholder="Describe the room, amenities, house rules, nearby transport, and what makes it special..."
-                rows="5"
-                className={`w-full px-4 py-3.5 border-2 ${
-                  errors.description ? 'border-red-400 bg-red-50' : 
-                  formData.description && formData.description.length >= 10 ? 'border-[#E63946] bg-red-50/30' :
-                  'border-gray-200 hover:border-gray-300'
-                } bg-white text-gray-800 rounded-xl focus:ring-2 ${errors.description ? 'focus:ring-red-400' : 'focus:ring-[#E63946]'} focus:border-transparent transition placeholder-gray-400 resize-none`}
-              />
-              {errors.description && <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {errors.description}</p>}
-              {!errors.description && <p className="text-gray-500 text-xs mt-1.5">💡 Include transport links, amenities, and house rules for better engagement</p>}
-            </div>
-
-            {/* Amenities */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-3">✨ Amenities</label>
-              <p className="text-xs text-gray-500 mb-3">Select all that apply to your room</p>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {availableAmenities.map(amenity => (
-                  <button
-                    key={amenity}
-                    type="button"
-                    onClick={() => toggleAmenity(amenity)}
-                    className={`px-3 py-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${
-                      formData.amenities.includes(amenity)
-                        ? 'bg-gradient-to-r from-red-500 to-[#c5303c] text-white shadow-lg scale-[1.02]'
-                        : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:border-red-300 hover:bg-red-50'
-                    }`}
-                  >
-                    {formData.amenities.includes(amenity) && <CheckCircle className="w-4 h-4" />}
-                    {amenity}
-                  </button>
-                ))}
-              </div>
-              {formData.amenities.length > 0 && (
-                <p className="text-xs text-[#E63946] font-medium mt-2">{formData.amenities.length} amenities selected</p>
-              )}
-            </div>
-
-            {/* Photos */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">
-                📸 Photos <span className="text-[#E63946] font-bold">{formData.photos.length}/5</span>
-              </label>
-              <div 
-                className="relative border-2 border-dashed border-red-300 bg-gradient-to-br from-red-50 via-red-50 to-red-50 rounded-2xl p-8 hover:border-red-500 hover:shadow-lg transition-all duration-300 cursor-pointer group"
-                onClick={() => setShowPhotoEditor(true)}
-              >
-                <div className="text-center">
-                  <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-[#c5303c] rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                    <span className="text-4xl">📸</span>
-                  </div>
-                  <p className="text-gray-800 font-bold text-lg mb-1">
-                    {formData.photos.length === 0 ? 'Add Photos' : `${formData.photos.length} Photo${formData.photos.length > 1 ? 's' : ''} Added`}
-                  </p>
-                  <p className="text-gray-500 text-sm">
-                    Click to upload • JPG, PNG up to 5MB each
-                  </p>
-                  {formData.photos.length === 0 && (
-                    <div className="mt-4 bg-white rounded-xl px-4 py-2 inline-block">
-                      <p className="text-sm text-[#E63946] font-semibold">
-                        ✨ Listings with photos get 3x more views!
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-              {formData.photos.length > 0 && (
-                <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-3">
-                  {formData.photos.map((photo, index) => (
-                    <div key={index} className="relative group aspect-square">
-                      {index === 0 && (
-                        <div className="absolute top-2 left-2 bg-gradient-to-r from-red-500 to-[#c5303c] text-white text-xs px-2 py-1 rounded-full font-semibold z-10 shadow">
-                          Cover
-                        </div>
-                      )}
-                      <img 
-                        src={photo} 
-                        alt={`Preview ${index + 1}`} 
-                        className="w-full h-full object-cover rounded-xl border-2 border-red-200 shadow-sm group-hover:shadow-md transition-shadow" 
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      {formData.priceType === 'nightly' ? 'Price per night' : 
+                       formData.priceType === 'weekly' ? 'Price per week' : 'Price per month'}
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-purple-600">R</span>
+                      <input
+                        type="number"
+                        value={formData.price}
+                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                        placeholder={formData.priceType === 'nightly' ? '350' : formData.priceType === 'weekly' ? '2000' : '6000'}
+                        className="w-full pl-10 pr-4 py-3.5 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 text-lg font-semibold"
                       />
                     </div>
-                  ))}
-                </div>
-              )}
-              {formData.photos.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setShowPhotoEditor(true)}
-                  className="mt-4 text-sm text-[#E63946] hover:text-[#c5303c] font-semibold flex items-center gap-1"
-                >
-                  <Edit className="w-4 h-4" /> Edit Photos
-                </button>
-              )}
-            </div>
+                  </div>
 
-            {/* Video Tour */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">
-                🎥 Video Tour <span className="text-gray-400 font-normal">(Optional)</span>
-              </label>
-              <p className="text-xs text-gray-500 mb-3">Upload a short walkthrough video (max 60 seconds, 50MB)</p>
-              
-              {formData.videoTour ? (
-                <div className="relative rounded-2xl overflow-hidden bg-gray-900">
-                  <video 
-                    src={formData.videoTour}
-                    controls
-                    className="w-full max-h-64 object-contain"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, videoTour: null })}
-                    className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow-lg"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                  <div className="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-3 py-1 rounded-full flex items-center gap-1">
-                    <span>🎬</span> Video Tour
+                  {/* Min/Max Stay */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">Min nights</label>
+                      <input
+                        type="number"
+                        value={formData.minStay}
+                        onChange={(e) => setFormData({ ...formData, minStay: parseInt(e.target.value) || 1 })}
+                        min="1"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">Max nights (0=no limit)</label>
+                      <input
+                        type="number"
+                        value={formData.maxStay}
+                        onChange={(e) => setFormData({ ...formData, maxStay: parseInt(e.target.value) || 0 })}
+                        min="0"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg"
+                      />
+                    </div>
                   </div>
                 </div>
               ) : (
-                <label className="block cursor-pointer">
-                  <div className="border-2 border-dashed border-purple-300 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-6 hover:border-purple-500 hover:shadow-lg transition-all duration-300 group">
-                    <div className="text-center">
-                      <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                        <span className="text-3xl">🎥</span>
-                      </div>
-                      <p className="text-gray-800 font-bold mb-1">Add Video Tour</p>
-                      <p className="text-gray-500 text-sm">MP4, MOV up to 50MB • Max 60 sec</p>
-                      <div className="mt-3 bg-white rounded-xl px-4 py-2 inline-block">
-                        <p className="text-sm text-purple-600 font-semibold">
-                          ⭐ Listings with video get 5x more enquiries!
-                        </p>
-                      </div>
+                /* Room/Backroom Monthly Price */
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Monthly rent (ZAR)</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-[#E63946]">R</span>
+                    <input
+                      type="number"
+                      value={formData.price}
+                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                      placeholder="2500"
+                      min="500"
+                      className="w-full pl-10 pr-4 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#E63946] text-lg font-semibold"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">Typical range: R500 - R15,000</p>
+                </div>
+              )}
+
+              {/* Availability */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, status: 'available' })}
+                      className={`flex-1 py-3 rounded-xl font-medium transition-all ${
+                        formData.status === 'available'
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      ✓ Available
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, status: 'rented' })}
+                      className={`flex-1 py-3 rounded-xl font-medium transition-all ${
+                        formData.status === 'rented'
+                          ? 'bg-gray-500 text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      Rented
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Available from</label>
+                  <input
+                    type="date"
+                    value={formData.availableDate}
+                    onChange={(e) => setFormData({ ...formData, availableDate: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#E63946]"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 3: Location */}
+          {currentStep === 3 && (
+            <div className="p-6 md:p-8 space-y-6">
+              <div className="text-center mb-6">
+                <h3 className="text-2xl font-bold text-gray-800 mb-2">📍 Where is your property?</h3>
+                <p className="text-gray-500">Help renters find your location</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Full address</label>
+                <textarea
+                  value={fullAddressInput}
+                  onChange={(e) => handleFullAddressChange(e.target.value)}
+                  placeholder="e.g., 123 Main Road, Sandton, Johannesburg, 2196"
+                  rows="2"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#E63946] resize-none"
+                />
+                <p className="text-xs text-gray-400 mt-1">Include street number, suburb, city, and postal code</p>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <p className="text-sm text-blue-700">
+                  <strong>💡 Tip:</strong> The more specific your address, the easier it is for renters to find you. 
+                  Include landmarks if helpful.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 4: Details */}
+          {currentStep === 4 && (
+            <div className="p-6 md:p-8 space-y-6">
+              <div className="text-center mb-6">
+                <h3 className="text-2xl font-bold text-gray-800 mb-2">📋 Property Details</h3>
+                <p className="text-gray-500">Tell us more about your {formData.listingType || 'room'}</p>
+              </div>
+
+              {/* Room Type (only for rooms) */}
+              {formData.listingType !== 'guesthouse' && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Room Type</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, roomType: 'private' })}
+                      className={`p-4 rounded-xl border-2 transition-all ${
+                        formData.roomType === 'private'
+                          ? 'border-[#E63946] bg-red-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <span className="text-2xl mb-2 block">🔒</span>
+                      <span className="font-semibold">Private Room</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, roomType: 'shared' })}
+                      className={`p-4 rounded-xl border-2 transition-all ${
+                        formData.roomType === 'shared'
+                          ? 'border-[#E63946] bg-red-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <span className="text-2xl mb-2 block">👥</span>
+                      <span className="font-semibold">Shared Room</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Lease Duration (only for rooms/backrooms) */}
+              {formData.listingType !== 'guesthouse' && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Lease Duration</label>
+                  <select
+                    value={formData.leaseDuration}
+                    onChange={(e) => setFormData({ ...formData, leaseDuration: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#E63946]"
+                  >
+                    <option value="1-3">1-3 months (Short)</option>
+                    <option value="4-6">4-6 months (Medium)</option>
+                    <option value="7-12">7-12 months (Long)</option>
+                    <option value="12+">12+ months (Extended)</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Guesthouse specific - Check-in/out times */}
+              {formData.listingType === 'guesthouse' && (
+                <div className="bg-purple-50 rounded-xl p-4 border border-purple-200 space-y-4">
+                  <h4 className="font-semibold text-purple-800">🏨 Guesthouse Settings</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Check-in time</label>
+                      <input
+                        type="time"
+                        value={formData.checkInTime}
+                        onChange={(e) => setFormData({ ...formData, checkInTime: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Check-out time</label>
+                      <input
+                        type="time"
+                        value={formData.checkOutTime}
+                        onChange={(e) => setFormData({ ...formData, checkOutTime: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg"
+                      />
                     </div>
                   </div>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, breakfastIncluded: !formData.breakfastIncluded })}
+                      className={`flex-1 p-3 rounded-xl border-2 transition-all flex items-center justify-center gap-2 ${
+                        formData.breakfastIncluded ? 'border-purple-500 bg-purple-100' : 'border-gray-200 bg-white'
+                      }`}
+                    >
+                      <span>🍳</span>
+                      <span className="font-medium text-sm">Breakfast {formData.breakfastIncluded ? '✓' : ''}</span>
+                    </button>
+                    <div className="flex-1">
+                      <input
+                        type="number"
+                        value={formData.cleaningFee}
+                        onChange={(e) => setFormData({ ...formData, cleaningFee: e.target.value })}
+                        placeholder="Cleaning fee (R)"
+                        className="w-full px-3 py-3 border-2 border-gray-200 rounded-xl"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Method */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Payment Method</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {['Bank and Cash', 'Cash Only', 'Bank Only'].map(method => (
+                    <button
+                      key={method}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, paymentMethod: method })}
+                      className={`py-3 px-2 rounded-xl font-medium transition-all text-sm ${
+                        formData.paymentMethod === method
+                          ? 'bg-[#E63946] text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {method}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Amenities */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Amenities</label>
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                  {availableAmenities.map(amenity => (
+                    <button
+                      key={amenity.id}
+                      type="button"
+                      onClick={() => {
+                        const newAmenities = formData.amenities.includes(amenity.id)
+                          ? formData.amenities.filter(a => a !== amenity.id)
+                          : [...formData.amenities, amenity.id];
+                        setFormData({ ...formData, amenities: newAmenities });
+                      }}
+                      className={`p-2 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${
+                        formData.amenities.includes(amenity.id)
+                          ? 'border-[#E63946] bg-red-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <span className="text-xl">{amenity.icon}</span>
+                      <span className="text-xs font-medium text-gray-700">{amenity.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quick toggles */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, petFriendly: !formData.petFriendly })}
+                  className={`p-4 rounded-xl border-2 transition-all flex items-center gap-3 ${
+                    formData.petFriendly ? 'border-[#E63946] bg-red-50' : 'border-gray-200'
+                  }`}
+                >
+                  <span className="text-2xl">🐾</span>
+                  <div className="text-left">
+                    <p className="font-semibold text-sm">Pet Friendly</p>
+                    <p className="text-xs text-gray-500">{formData.petFriendly ? 'Yes' : 'No'}</p>
+                  </div>
+                </button>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Gender Preference</label>
+                  <select
+                    value={formData.genderPreference}
+                    onChange={(e) => setFormData({ ...formData, genderPreference: e.target.value })}
+                    className="w-full px-3 py-3 border-2 border-gray-200 rounded-xl"
+                  >
+                    <option value="any">Any</option>
+                    <option value="male">Males Only</option>
+                    <option value="female">Females Only</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 5: Photos & Description */}
+          {currentStep === 5 && (
+            <div className="p-6 md:p-8 space-y-6">
+              <div className="text-center mb-6">
+                <h3 className="text-2xl font-bold text-gray-800 mb-2">📸 Photos & Description</h3>
+                <p className="text-gray-500">Make your listing stand out</p>
+              </div>
+
+              {/* Photo Upload */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Upload photos (up to 5)
+                </label>
+                <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-[#E63946] transition-colors">
                   <input
                     type="file"
-                    accept="video/mp4,video/mov,video/quicktime,video/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      
-                      // Check file size (50MB max)
-                      if (file.size > 50 * 1024 * 1024) {
-                        alert('Video must be under 50MB');
-                        return;
-                      }
-                      
-                      // Check video duration
-                      const video = document.createElement('video');
-                      video.preload = 'metadata';
-                      video.onloadedmetadata = () => {
-                        URL.revokeObjectURL(video.src);
-                        if (video.duration > 65) { // 60 sec + 5 sec buffer
-                          alert('Video must be 60 seconds or less');
-                          return;
-                        }
-                        
-                        // Convert to base64
-                        const reader = new FileReader();
-                        reader.onload = (evt) => {
-                          setFormData(prev => ({ ...prev, videoTour: evt.target.result }));
-                        };
-                        reader.readAsDataURL(file);
-                      };
-                      video.src = URL.createObjectURL(file);
-                    }}
+                    accept="image/*"
+                    multiple
+                    onChange={handlePhotoUpload}
                     className="hidden"
+                    id="photo-upload-new"
                   />
-                </label>
-              )}
-            </div>
+                  <label htmlFor="photo-upload-new" className="cursor-pointer">
+                    <Camera className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-600 font-medium">Click to upload photos</p>
+                    <p className="text-xs text-gray-400 mt-1">JPG, PNG up to 5MB each</p>
+                  </label>
+                </div>
 
-            {showPhotoEditor && (
-              <LazyModalBoundary label="Loading editor...">
-                <PhotoEditor
-                  photos={formData.photos}
-                  onPhotosChange={(newPhotos) => setFormData({ ...formData, photos: newPhotos })}
-                  onClose={() => setShowPhotoEditor(false)}
-                  maxPhotos={5}
-                />
-              </LazyModalBoundary>
-            )}
-
-            {/* Submit Button */}
-            <div className="border-t border-gray-200 pt-8 mt-8">
-              <button
-                onClick={handleSubmit}
-                disabled={isSubmitting || Object.keys(errors).length > 0}
-                className={`w-full font-bold py-4 rounded-2xl transition-all relative text-lg ${
-                  isSubmitting || Object.keys(errors).length > 0
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-[#E63946] via-[#c5303c] to-[#c5303c] hover:from-[#c5303c] hover:via-[#a52833] hover:to-[#a52833] text-white shadow-xl hover:shadow-2xl hover:shadow-red-500/30 active:scale-[0.98]'
-                }`}
-              >
-                {isSubmitting ? (
-                  <div className="flex items-center justify-center gap-3">
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Posting Your Room...</span>
+                {/* Photo preview */}
+                {formData.photos.length > 0 && (
+                  <div className="grid grid-cols-5 gap-2 mt-4">
+                    {formData.photos.map((photo, index) => (
+                      <div key={index} className="relative aspect-square">
+                        <img src={photo} alt={`Preview ${index + 1}`} className="w-full h-full object-cover rounded-lg" />
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, photos: formData.photos.filter((_, i) => i !== index) })}
+                          className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs"
+                        >
+                          ×
+                        </button>
+                        {index === 0 && (
+                          <span className="absolute bottom-1 left-1 bg-[#E63946] text-white text-[10px] px-2 py-0.5 rounded-full">Cover</span>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                ) : (
-                  <span className="flex items-center justify-center gap-2">
-                    <PlusCircle className="w-5 h-5" />
-                    Post Your Room
-                  </span>
                 )}
-              </button>
-              {Object.keys(errors).length > 0 && (
-                <div className="mt-3 bg-red-50 border border-red-200 rounded-xl p-3 text-center">
-                  <p className="text-red-600 text-sm font-medium flex items-center justify-center gap-2">
-                    <AlertCircle className="w-4 h-4" />
-                    Please fix the errors above before submitting
-                  </p>
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Describe your property - what makes it special? Nearby amenities? Transport links?"
+                  rows="4"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#E63946] resize-none"
+                />
+                <p className="text-xs text-gray-400 mt-1">{formData.description?.length || 0}/500 characters</p>
+              </div>
+
+              {/* House Rules for Guesthouse */}
+              {formData.listingType === 'guesthouse' && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">House Rules (optional)</label>
+                  <textarea
+                    value={formData.houseRules}
+                    onChange={(e) => setFormData({ ...formData, houseRules: e.target.value })}
+                    placeholder="e.g., No smoking, No parties, Quiet hours after 10pm"
+                    rows="2"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl resize-none"
+                  />
                 </div>
               )}
             </div>
+          )}
+
+          {/* Navigation Buttons */}
+          <div className="px-6 md:px-8 py-4 bg-gray-50 border-t border-gray-100 flex justify-between">
+            {currentStep > 1 ? (
+              <button
+                type="button"
+                onClick={() => setCurrentStep(currentStep - 1)}
+                className="px-6 py-3 rounded-xl font-semibold text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 transition-all"
+              >
+                ← Back
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onCancel}
+                className="px-6 py-3 rounded-xl font-semibold text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 transition-all"
+              >
+                Cancel
+              </button>
+            )}
+
+            {currentStep < totalSteps ? (
+              <button
+                type="button"
+                onClick={() => setCurrentStep(currentStep + 1)}
+                className="px-8 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-[#E63946] to-[#c5303c] hover:shadow-lg transition-all"
+              >
+                Continue →
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="px-8 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-emerald-500 to-green-600 hover:shadow-lg transition-all disabled:opacity-50"
+              >
+                {isSubmitting ? 'Publishing...' : '🎉 Publish Listing'}
+              </button>
+            )}
           </div>
         </div>
       </div>
     </div>
   );
 }
-
 // Edit Listing View - allows landlords to modify their existing listings
 function EditListingView({ listing, onSubmit, onCancel, currentUser }) {
   const [formData, setFormData] = useState({
