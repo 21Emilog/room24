@@ -23,6 +23,7 @@ import {
   signInWithGoogle,
   signOut,
   resetPassword,
+  resendConfirmationEmail,
   onAuthStateChange,
   getSession,
   // Profile functions
@@ -191,7 +192,7 @@ export default function RentalPlatform() {
   // Auth functions to pass to AuthModal - Uses Supabase
   const authFunctions = {
     signUp: async (email, password, displayName, userTypeParam = 'renter', phone = '', captchaToken = '') => {
-      const user = await signUpWithEmail(email, password, captchaToken);
+      const { user, pendingConfirmation } = await signUpWithEmail(email, password, captchaToken);
       
       // Create user profile data
       const profileData = {
@@ -207,6 +208,12 @@ export default function RentalPlatform() {
       // Store in localStorage
       saveProfile(user.id, profileData);
       
+      // If email confirmation is still pending, there's no active session yet -
+      // don't sync to Supabase or mark the user as logged in until they confirm.
+      if (pendingConfirmation) {
+        return { user, pendingConfirmation: true };
+      }
+      
       // Sync profile to Supabase so other users can see this user's name in messages
       try {
         await syncProfileToSupabase(user.id, profileData);
@@ -218,7 +225,7 @@ export default function RentalPlatform() {
       setUserProfile(profileData);
       setUserType(userTypeParam);
       
-      return user;
+      return { user, pendingConfirmation: false };
     },
     signIn: async (email, password, captchaToken = '') => {
       const user = await signInWithEmail(email, password, captchaToken);
@@ -250,6 +257,9 @@ export default function RentalPlatform() {
     },
     sendPasswordReset: async (email, captchaToken = '') => {
       await resetPassword(email, captchaToken);
+    },
+    resendConfirmation: async (email, captchaToken = '') => {
+      await resendConfirmationEmail(email, captchaToken);
     }
   };
 
@@ -5032,6 +5042,9 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState('');
   const [resetSent, setResetSent] = useState(false);
+  const [pendingConfirmation, setPendingConfirmation] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState('');
   const [isVisible, setIsVisible] = useState(false);
   
   // Turnstile captcha state
@@ -5118,13 +5131,24 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
     setIsSubmitting(true);
     setAuthError('');
     setCaptchaError('');
+    setPendingConfirmation(false);
+    setResendMessage('');
     
     try {
       if (mode === 'signup') {
         // Everyone signs up as renter by default, they can change to landlord in profile settings
-        await authFunctions.signUp(form.email, form.password, form.name, 'renter', form.phone.trim(), captchaToken);
-        onSuccess?.();
-        onClose();
+        const result = await authFunctions.signUp(form.email, form.password, form.name, 'renter', form.phone.trim(), captchaToken);
+        if (result?.pendingConfirmation) {
+          // Brand-new account created - Supabase emailed a confirmation link.
+          // Keep the modal open and show a clear, non-alarming success state
+          // instead of closing (there's no session yet, so nothing to do until
+          // the user clicks the link in their inbox).
+          setPendingConfirmation(true);
+          setResendMessage('');
+        } else {
+          onSuccess?.();
+          onClose();
+        }
       } else if (mode === 'signin') {
         await authFunctions.signIn(form.email, form.password, captchaToken);
         onSuccess?.();
@@ -5139,9 +5163,12 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
       setCaptchaToken('');
       setCaptchaRefresh(prev => prev + 1);
       
+      const rawMessage = err.message || '';
+      const lowerMessage = rawMessage.toLowerCase();
       let errorMessage = 'An error occurred. Please try again.';
+
       if (err.code === 'auth/email-already-in-use') {
-        errorMessage = 'This email is already registered. Please sign in instead.';
+        errorMessage = rawMessage || 'This email is already registered. Please sign in instead.';
       } else if (err.code === 'auth/invalid-email') {
         errorMessage = 'Invalid email address format.';
       } else if (err.code === 'auth/weak-password') {
@@ -5152,12 +5179,39 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
         errorMessage = 'Too many attempts. Please try again later.';
       } else if (err.code === 'auth/network-request-failed') {
         errorMessage = 'Network error. Please check your connection.';
-      } else if (err.message) {
-        errorMessage = err.message;
+      } else if (lowerMessage.includes('invalid login credentials')) {
+        errorMessage = 'Invalid email or password. Please check and try again.';
+      } else if (lowerMessage.includes('email not confirmed')) {
+        errorMessage = 'Please confirm your email before signing in - check your inbox (and spam folder) for the confirmation link.';
+        setPendingConfirmation(true);
+      } else if (lowerMessage.includes('user already registered')) {
+        errorMessage = 'This email is already registered. Please sign in instead.';
+      } else if (lowerMessage.includes('rate limit') || lowerMessage.includes('security purposes')) {
+        errorMessage = rawMessage || 'Too many attempts. Please wait a moment and try again.';
+      } else if (lowerMessage.includes('network')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else if (rawMessage) {
+        errorMessage = rawMessage;
       }
       setAuthError(errorMessage);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!form.email) return;
+    setIsResending(true);
+    setResendMessage('');
+    setAuthError('');
+    try {
+      await authFunctions.resendConfirmation(form.email, captchaToken);
+      setResendMessage('Confirmation email sent! Please check your inbox (and spam folder).');
+    } catch (err) {
+      console.error('Resend confirmation error:', err);
+      setResendMessage(err.message || 'Could not resend the email. Please try again in a moment.');
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -5239,6 +5293,32 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
               <CheckCircle className="w-4 h-4 text-green-600" />
             </div>
             <span className="font-medium">Password reset email sent! Check your inbox.</span>
+          </div>
+        )}
+
+        {/* Email Confirmation Pending Message */}
+        {pendingConfirmation && (
+          <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl text-blue-700 text-sm shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Mail className="w-4 h-4 text-blue-600" />
+              </div>
+              <span className="font-medium">
+                Almost there! We've sent a confirmation link to <span className="font-semibold">{form.email}</span>. Click it to activate your account, then sign in.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={handleResendConfirmation}
+              disabled={isResending}
+              className="mt-3 inline-flex items-center gap-1.5 text-blue-700 hover:text-blue-900 font-semibold text-xs disabled:opacity-60"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isResending ? 'animate-spin' : ''}`} />
+              {isResending ? 'Sending...' : "Didn't get it? Resend email"}
+            </button>
+            {resendMessage && (
+              <p className="mt-2 text-xs font-medium text-blue-600">{resendMessage}</p>
+            )}
           </div>
         )}
 
@@ -5397,7 +5477,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
               {mode === 'signin' && (
                 <button
                   type="button"
-                  onClick={() => { setMode('reset'); setAuthError(''); setResetSent(false); }}
+                  onClick={() => { setMode('reset'); setAuthError(''); setResetSent(false); setPendingConfirmation(false); setResendMessage(''); }}
                   className="text-sm text-[#E63946] hover:text-[#c5303c] font-medium"
                 >
                   Forgot your password?
@@ -5459,7 +5539,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
               <>
                 Don't have an account?{' '}
                 <button 
-                  onClick={() => { setMode('signup'); setAuthError(''); }} 
+                  onClick={() => { setMode('signup'); setAuthError(''); setPendingConfirmation(false); setResendMessage(''); }} 
                   className="text-[#E63946] hover:text-[#c5303c] font-semibold transition-colors hover:underline underline-offset-2"
                 >
                   Sign up
@@ -5470,7 +5550,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
               <>
                 Already have an account?{' '}
                 <button 
-                  onClick={() => { setMode('signin'); setAuthError(''); }} 
+                  onClick={() => { setMode('signin'); setAuthError(''); setPendingConfirmation(false); setResendMessage(''); }} 
                   className="text-[#E63946] hover:text-[#c5303c] font-semibold transition-colors hover:underline underline-offset-2"
                 >
                   Sign in
@@ -5479,7 +5559,7 @@ function AuthModal({ defaultType = 'renter', defaultMode = 'signin', onClose, on
             )}
             {mode === 'reset' && (
               <button 
-                onClick={() => { setMode('signin'); setAuthError(''); setResetSent(false); }} 
+                onClick={() => { setMode('signin'); setAuthError(''); setResetSent(false); setPendingConfirmation(false); setResendMessage(''); }} 
                 className="text-[#E63946] hover:text-[#c5303c] font-semibold transition-colors hover:underline underline-offset-2 inline-flex items-center gap-1"
               >
                 <span>←</span> Back to sign in

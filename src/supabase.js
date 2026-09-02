@@ -13,6 +13,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 // ===========================
 
 // Sign up with email and password
+// Returns { user, pendingConfirmation } - pendingConfirmation is true when
+// a brand-new account was created and is waiting on the user to click the
+// confirmation link emailed to them (session will be null until then).
 export async function signUpWithEmail(email, password, captchaToken) {
   const payload = {
     email,
@@ -33,23 +36,52 @@ export async function signUpWithEmail(email, password, captchaToken) {
     throw error;
   }
   
-  // Check if email confirmation is required
-  // If user.identities is empty, email confirmation is pending
+  // Supabase returns a user object with an EMPTY identities array when the
+  // email already belongs to an existing account. No confirmation email is
+  // sent in this case (this obfuscation is intentional, to stop attackers
+  // from using signup to discover which emails already have accounts) - so
+  // we must NOT tell the user to "check their email" here, since none will
+  // ever arrive. Surface a clear, actionable message instead.
   if (data.user && data.user.identities && data.user.identities.length === 0) {
-    throw new Error('Please check your email to confirm your account before signing in.');
+    const err = new Error('This email is already registered. Please sign in instead, or use "Forgot password" if you need to reset it.');
+    err.code = 'auth/email-already-in-use';
+    throw err;
   }
   
-  // If session exists, user is signed in (email confirmation disabled)
+  // Session exists immediately - email confirmation is disabled in Supabase settings
   if (data.session) {
-    return data.user;
+    return { user: data.user, pendingConfirmation: false };
   }
   
-  // Email confirmation required
+  // Brand-new account created, confirmation email has been sent
   if (data.user && !data.session) {
-    throw new Error('Please check your email and click the confirmation link to complete signup.');
+    return { user: data.user, pendingConfirmation: true };
   }
   
-  return data.user;
+  return { user: data.user, pendingConfirmation: false };
+}
+
+// Resend the signup confirmation email (used when a user's first email
+// never arrived, or they signed in before confirming and got stuck).
+export async function resendConfirmationEmail(email, captchaToken = '') {
+  const options = {
+    emailRedirectTo: window.location.origin,
+  };
+
+  if (captchaToken) {
+    options.captchaToken = captchaToken;
+  }
+
+  const { error } = await supabase.auth.resend({
+    type: 'signup',
+    email,
+    options,
+  });
+
+  if (error) {
+    console.error('Resend confirmation error:', error);
+    throw error;
+  }
 }
 
 // Sign in with email and password
