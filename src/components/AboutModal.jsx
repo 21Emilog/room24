@@ -4,10 +4,10 @@ import { X, Users, Shield, MapPin, Heart, Zap, Mail, Globe, Check } from 'lucide
 export default function AboutModal({ onClose }) {
   const APP_VERSION = '1.0.0';
   
-  // Logo component using PNG image
+  // Logo component using SVG icon (crisp at any size, no baked-in text)
   const Logo = () => (
     <img 
-      src="/logo192.png" 
+      src="/logo-icon.svg" 
       alt="RentMzansi" 
       className="w-16 h-16 object-contain"
     />

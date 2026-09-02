@@ -1,0 +1,6 @@
+<svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+  <path d="M50,5 Q70,5 80,20 Q90,35 80,50 L50,90 L20,50 Q10,35 20,20 Q30,5 50,5 Z" fill="#E63946"/>
+  <polygon points="50,30 40,40 40,55 60,55 60,40" fill="#F1FAEE"/>
+  <rect x="45" y="45" width="10" height="10" fill="#F1FAEE"/>
+  <circle cx="50" cy="50" r="3" fill="#1D3557"/>
+</svg>

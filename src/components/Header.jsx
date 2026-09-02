@@ -2,10 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Menu, X, Bell, User, LogOut, Search, PlusCircle, Heart, Settings, ChevronDown, Eye, EyeOff, MapPin, Moon, Sun, MessageSquare } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 
-// RentMzansi Logo Component - uses PNG image
+// RentMzansi Logo Component - uses SVG icon (crisp at any size, no baked-in text)
 const Logo = ({ className = "w-10 h-10" }) => (
   <img 
-    src="/logo192.png" 
+    src="/logo-icon.svg" 
     alt="RentMzansi" 
     className={`${className} object-contain`}
   />

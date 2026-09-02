@@ -4,10 +4,10 @@ import { Heart, Shield, Mail, Download, MapPin } from 'lucide-react';
 export default function Footer({ onOpenPrivacy, onOpenAbout, onInstallApp, onNavigate }) {
   const currentYear = new Date().getFullYear();
 
-  // Logo component using PNG image
+  // Logo component using SVG icon (crisp at any size, no baked-in text)
   const Logo = () => (
     <img 
-      src="/logo192.png" 
+      src="/logo-icon.svg" 
       alt="RentMzansi" 
       className="w-8 h-8 object-contain"
     />
